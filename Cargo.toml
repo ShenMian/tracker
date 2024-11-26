@@ -1,0 +1,19 @@
+[package]
+name = "tracker"
+version = "0.1.0"
+authors = ["ShenMian <sms_school@outlook.com>"]
+license = "Apache-2.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.93"
+chrono = "0.4.38"
+sgp4 = "2.2.0"
+reverse_geocoder = "4.1.1"
+isocountry = "0.3.2"
+ureq = { version = "2.10.1", features = ["json"] }
+
+ratatui = "0.29.0"
+crossterm = { version = "0.28.1", features = ["event-stream"] }
+tokio = { version = "1.41.1", features = ["full"] }
+futures = "0.3.31"
