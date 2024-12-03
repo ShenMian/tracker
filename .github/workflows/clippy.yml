@@ -6,11 +6,8 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  test:
-    strategy:
-      matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
+  clippy:
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
