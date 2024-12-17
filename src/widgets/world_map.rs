@@ -144,10 +144,14 @@ pub async fn handle_mouse_events(event: MouseEvent, app: &mut App) -> Result<()>
     // Convert window coordinates to area coordinates
     let mouse = Position::new(event.column - inner_area.x, event.row - inner_area.y);
 
+    let (lon, lat) = area_to_lon_lat(mouse.x, mouse.y, app.world_map_state.inner_area);
+    let nearest_object = app
+        .satellites_state
+        .get_nearest_object(Utc::now(), lon, lat);
     if let MouseEventKind::Down(buttom) = event.kind {
         match buttom {
             MouseButton::Left => {
-                app.world_map_state.selected_object = get_nearest_object(app, mouse.x, mouse.y);
+                app.world_map_state.selected_object = nearest_object;
             }
             MouseButton::Right => {
                 app.world_map_state.selected_object = None;
@@ -155,25 +159,9 @@ pub async fn handle_mouse_events(event: MouseEvent, app: &mut App) -> Result<()>
             _ => {}
         }
     }
-    app.world_map_state.hovered_object = get_nearest_object(app, mouse.x, mouse.y);
+    app.world_map_state.hovered_object = nearest_object;
 
     Ok(())
-}
-
-/// Get the index of the nearest object to the given area coordinates
-fn get_nearest_object(app: &mut App, x: u16, y: u16) -> Option<usize> {
-    app.satellites_state
-        .objects
-        .iter()
-        .enumerate()
-        .min_by_key(|(_, obj)| {
-            let state = obj.predict(Utc::now()).unwrap();
-            let (lon, lat) = area_to_lon_lat(x, y, app.world_map_state.inner_area);
-            let dx = state.longitude() - lon;
-            let dy = state.latitude() - lat;
-            ((dx * dx + dy * dy) * 1000.0) as i32
-        })
-        .map(|(index, _)| index)
 }
 
 /// Convert area coordinates to lon/lat coordinates

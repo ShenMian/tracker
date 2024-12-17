@@ -1,6 +1,7 @@
 use std::time::Instant;
 
 use anyhow::Result;
+use chrono::{DateTime, Utc};
 use crossterm::event::{MouseButton, MouseEvent, MouseEventKind};
 use ratatui::{
     buffer::Buffer,
@@ -44,6 +45,20 @@ impl SatellitesState {
                 item.selected = false;
             }
         }
+    }
+
+    /// Get the index of the nearest object to the given area coordinates
+    pub fn get_nearest_object(&self, time: DateTime<Utc>, lon: f64, lat: f64) -> Option<usize> {
+        self.objects
+            .iter()
+            .enumerate()
+            .min_by_key(|(_, obj)| {
+                let state = obj.predict(time).unwrap();
+                let dx = state.longitude() - lon;
+                let dy = state.latitude() - lat;
+                ((dx * dx + dy * dy) * 1000.0) as i32
+            })
+            .map(|(index, _)| index)
     }
 
     pub fn scroll_up(&mut self) {
