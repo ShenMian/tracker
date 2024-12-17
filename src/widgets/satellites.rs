@@ -45,6 +45,18 @@ impl SatellitesState {
             }
         }
     }
+
+    pub fn scroll_up(&mut self) {
+        *self.list_state.offset_mut() = self.list_state.offset().saturating_sub(1);
+    }
+
+    pub fn scroll_down(&mut self) {
+        let max_offset = self
+            .items
+            .len()
+            .saturating_sub(self.inner_area.height as usize);
+        *self.list_state.offset_mut() = (self.list_state.offset() + 1).min(max_offset);
+    }
 }
 
 impl Default for SatellitesState {
@@ -138,19 +150,8 @@ pub async fn handle_mouse_events(event: MouseEvent, app: &mut App) -> Result<()>
                 app.satellites_state.refresh_objects().await;
             }
         }
-        MouseEventKind::ScrollDown => {
-            let max_offset = app
-                .satellites_state
-                .items
-                .len()
-                .saturating_sub(inner_area.height as usize);
-            *app.satellites_state.list_state.offset_mut() =
-                (app.satellites_state.list_state.offset() + 1).min(max_offset);
-        }
-        MouseEventKind::ScrollUp => {
-            *app.satellites_state.list_state.offset_mut() =
-                app.satellites_state.list_state.offset().saturating_sub(1);
-        }
+        MouseEventKind::ScrollUp => app.satellites_state.scroll_up(),
+        MouseEventKind::ScrollDown => app.satellites_state.scroll_down(),
         _ => {}
     }
     // Highlight the hovered item.
