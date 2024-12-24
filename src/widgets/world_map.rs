@@ -17,8 +17,6 @@ use super::satellites::SatellitesState;
 
 pub struct WorldMap<'a> {
     pub satellites_state: &'a SatellitesState,
-    pub satellit_symbol: String,
-    pub trajectory_color: Color,
 }
 
 #[derive(Default)]
@@ -29,6 +27,10 @@ pub struct WorldMapState {
 }
 
 impl WorldMap<'_> {
+    const MAP_COLOR: Color = Color::Gray;
+    const TRAJECTORY_COLOR: Color = Color::LightBlue;
+    const SATELLIT_SYMBOL: &'static str = "+";
+
     fn render_block(&self, area: Rect, buf: &mut Buffer, state: &mut WorldMapState) {
         let block = Block::bordered().title("World map".blue());
         state.inner_area = block.inner(area);
@@ -40,18 +42,16 @@ impl WorldMap<'_> {
             .paint(|ctx| {
                 // Draw the world map
                 ctx.draw(&Map {
-                    color: Color::Gray,
+                    color: Self::MAP_COLOR,
                     resolution: MapResolution::High,
                 });
 
                 // Draw satellites
                 for object in self.satellites_state.objects.iter() {
                     let line = if state.selected_object.is_none() {
-                        self.satellit_symbol.clone().light_red()
-                            + format!(" {}", object.name()).white()
+                        Self::SATELLIT_SYMBOL.light_red() + format!(" {}", object.name()).white()
                     } else {
-                        self.satellit_symbol.clone().red()
-                            + format!(" {}", object.name()).dark_gray()
+                        Self::SATELLIT_SYMBOL.red() + format!(" {}", object.name()).dark_gray()
                     };
                     let state = object.predict(Utc::now()).unwrap();
                     ctx.print(state.position[0], state.position[1], line);
@@ -85,22 +85,22 @@ impl WorldMap<'_> {
                         // Handle trajectory crossing the international date line
                         if (x1 - x2).abs() >= 180.0 {
                             let x_edge = if x1 > 0.0 { 180.0 } else { -180.0 };
-                            ctx.draw(&Line::new(x1, y1, x_edge, y2, self.trajectory_color));
-                            ctx.draw(&Line::new(-x_edge, y1, x2, y2, self.trajectory_color));
+                            ctx.draw(&Line::new(x1, y1, x_edge, y2, Self::TRAJECTORY_COLOR));
+                            ctx.draw(&Line::new(-x_edge, y1, x2, y2, Self::TRAJECTORY_COLOR));
                             continue;
                         }
                         if (y1 - y2).abs() >= 90.0 {
                             // TEMPSAT 1 (1512), CALSPHERE 4A (1520)
                             continue;
                         }
-                        ctx.draw(&Line::new(x1, y1, x2, y2, self.trajectory_color));
+                        ctx.draw(&Line::new(x1, y1, x2, y2, Self::TRAJECTORY_COLOR));
                     }
 
                     // Highlight the selected satellite
                     ctx.print(
                         state.position[0],
                         state.position[1],
-                        self.satellit_symbol.clone().light_green().slow_blink()
+                        Self::SATELLIT_SYMBOL.light_green().slow_blink()
                             + format!(" {}", selected.name()).white(),
                     );
                 } else if let Some(hovered_object_index) = state.hovered_object {
@@ -111,7 +111,7 @@ impl WorldMap<'_> {
                     ctx.print(
                         state.position[0],
                         state.position[1],
-                        self.satellit_symbol.clone().light_red().reversed()
+                        Self::SATELLIT_SYMBOL.light_red().reversed()
                             + " ".into()
                             + hovered.name().clone().white().reversed(),
                     );

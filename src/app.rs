@@ -5,7 +5,6 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseEvent};
 use ratatui::{
     layout::{Constraint, Layout},
     prelude::CrosstermBackend,
-    style::Color,
     Terminal,
 };
 
@@ -75,8 +74,6 @@ impl App {
 
             let world_map = WorldMap {
                 satellites_state: &self.satellites_state,
-                satellit_symbol: "+".to_string(),
-                trajectory_color: Color::LightBlue,
             };
             frame.render_stateful_widget(world_map, left, &mut self.world_map_state);
 
