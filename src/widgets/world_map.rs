@@ -175,7 +175,7 @@ fn area_to_lon_lat(x: u16, y: u16, area: Rect) -> (f64, f64) {
     (lon, lat)
 }
 
-#[allow(dead_code)]
+#[expect(dead_code)]
 /// Convert lon/lat coordinates to area coordinates
 fn lon_lat_to_area(lon: f64, lat: f64, area: Rect) -> (u16, u16) {
     debug_assert!((-180.0..=180.0).contains(&lon));

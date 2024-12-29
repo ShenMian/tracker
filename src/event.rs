@@ -15,14 +15,15 @@ pub enum Event {
 }
 
 /// Terminal event handler.
-#[allow(dead_code)]
 #[derive(Debug)]
 pub struct EventHandler {
     /// Event sender channel.
+    #[expect(dead_code)]
     sender: mpsc::UnboundedSender<Event>,
     /// Event receiver channel.
     receiver: mpsc::UnboundedReceiver<Event>,
     /// Event handler thread.
+    #[expect(dead_code)]
     handler: tokio::task::JoinHandle<()>,
 }
 
