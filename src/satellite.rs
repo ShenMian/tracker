@@ -2,7 +2,6 @@ use std::time::Duration;
 
 use strum::{Display, EnumIter};
 use tokio::fs;
-use ureq::serde_json;
 
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Display, EnumIter)]
 pub enum Satellite {
@@ -133,22 +132,22 @@ impl Satellite {
 
     /// Fetches SGP4 elements from celestrak.org.
     async fn fetch_elements(&self) -> Option<Vec<sgp4::Elements>> {
-        let mut request =
-            ureq::get("https://celestrak.org/NORAD/elements/gp.php").query("FORMAT", "json");
+        const URL: &str = "https://celestrak.com/NORAD/elements/gp.php";
+
+        let mut request = reqwest::Client::new().get(URL).query(&[("FORMAT", "json")]);
 
         request = match (self.cospar_id(), self.group()) {
-            (Some(id), None) => request.query("INTDES", id),
-            (None, Some(group)) => request.query("GROUP", group),
+            (Some(id), None) => request.query(&[("INTDES", id)]),
+            (None, Some(group)) => request.query(&[("GROUP", group)]),
             _ => unreachable!(),
         };
 
-        request
-            .call()
-            .map(|response| {
-                response
-                    .into_json()
-                    .expect("failed to parse JSON from celestrak.org")
-            })
-            .ok()
+        let response = request.send().await.ok()?;
+        Some(
+            response
+                .json()
+                .await
+                .expect("failed to parse JSON from celestrak.org"),
+        )
     }
 }
