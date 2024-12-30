@@ -107,12 +107,12 @@ impl App {
         match event.code {
             // Exit application on `ESC`
             KeyCode::Esc => {
-                self.quit();
+                self.request_exit();
             }
             // Exit application on `Ctrl-C`
             KeyCode::Char('c') => {
                 if event.modifiers == KeyModifiers::CONTROL {
-                    self.quit();
+                    self.request_exit();
                 }
             }
             _ => {}
@@ -128,7 +128,7 @@ impl App {
     }
 
     /// Set running to false to quit the application.
-    pub fn quit(&mut self) {
+    pub fn request_exit(&mut self) {
         self.running = false;
     }
 }
