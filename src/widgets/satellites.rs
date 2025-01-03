@@ -164,7 +164,6 @@ pub async fn handle_mouse_events(event: MouseEvent, app: &mut App) -> Result<()>
                 app.satellites_state.items[index].selected =
                     !app.satellites_state.items[index].selected;
                 app.world_map_state.selected_object = None;
-                app.world_map_state.hovered_object = None;
                 app.satellites_state.refresh_objects().await;
             }
         }
