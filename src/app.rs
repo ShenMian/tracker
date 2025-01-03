@@ -68,14 +68,14 @@ impl App {
     pub fn render(&mut self) -> Result<()> {
         self.tui.terminal.draw(|frame| {
             let horizontal = Layout::horizontal([Constraint::Percentage(80), Constraint::Min(25)]);
-            let [left, right] = horizontal.areas(frame.area());
+            let [left_area, right_area] = horizontal.areas(frame.area());
             let vertical = Layout::vertical([Constraint::Percentage(60), Constraint::Fill(1)]);
-            let [top_right, bottom_right] = vertical.areas(right);
+            let [top_right_area, right_bottom_area] = vertical.areas(right_area);
 
             let world_map = WorldMap {
                 satellites_state: &self.satellites_state,
             };
-            frame.render_stateful_widget(world_map, left, &mut self.world_map_state);
+            frame.render_stateful_widget(world_map, left_area, &mut self.world_map_state);
 
             let object_information = ObjectInformation {
                 satellites_state: &self.satellites_state,
@@ -83,11 +83,11 @@ impl App {
             };
             frame.render_stateful_widget(
                 object_information,
-                top_right,
+                top_right_area,
                 &mut self.object_information_state,
             );
 
-            frame.render_stateful_widget(Satellites, bottom_right, &mut self.satellites_state);
+            frame.render_stateful_widget(Satellites, right_bottom_area, &mut self.satellites_state);
         })?;
         Ok(())
     }
@@ -101,6 +101,11 @@ impl App {
             self.satellites_state.refresh_objects().await;
             self.satellites_state.last_object_update = now;
         }
+    }
+
+    /// Set running to false to quit the application.
+    pub fn request_exit(&mut self) {
+        self.running = false;
     }
 
     async fn handle_key_events(&mut self, event: KeyEvent) -> Result<()> {
@@ -125,10 +130,5 @@ impl App {
         object_information::handle_mouse_events(event, self).await?;
         satellites::handle_mouse_events(event, self).await?;
         Ok(())
-    }
-
-    /// Set running to false to quit the application.
-    pub fn request_exit(&mut self) {
-        self.running = false;
     }
 }
