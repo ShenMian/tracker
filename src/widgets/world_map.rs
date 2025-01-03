@@ -150,12 +150,8 @@ pub async fn handle_mouse_events(event: MouseEvent, app: &mut App) -> Result<()>
         .get_nearest_object(Utc::now(), lon, lat);
     if let MouseEventKind::Down(buttom) = event.kind {
         match buttom {
-            MouseButton::Left => {
-                app.world_map_state.selected_object = nearest_object;
-            }
-            MouseButton::Right => {
-                app.world_map_state.selected_object = None;
-            }
+            MouseButton::Left => app.world_map_state.selected_object = nearest_object,
+            MouseButton::Right => app.world_map_state.selected_object = None,
             _ => {}
         }
     }
