@@ -154,6 +154,9 @@ pub async fn handle_mouse_events(event: MouseEvent, app: &mut App) -> Result<()>
         return Ok(());
     }
 
+    // Convert window coordinates to area coordinates
+    let mouse = Position::new(event.column - inner_area.x, event.row - inner_area.y);
+
     match event.kind {
         MouseEventKind::Down(MouseButton::Left) => {
             // Select the clicked item.
@@ -169,8 +172,9 @@ pub async fn handle_mouse_events(event: MouseEvent, app: &mut App) -> Result<()>
         MouseEventKind::ScrollDown => app.satellites_state.scroll_down(),
         _ => {}
     }
+
     // Highlight the hovered item.
-    let row = (event.row - inner_area.y) as usize + app.satellites_state.list_state.offset();
+    let row = mouse.y as usize + app.satellites_state.list_state.offset();
     let index = if row < app.satellites_state.items.len() {
         Some(row)
     } else {

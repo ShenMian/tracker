@@ -186,6 +186,9 @@ pub async fn handle_mouse_events(event: MouseEvent, app: &mut App) -> Result<()>
         return Ok(());
     }
 
+    // Convert window coordinates to area coordinates
+    let mouse = Position::new(event.column - inner_area.x, event.row - inner_area.y);
+
     match event.kind {
         MouseEventKind::Down(MouseButton::Left) => {
             // Copy the clicked value to the clipboard.
@@ -201,8 +204,7 @@ pub async fn handle_mouse_events(event: MouseEvent, app: &mut App) -> Result<()>
         _ => {}
     }
     // Highlight the hovered row.
-    let row =
-        (event.row - inner_area.y) as usize + app.object_information_state.table_state.offset();
+    let row = mouse.y as usize + app.object_information_state.table_state.offset();
     let index = if row < app.object_information_state.items.len() {
         Some(row)
     } else {
