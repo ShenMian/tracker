@@ -38,13 +38,11 @@ impl Object {
         Self {
             name: elements
                 .object_name
-                .as_ref()
-                .cloned()
+                .clone()
                 .unwrap_or("Unknown".to_string()),
             cospar_id: elements
                 .international_designator
-                .as_ref()
-                .cloned()
+                .clone()
                 .unwrap_or("Unknown".to_string()),
             norad_id: elements.norad_id,
             epoch: DateTime::from_naive_utc_and_offset(elements.datetime, Utc),
