@@ -5,9 +5,9 @@ use chrono::{DateTime, Datelike, Timelike, Utc};
 #[derive(Clone, Debug)]
 pub struct Object {
     /// The name of the object.
-    name: String,
+    name: Option<String>,
     /// The COSPAR ID of the object.
-    cospar_id: String,
+    cospar_id: Option<String>,
     /// The NORAD ID of the object.
     norad_id: u64,
 
@@ -36,14 +36,8 @@ pub struct Object {
 impl Object {
     pub fn from_elements(elements: sgp4::Elements) -> Self {
         Self {
-            name: elements
-                .object_name
-                .clone()
-                .unwrap_or("Unknown".to_string()),
-            cospar_id: elements
-                .international_designator
-                .clone()
-                .unwrap_or("Unknown".to_string()),
+            name: elements.object_name.clone(),
+            cospar_id: elements.international_designator.clone(),
             norad_id: elements.norad_id,
             epoch: DateTime::from_naive_utc_and_offset(elements.datetime, Utc),
             drag_term: elements.drag_term,
@@ -58,14 +52,17 @@ impl Object {
         }
     }
 
-    pub fn name(&self) -> &String {
-        &self.name
+    /// The name of the object.
+    pub fn name(&self) -> Option<&String> {
+        self.name.as_ref()
     }
 
-    pub fn cospar_id(&self) -> &String {
-        &self.cospar_id
+    /// The COSPAR ID of the object.
+    pub fn cospar_id(&self) -> Option<&String> {
+        self.cospar_id.as_ref()
     }
 
+    /// The COSPAR ID of the object.
     pub fn norad_id(&self) -> u64 {
         self.norad_id
     }

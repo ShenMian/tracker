@@ -64,6 +64,8 @@ impl ObjectInformation<'_> {
     }
 
     fn render_table(&self, buf: &mut Buffer, state: &mut ObjectInformationState, index: usize) {
+        const UNKNOWN_NAME: &str = "Unknown";
+
         let object = &self.satellites_state.objects[index];
         let object_state = object.predict(Utc::now()).unwrap();
 
@@ -76,8 +78,17 @@ impl ObjectInformation<'_> {
             .name();
 
         state.items = Vec::from([
-            ("Name", object.name().clone()),
-            ("COSPAR ID", object.cospar_id().clone()),
+            (
+                "Name",
+                object.name().unwrap_or(&UNKNOWN_NAME.to_string()).clone(),
+            ),
+            (
+                "COSPAR ID",
+                object
+                    .cospar_id()
+                    .unwrap_or(&UNKNOWN_NAME.to_string())
+                    .clone(),
+            ),
             ("NORAD ID", object.norad_id().to_string()),
             ("Longitude", format!("{:9.4}°", object_state.longitude())),
             ("Latitude", format!("{:9.4}°", object_state.latitude())),

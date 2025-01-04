@@ -30,6 +30,7 @@ impl WorldMap<'_> {
     const MAP_COLOR: Color = Color::Gray;
     const TRAJECTORY_COLOR: Color = Color::LightBlue;
     const SATELLIT_SYMBOL: &'static str = "+";
+    const UNKNOWN_NAME: &'static str = "UNK";
 
     fn render_block(&self, area: Rect, buf: &mut Buffer, state: &mut WorldMapState) {
         let block = Block::bordered().title("World map".blue());
@@ -49,9 +50,19 @@ impl WorldMap<'_> {
                 // Draw satellites
                 for object in self.satellites_state.objects.iter() {
                     let line = if state.selected_object.is_none() {
-                        Self::SATELLIT_SYMBOL.light_red() + format!(" {}", object.name()).white()
+                        Self::SATELLIT_SYMBOL.light_red()
+                            + format!(
+                                " {}",
+                                object.name().unwrap_or(&Self::UNKNOWN_NAME.to_string())
+                            )
+                            .white()
                     } else {
-                        Self::SATELLIT_SYMBOL.red() + format!(" {}", object.name()).dark_gray()
+                        Self::SATELLIT_SYMBOL.red()
+                            + format!(
+                                " {}",
+                                object.name().unwrap_or(&Self::UNKNOWN_NAME.to_string())
+                            )
+                            .dark_gray()
                     };
                     let state = object.predict(Utc::now()).unwrap();
                     ctx.print(state.position[0], state.position[1], line);
@@ -101,7 +112,11 @@ impl WorldMap<'_> {
                         state.position[0],
                         state.position[1],
                         Self::SATELLIT_SYMBOL.light_green().slow_blink()
-                            + format!(" {}", selected.name()).white(),
+                            + format!(
+                                " {}",
+                                selected.name().unwrap_or(&Self::UNKNOWN_NAME.to_string())
+                            )
+                            .white(),
                     );
                 } else if let Some(hovered_object_index) = state.hovered_object {
                     let hovered = &self.satellites_state.objects[hovered_object_index];
@@ -113,7 +128,12 @@ impl WorldMap<'_> {
                         state.position[1],
                         Self::SATELLIT_SYMBOL.light_red().reversed()
                             + " ".into()
-                            + hovered.name().clone().white().reversed(),
+                            + hovered
+                                .name()
+                                .unwrap_or(&Self::UNKNOWN_NAME.to_string())
+                                .clone()
+                                .white()
+                                .reversed(),
                     );
                 }
             })
