@@ -110,8 +110,8 @@ impl App {
 
     async fn handle_key_events(&mut self, event: KeyEvent) -> Result<()> {
         match event.code {
-            // Exit application on `ESC`
-            KeyCode::Esc => {
+            // Exit application on `Q` or `ESC`
+            KeyCode::Char('q') | KeyCode::Esc => {
                 self.request_exit();
             }
             // Exit application on `Ctrl-C`
