@@ -51,40 +51,6 @@ pub enum Satellite {
 }
 
 impl Satellite {
-    /// Returns the international designator.
-    fn cospar_id(&self) -> Option<&str> {
-        match self {
-            Self::Iss => Some("1998-067A"),
-            Self::Css => Some("2021-035A"),
-            Self::Dfh1 => Some("1970-034A"),
-            _ => None,
-        }
-    }
-
-    /// Returns CelesTrak group name.
-    fn group(&self) -> Option<&str> {
-        match self {
-            Self::Weather => Some("weather"),
-            Self::Noaa => Some("noaa"),
-            Self::Goes => Some("goes"),
-            Self::EarthResources => Some("resource"),
-            Self::SearchRescue => Some("sarsat"),
-            Self::DisasterMonitoring => Some("dmc"),
-            Self::Gps => Some("gps-ops"),
-            Self::Glonass => Some("glo-ops"),
-            Self::Galileo => Some("galileo"),
-            Self::Beidou => Some("beidou"),
-            Self::SpaceEarthScience => Some("science"),
-            Self::Geodetic => Some("geodetic"),
-            Self::Engineering => Some("engineering"),
-            Self::Education => Some("education"),
-            Self::Military => Some("military"),
-            Self::RadarCalibration => Some("radar"),
-            Self::CubeSats => Some("cubesat"),
-            _ => None,
-        }
-    }
-
     /// Returns SGP4 elements.
     ///
     /// If cache is older than 2 hours, fetches elements from celestrak.org.
@@ -149,5 +115,39 @@ impl Satellite {
                 .await
                 .expect("failed to parse JSON from celestrak.org"),
         )
+    }
+
+    /// Returns the international designator.
+    fn cospar_id(&self) -> Option<&str> {
+        match self {
+            Self::Iss => Some("1998-067A"),
+            Self::Css => Some("2021-035A"),
+            Self::Dfh1 => Some("1970-034A"),
+            _ => None,
+        }
+    }
+
+    /// Returns CelesTrak group name.
+    fn group(&self) -> Option<&str> {
+        match self {
+            Self::Weather => Some("weather"),
+            Self::Noaa => Some("noaa"),
+            Self::Goes => Some("goes"),
+            Self::EarthResources => Some("resource"),
+            Self::SearchRescue => Some("sarsat"),
+            Self::DisasterMonitoring => Some("dmc"),
+            Self::Gps => Some("gps-ops"),
+            Self::Glonass => Some("glo-ops"),
+            Self::Galileo => Some("galileo"),
+            Self::Beidou => Some("beidou"),
+            Self::SpaceEarthScience => Some("science"),
+            Self::Geodetic => Some("geodetic"),
+            Self::Engineering => Some("engineering"),
+            Self::Education => Some("education"),
+            Self::Military => Some("military"),
+            Self::RadarCalibration => Some("radar"),
+            Self::CubeSats => Some("cubesat"),
+            _ => None,
+        }
     }
 }
