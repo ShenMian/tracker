@@ -1892,8 +1892,7 @@ dependencies = [
 [[package]]
 name = "sgp4"
 version = "2.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e4b1f4474b6f9c1edcf6c74288127f3d5528d19160b817382e5b7db70637cf1"
+source = "git+https://github.com/neuromorphicsystems/sgp4#0941abe606b65828877d6e6b80933f90834017c5"
 dependencies = [
  "chrono",
  "serde",

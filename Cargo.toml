@@ -6,7 +6,7 @@ license = "Apache-2.0"
 edition = "2021"
 
 [dependencies]
-sgp4 = "2.2"
+sgp4 = { git = "https://github.com/neuromorphicsystems/sgp4" }
 reverse_geocoder = "4.1"
 isocountry = "0.3"
 arboard = "3.4"
