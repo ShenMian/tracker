@@ -4,67 +4,24 @@ use chrono::{DateTime, Datelike, Timelike, Utc};
 
 #[derive(Clone, Debug)]
 pub struct Object {
-    /// The name of the object.
-    name: Option<String>,
-    /// The COSPAR ID of the object.
-    cospar_id: Option<String>,
-    /// The NORAD ID of the object.
-    norad_id: u64,
-
     epoch: DateTime<Utc>,
-
-    /// Radiation pressure coefficient in earth radii⁻¹.
-    drag_term: f64,
-    /// Angle between the equator and the orbit plane in deg.
-    inclination: f64,
-    /// Angle between vernal equinox and the point where the orbit crosses the equatorial plane in deg.
-    right_ascension: f64,
-    /// The shape of the orbit.
-    eccentricity: f64,
-    /// Angle between the ascending node and the orbit's point of closest approach to the earth in deg.
-    argument_of_perigee: f64,
-    /// Angle of the satellite location measured from perigee in deg.
-    mean_anomaly: f64,
-    /// Mean number of orbits per day in day⁻¹ (Kozai convention).
-    mean_motion: f64,
-    /// The orbit number at epoch.
-    revolution_number: u64,
-
+    orbital_period: chrono::Duration,
+    elements: sgp4::Elements,
     constants: sgp4::Constants,
 }
 
 impl Object {
     pub fn from_elements(elements: sgp4::Elements) -> Self {
+        const SECONDS_PER_DAY: f64 = 24.0 * 60.0 * 60.0;
+        let orbital_period =
+            chrono::Duration::seconds((SECONDS_PER_DAY / elements.mean_motion) as i64);
+
         Self {
-            name: elements.object_name.clone(),
-            cospar_id: elements.international_designator.clone(),
-            norad_id: elements.norad_id,
             epoch: DateTime::from_naive_utc_and_offset(elements.datetime, Utc),
-            drag_term: elements.drag_term,
-            inclination: elements.inclination,
-            right_ascension: elements.right_ascension,
-            eccentricity: elements.eccentricity,
-            argument_of_perigee: elements.argument_of_perigee,
-            mean_anomaly: elements.mean_anomaly,
-            mean_motion: elements.mean_motion,
-            revolution_number: elements.revolution_number,
+            orbital_period,
             constants: sgp4::Constants::from_elements(&elements).unwrap(),
+            elements,
         }
-    }
-
-    /// The name of the object.
-    pub fn name(&self) -> Option<&String> {
-        self.name.as_ref()
-    }
-
-    /// The COSPAR ID of the object.
-    pub fn cospar_id(&self) -> Option<&String> {
-        self.cospar_id.as_ref()
-    }
-
-    /// The COSPAR ID of the object.
-    pub fn norad_id(&self) -> u64 {
-        self.norad_id
     }
 
     /// The UTC timestamp of the elements
@@ -72,49 +29,12 @@ impl Object {
         self.epoch
     }
 
-    /// Radiation pressure coefficient in earth radii⁻¹
-    pub fn drag_term(&self) -> f64 {
-        self.drag_term
+    pub fn orbital_period(&self) -> &chrono::Duration {
+        &self.orbital_period
     }
 
-    /// Angle between the equator and the orbit plane in deg
-    pub fn inclination(&self) -> f64 {
-        self.inclination
-    }
-
-    /// Angle between vernal equinox and the point where the orbit crosses the equatorial plane in deg
-    pub fn right_ascension(&self) -> f64 {
-        self.right_ascension
-    }
-
-    /// The shape of the orbit
-    pub fn eccentricity(&self) -> f64 {
-        self.eccentricity
-    }
-
-    /// Angle between the ascending node and the orbit's point of closest approach to the earth in deg
-    pub fn argument_of_perigee(&self) -> f64 {
-        self.argument_of_perigee
-    }
-
-    /// Angle of the satellite location measured from perigee in deg
-    pub fn mean_anomaly(&self) -> f64 {
-        self.mean_anomaly
-    }
-
-    /// Mean number of orbits per day in day⁻¹ (Kozai convention)
-    pub fn mean_motion(&self) -> f64 {
-        self.mean_motion
-    }
-
-    /// The orbit number at epoch
-    pub fn revolution_number(&self) -> u64 {
-        self.revolution_number
-    }
-
-    pub fn orbital_period(&self) -> chrono::Duration {
-        const SECONDS_PER_DAY: f64 = 24.0 * 60.0 * 60.0;
-        chrono::Duration::seconds((SECONDS_PER_DAY / self.mean_motion) as i64)
+    pub fn elements(&self) -> &sgp4::Elements {
+        &self.elements
     }
 
     pub fn predict(&self, time: DateTime<Utc>) -> Result<State, sgp4::Error> {

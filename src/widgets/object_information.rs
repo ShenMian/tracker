@@ -77,19 +77,23 @@ impl ObjectInformation<'_> {
             .unwrap()
             .name();
 
+        let elemenets = object.elements();
         state.items = Vec::from([
             (
                 "Name",
-                object.name().unwrap_or(&UNKNOWN_NAME.to_string()).clone(),
+                elemenets
+                    .object_name
+                    .clone()
+                    .unwrap_or(UNKNOWN_NAME.to_string()),
             ),
             (
                 "COSPAR ID",
-                object
-                    .cospar_id()
-                    .unwrap_or(&UNKNOWN_NAME.to_string())
-                    .clone(),
+                elemenets
+                    .international_designator
+                    .clone()
+                    .unwrap_or(UNKNOWN_NAME.to_string()),
             ),
-            ("NORAD ID", object.norad_id().to_string()),
+            ("NORAD ID", elemenets.norad_id.to_string()),
             ("Longitude", format!("{:9.4}°", object_state.longitude())),
             ("Latitude", format!("{:9.4}°", object_state.latitude())),
             ("Altitude", format!("{:.3} km", object_state.altitude())),
@@ -106,13 +110,13 @@ impl ObjectInformation<'_> {
                 "Epoch",
                 object.epoch().format("%Y-%m-%d %H:%M:%S").to_string(),
             ),
-            ("Drag term", format!("{} 1/ER", object.drag_term())),
-            ("Inc", format!("{}°", object.inclination())),
-            ("Right asc.", format!("{}°", object.right_ascension())),
-            ("Ecc", object.eccentricity().to_string()),
-            ("M. anomaly", format!("{}°", object.mean_anomaly())),
-            ("M. motion", format!("{} 1/day", object.mean_motion())),
-            ("Rev. #", object.revolution_number().to_string()),
+            ("Drag term", format!("{} 1/ER", elemenets.drag_term)),
+            ("Inc", format!("{}°", elemenets.inclination)),
+            ("Right asc.", format!("{}°", elemenets.right_ascension)),
+            ("Ecc", elemenets.eccentricity.to_string()),
+            ("M. anomaly", format!("{}°", elemenets.mean_anomaly)),
+            ("M. motion", format!("{} 1/day", elemenets.mean_motion)),
+            ("Rev. #", elemenets.revolution_number.to_string()),
         ]);
 
         let (max_key_width, _max_value_width) = state

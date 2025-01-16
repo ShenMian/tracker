@@ -53,14 +53,22 @@ impl WorldMap<'_> {
                         Self::SATELLIT_SYMBOL.light_red()
                             + format!(
                                 " {}",
-                                object.name().unwrap_or(&Self::UNKNOWN_NAME.to_string())
+                                object
+                                    .elements()
+                                    .object_name
+                                    .clone()
+                                    .unwrap_or(Self::UNKNOWN_NAME.to_string())
                             )
                             .white()
                     } else {
                         Self::SATELLIT_SYMBOL.red()
                             + format!(
                                 " {}",
-                                object.name().unwrap_or(&Self::UNKNOWN_NAME.to_string())
+                                object
+                                    .elements()
+                                    .object_name
+                                    .clone()
+                                    .unwrap_or(Self::UNKNOWN_NAME.to_string())
                             )
                             .dark_gray()
                     };
@@ -114,7 +122,11 @@ impl WorldMap<'_> {
                         Self::SATELLIT_SYMBOL.light_green().slow_blink()
                             + format!(
                                 " {}",
-                                selected.name().unwrap_or(&Self::UNKNOWN_NAME.to_string())
+                                selected
+                                    .elements()
+                                    .object_name
+                                    .clone()
+                                    .unwrap_or(Self::UNKNOWN_NAME.to_string())
                             )
                             .white(),
                     );
@@ -129,9 +141,10 @@ impl WorldMap<'_> {
                         Self::SATELLIT_SYMBOL.light_red().reversed()
                             + " ".into()
                             + hovered
-                                .name()
-                                .unwrap_or(&Self::UNKNOWN_NAME.to_string())
+                                .elements()
+                                .object_name
                                 .clone()
+                                .unwrap_or(Self::UNKNOWN_NAME.to_string())
                                 .white()
                                 .reversed(),
                     );
