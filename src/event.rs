@@ -28,7 +28,7 @@ pub struct EventHandler {
 }
 
 impl EventHandler {
-    /// Constructs a new instance of [`EventHandler`].
+    /// Creates a new `EventHandler`.
     pub fn new() -> Self {
         const UPDATE_RATE: f64 = 10.0;
         const RENDER_RATE: f64 = 60.0;

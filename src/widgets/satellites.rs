@@ -16,9 +16,11 @@ use strum::IntoEnumIterator;
 
 use crate::{app::App, object::Object, satellite::Satellite};
 
+/// A widget to display a list of satellites.
 #[derive(Default)]
 pub struct Satellites;
 
+/// State of a [`Satellites`] widget
 pub struct SatellitesState {
     pub objects: Vec<Object>,
 

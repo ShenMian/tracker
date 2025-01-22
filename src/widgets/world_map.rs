@@ -15,10 +15,12 @@ use crate::app::App;
 
 use super::satellites::SatellitesState;
 
+/// A widget to display a world map with satellites.
 pub struct WorldMap<'a> {
     pub satellites_state: &'a SatellitesState,
 }
 
+/// State of a [`WorldMapState`] widget
 #[derive(Default)]
 pub struct WorldMapState {
     pub selected_object: Option<usize>,

@@ -31,7 +31,7 @@ pub struct App {
 }
 
 impl App {
-    /// Constructs a new instance of [`App`].
+    /// Creates a new `App`.
     pub fn new() -> Result<Self> {
         let backend = CrosstermBackend::new(std::io::stdout());
         let terminal = Terminal::new(backend)?;
@@ -94,8 +94,8 @@ impl App {
 
     /// Handle update events.
     pub async fn update(&mut self) {
+        // Refresh satellite data every 2 minutes.
         const OBJECT_UPDATE_INTERVAL: Duration = Duration::from_secs(2 * 60);
-
         let now = Instant::now();
         if now.duration_since(self.satellites_state.last_object_update) >= OBJECT_UPDATE_INTERVAL {
             self.satellites_state.refresh_objects().await;
@@ -110,11 +110,11 @@ impl App {
 
     async fn handle_key_events(&mut self, event: KeyEvent) -> Result<()> {
         match event.code {
-            // Exit application on `Q` or `ESC`
+            // Exit application on `Q` or `ESC`.
             KeyCode::Char('q') | KeyCode::Esc => {
                 self.request_exit();
             }
-            // Exit application on `Ctrl-C`
+            // Exit application on `Ctrl-C`.
             KeyCode::Char('c') => {
                 if event.modifiers == KeyModifiers::CONTROL {
                     self.request_exit();

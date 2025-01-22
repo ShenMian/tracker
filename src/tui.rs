@@ -22,7 +22,7 @@ pub struct Tui<B: Backend> {
 }
 
 impl<B: Backend> Tui<B> {
-    /// Constructs a new instance of [`Tui`].
+    /// Creates a new `Tui`.
     pub fn new(terminal: Terminal<B>, events: EventHandler) -> Self {
         Self { terminal, events }
     }

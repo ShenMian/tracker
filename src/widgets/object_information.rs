@@ -19,11 +19,13 @@ use crate::app::App;
 
 use super::{satellites::SatellitesState, world_map::WorldMapState};
 
+/// A widget to display information about a selected object.
 pub struct ObjectInformation<'a> {
     pub satellites_state: &'a SatellitesState,
     pub world_map_state: &'a WorldMapState,
 }
 
+/// State of a [`ObjectInformation`] widget
 pub struct ObjectInformationState {
     pub items: Vec<(&'static str, String)>,
     pub table_state: TableState,

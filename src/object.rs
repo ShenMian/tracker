@@ -2,6 +2,7 @@ use std::f64::consts::PI;
 
 use chrono::{DateTime, Datelike, Timelike, Utc};
 
+/// A satellite object with orbital elements.
 #[derive(Clone, Debug)]
 pub struct Object {
     epoch: DateTime<Utc>,
@@ -24,7 +25,7 @@ impl Object {
         }
     }
 
-    /// The UTC timestamp of the elements
+    /// The UTC timestamp of the elements.
     pub fn epoch(&self) -> DateTime<Utc> {
         self.epoch
     }
@@ -37,6 +38,7 @@ impl Object {
         &self.elements
     }
 
+    /// Predicts the state of the object at the given time.
     pub fn predict(&self, time: DateTime<Utc>) -> Result<State, sgp4::Error> {
         let minutes_since_epoch = (time - self.epoch).num_seconds() as f64 / 60.0;
 

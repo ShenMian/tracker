@@ -3,6 +3,9 @@ use std::time::Duration;
 use strum::{Display, EnumIter};
 use tokio::fs;
 
+/// The `Satellite` type.
+///
+/// Type [`Satellite`] represents a satellite or a group of satellites.
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Display, EnumIter)]
 pub enum Satellite {
     // Space stations
@@ -53,7 +56,7 @@ pub enum Satellite {
 impl Satellite {
     /// Returns SGP4 elements.
     ///
-    /// If cache is older than 2 hours, fetches elements from celestrak.org.
+    /// If cache is older than 2 hours, fetches elements from <https://celestrak.org>.
     /// Otherwise, reads elements from cache.
     pub async fn get_elements(&self) -> Option<Vec<sgp4::Elements>> {
         let cache_path = dirs::cache_dir()
@@ -96,7 +99,7 @@ impl Satellite {
         serde_json::from_str(&json).unwrap()
     }
 
-    /// Fetches SGP4 elements from celestrak.org.
+    /// Fetches SGP4 elements from <https://celestrak.org>.
     async fn fetch_elements(&self) -> Option<Vec<sgp4::Elements>> {
         const URL: &str = "https://celestrak.com/NORAD/elements/gp.php";
 
