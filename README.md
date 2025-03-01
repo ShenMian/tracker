@@ -28,7 +28,7 @@ paru -S tracker # use your favorite AUR helper
 #### Windows
 
 ```powershell
-scoop bucket add shenmian https://github.com/ShenMian/bucket
+scoop bucket add extra
 scoop install tracker
 ```
 
