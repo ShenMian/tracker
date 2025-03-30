@@ -7,9 +7,9 @@ edition = "2021"
 
 [dependencies]
 sgp4 = { git = "https://github.com/neuromorphicsystems/sgp4" }
-reverse_geocoder = "4.1"
-isocountry = "0.3"
-arboard = "3.4"
+reverse_geocoder = "4.1"                                       # Convert latitude and longitude to country code
+isocountry = "0.3"                                             # Convert country code to country name
+arboard = "3.4"                                                # Access system clipboard
 
 # TUI
 ratatui = "0.29"
