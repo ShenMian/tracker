@@ -5,7 +5,7 @@ use crossterm::event::{MouseButton, MouseEvent, MouseEventKind};
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Layout, Margin, Position, Rect},
-    style::{palette::tailwind, Modifier, Style, Stylize},
+    style::{Modifier, Style, Stylize, palette::tailwind},
     text::Text,
     widgets::{
         Block, Cell, Paragraph, Row, Scrollbar, ScrollbarState, StatefulWidget, Table, TableState,

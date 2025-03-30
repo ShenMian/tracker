@@ -6,8 +6,8 @@ use ratatui::{
     layout::{Position, Rect},
     style::{Color, Stylize},
     widgets::{
-        canvas::{Canvas, Line, Map, MapResolution},
         Block, StatefulWidget, Widget,
+        canvas::{Canvas, Line, Map, MapResolution},
     },
 };
 

@@ -5,7 +5,7 @@ use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},
     terminal::{self, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use ratatui::{backend::Backend, Terminal};
+use ratatui::{Terminal, backend::Backend};
 
 use crate::event::EventHandler;
 
