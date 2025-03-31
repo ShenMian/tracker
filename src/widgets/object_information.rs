@@ -27,7 +27,7 @@ pub struct ObjectInformation<'a> {
 
 /// State of a [`ObjectInformation`] widget
 pub struct ObjectInformationState {
-    pub items: Vec<(&'static str, String)>,
+    pub table_entries: Vec<(&'static str, String)>,
     pub table_state: TableState,
     pub inner_area: Rect,
     geocoder: ReverseGeocoder,
@@ -40,7 +40,7 @@ impl ObjectInformationState {
 
     pub fn scroll_down(&mut self) {
         let max_offset = self
-            .items
+            .table_entries
             .len()
             .saturating_sub(self.inner_area.height as usize);
         *self.table_state.offset_mut() = (self.table_state.offset() + 1).min(max_offset);
@@ -50,7 +50,7 @@ impl ObjectInformationState {
 impl Default for ObjectInformationState {
     fn default() -> Self {
         Self {
-            items: Default::default(),
+            table_entries: Default::default(),
             table_state: Default::default(),
             inner_area: Default::default(),
             geocoder: ReverseGeocoder::new(),
@@ -74,28 +74,28 @@ impl ObjectInformation<'_> {
         let result = state
             .geocoder
             .search((object_state.latitude(), object_state.longitude()));
-        let city = result.record.name.clone();
-        let country = isocountry::CountryCode::for_alpha2(&result.record.cc)
+        let city_name = result.record.name.clone();
+        let country_name = isocountry::CountryCode::for_alpha2(&result.record.cc)
             .unwrap()
             .name();
 
-        let elemenets = object.elements();
-        state.items = Vec::from([
+        let elements = object.elements();
+        state.table_entries = Vec::from([
             (
                 "Name",
-                elemenets
+                elements
                     .object_name
                     .clone()
                     .unwrap_or(UNKNOWN_NAME.to_string()),
             ),
             (
                 "COSPAR ID",
-                elemenets
+                elements
                     .international_designator
                     .clone()
                     .unwrap_or(UNKNOWN_NAME.to_string()),
             ),
-            ("NORAD ID", elemenets.norad_id.to_string()),
+            ("NORAD ID", elements.norad_id.to_string()),
             ("Longitude", format!("{:9.4}°", object_state.longitude())),
             ("Latitude", format!("{:9.4}°", object_state.latitude())),
             ("Altitude", format!("{:.3} km", object_state.altitude())),
@@ -107,22 +107,22 @@ impl ObjectInformation<'_> {
                     object.orbital_period().num_seconds() as f64 / 60.0
                 ),
             ),
-            ("Location", format!("{}, {}", city, country)),
+            ("Location", format!("{}, {}", city_name, country_name)),
             (
                 "Epoch",
                 object.epoch().format("%Y-%m-%d %H:%M:%S").to_string(),
             ),
-            ("Drag term", format!("{} 1/ER", elemenets.drag_term)),
-            ("Inc", format!("{}°", elemenets.inclination)),
-            ("Right asc.", format!("{}°", elemenets.right_ascension)),
-            ("Ecc", elemenets.eccentricity.to_string()),
-            ("M. anomaly", format!("{}°", elemenets.mean_anomaly)),
-            ("M. motion", format!("{} 1/day", elemenets.mean_motion)),
-            ("Rev. #", elemenets.revolution_number.to_string()),
+            ("Drag term", format!("{} 1/ER", elements.drag_term)),
+            ("Inc", format!("{}°", elements.inclination)),
+            ("Right asc.", format!("{}°", elements.right_ascension)),
+            ("Ecc", elements.eccentricity.to_string()),
+            ("M. anomaly", format!("{}°", elements.mean_anomaly)),
+            ("M. motion", format!("{} 1/day", elements.mean_motion)),
+            ("Rev. #", elements.revolution_number.to_string()),
         ]);
 
         let (max_key_width, _max_value_width) = state
-            .items
+            .table_entries
             .iter()
             .map(|(key, value)| (key.width(), value.width()))
             .fold((0, 0), |acc, (key_width, value_width)| {
@@ -135,29 +135,34 @@ impl ObjectInformation<'_> {
             .map(|rect| rect.width);
         let right = right.saturating_sub(1) as usize;
 
-        let rows = state.items.iter().enumerate().map(|(i, (key, value))| {
-            let color = match i % 2 {
-                0 => tailwind::SLATE.c950,
-                _ => tailwind::SLATE.c900,
-            };
-            let value = if value.width() > right {
-                let etc = "…";
-                let end = value
-                    .char_indices()
-                    .map(|(i, _)| i)
-                    .nth(right.saturating_sub(etc.width()))
-                    .unwrap();
-                value[..end].to_string() + etc
-            } else {
-                value.to_string()
-            };
-            Row::new([
-                Cell::from(Text::from(key.bold())),
-                Cell::from(Text::from(value)),
-            ])
-            .style(Style::new().bg(color))
-            .height(1)
-        });
+        let rows = state
+            .table_entries
+            .iter()
+            .enumerate()
+            .map(|(row_index, (key, value))| {
+                let row_color = if row_index % 2 == 0 {
+                    tailwind::SLATE.c950
+                } else {
+                    tailwind::SLATE.c900
+                };
+                let value = if value.width() > right {
+                    let ellipsis = "…";
+                    let end = value
+                        .char_indices()
+                        .map(|(i, _)| i)
+                        .nth(right.saturating_sub(ellipsis.width()))
+                        .unwrap();
+                    value[..end].to_string() + ellipsis
+                } else {
+                    value.to_string()
+                };
+                Row::new([
+                    Cell::from(Text::from(key.bold())),
+                    Cell::from(Text::from(value)),
+                ])
+                .style(Style::new().bg(row_color))
+                .height(1)
+            });
 
         let table = Table::new(rows, widths)
             .row_highlight_style(Style::default().add_modifier(Modifier::REVERSED));
@@ -167,18 +172,21 @@ impl ObjectInformation<'_> {
 
     fn render_scrollbar(&self, area: Rect, buf: &mut Buffer, state: &mut ObjectInformationState) {
         let inner_area = area.inner(Margin::new(0, 1));
-        let mut scrollbar_state =
-            ScrollbarState::new(state.items.len().saturating_sub(inner_area.height as usize))
-                .position(state.table_state.offset());
+        let mut scrollbar_state = ScrollbarState::new(
+            state
+                .table_entries
+                .len()
+                .saturating_sub(inner_area.height as usize),
+        )
+        .position(state.table_state.offset());
         Scrollbar::default().render(inner_area, buf, &mut scrollbar_state);
     }
 
     fn render_no_object_selected(&self, buf: &mut Buffer, state: &mut ObjectInformationState) {
-        let paragraph = Paragraph::new("No object selected".dark_gray())
+        Paragraph::new("No object selected".dark_gray())
             .centered()
-            .wrap(Wrap { trim: true });
-
-        paragraph.render(state.inner_area, buf);
+            .wrap(Wrap { trim: true })
+            .render(state.inner_area, buf);
     }
 }
 
@@ -187,7 +195,7 @@ impl StatefulWidget for ObjectInformation<'_> {
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         self.render_block(area, buf, state);
-        if let Some(index) = self.world_map_state.selected_object {
+        if let Some(index) = self.world_map_state.selected_object_index {
             self.render_table(buf, state, index);
             self.render_scrollbar(area, buf, state);
         } else {
@@ -211,7 +219,7 @@ pub async fn handle_mouse_events(event: MouseEvent, app: &mut App) -> Result<()>
             // Copy the clicked value to the clipboard.
             if let Some(index) = app.object_information_state.table_state.selected() {
                 if let Ok(mut clipboard) = Clipboard::new() {
-                    let value = app.object_information_state.items[index].1.clone();
+                    let value = app.object_information_state.table_entries[index].1.clone();
                     clipboard.set_text(value).unwrap();
                 }
             }
@@ -222,7 +230,7 @@ pub async fn handle_mouse_events(event: MouseEvent, app: &mut App) -> Result<()>
     }
     // Highlight the hovered row.
     let row = mouse.y as usize + app.object_information_state.table_state.offset();
-    let index = if row < app.object_information_state.items.len() {
+    let index = if row < app.object_information_state.table_entries.len() {
         Some(row)
     } else {
         None

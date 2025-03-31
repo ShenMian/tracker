@@ -23,15 +23,15 @@ pub struct WorldMap<'a> {
 /// State of a [`WorldMapState`] widget
 #[derive(Default)]
 pub struct WorldMapState {
-    pub selected_object: Option<usize>,
-    pub hovered_object: Option<usize>,
+    pub selected_object_index: Option<usize>,
+    pub hovered_object_index: Option<usize>,
     pub inner_area: Rect,
 }
 
 impl WorldMap<'_> {
     const MAP_COLOR: Color = Color::Gray;
     const TRAJECTORY_COLOR: Color = Color::LightBlue;
-    const SATELLIT_SYMBOL: &'static str = "+";
+    const SATELLITE_SYMBOL: &'static str = "+";
     const UNKNOWN_NAME: &'static str = "UNK";
 
     fn render_block(&self, area: Rect, buf: &mut Buffer, state: &mut WorldMapState) {
@@ -51,8 +51,8 @@ impl WorldMap<'_> {
 
                 // Draw satellites
                 for object in self.satellites_state.objects.iter() {
-                    let line = if state.selected_object.is_none() {
-                        Self::SATELLIT_SYMBOL.light_red()
+                    let line = if state.selected_object_index.is_none() {
+                        Self::SATELLITE_SYMBOL.light_red()
                             + format!(
                                 " {}",
                                 object
@@ -63,7 +63,7 @@ impl WorldMap<'_> {
                             )
                             .white()
                     } else {
-                        Self::SATELLIT_SYMBOL.red()
+                        Self::SATELLITE_SYMBOL.red()
                             + format!(
                                 " {}",
                                 object
@@ -87,7 +87,7 @@ impl WorldMap<'_> {
     fn render_top_layer(&self, buf: &mut Buffer, state: &mut WorldMapState) {
         let top_layer = Canvas::default()
             .paint(|ctx| {
-                if let Some(selected_object_index) = state.selected_object {
+                if let Some(selected_object_index) = state.selected_object_index {
                     let selected = &self.satellites_state.objects[selected_object_index];
                     let state = selected.predict(Utc::now()).unwrap();
 
@@ -121,7 +121,7 @@ impl WorldMap<'_> {
                     ctx.print(
                         state.position[0],
                         state.position[1],
-                        Self::SATELLIT_SYMBOL.light_green().slow_blink()
+                        Self::SATELLITE_SYMBOL.light_green().slow_blink()
                             + format!(
                                 " {}",
                                 selected
@@ -132,7 +132,7 @@ impl WorldMap<'_> {
                             )
                             .white(),
                     );
-                } else if let Some(hovered_object_index) = state.hovered_object {
+                } else if let Some(hovered_object_index) = state.hovered_object_index {
                     let hovered = &self.satellites_state.objects[hovered_object_index];
                     let state = hovered.predict(Utc::now()).unwrap();
 
@@ -140,7 +140,7 @@ impl WorldMap<'_> {
                     ctx.print(
                         state.position[0],
                         state.position[1],
-                        Self::SATELLIT_SYMBOL.light_red().reversed()
+                        Self::SATELLITE_SYMBOL.light_red().reversed()
                             + " ".into()
                             + hovered
                                 .elements()
@@ -172,7 +172,7 @@ impl StatefulWidget for WorldMap<'_> {
 pub async fn handle_mouse_events(event: MouseEvent, app: &mut App) -> Result<()> {
     let inner_area = app.world_map_state.inner_area;
     if !inner_area.contains(Position::new(event.column, event.row)) {
-        app.world_map_state.hovered_object = None;
+        app.world_map_state.hovered_object_index = None;
         return Ok(());
     }
 
@@ -180,17 +180,19 @@ pub async fn handle_mouse_events(event: MouseEvent, app: &mut App) -> Result<()>
     let mouse = Position::new(event.column - inner_area.x, event.row - inner_area.y);
 
     let (lon, lat) = area_to_lon_lat(mouse.x, mouse.y, app.world_map_state.inner_area);
-    let nearest_object = app
+    let nearest_object_index = app
         .satellites_state
-        .get_nearest_object(Utc::now(), lon, lat);
+        .get_nearest_object_index(Utc::now(), lon, lat);
     match event.kind {
         MouseEventKind::Down(MouseButton::Left) => {
-            app.world_map_state.selected_object = nearest_object
+            app.world_map_state.selected_object_index = nearest_object_index
         }
-        MouseEventKind::Down(MouseButton::Right) => app.world_map_state.selected_object = None,
+        MouseEventKind::Down(MouseButton::Right) => {
+            app.world_map_state.selected_object_index = None
+        }
         _ => {}
     }
-    app.world_map_state.hovered_object = nearest_object;
+    app.world_map_state.hovered_object_index = nearest_object_index;
 
     Ok(())
 }

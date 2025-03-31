@@ -24,7 +24,7 @@ pub struct Satellites;
 pub struct SatellitesState {
     pub objects: Vec<Object>,
 
-    pub items: Vec<Item>,
+    pub list_entries: Vec<Entry>,
     pub list_state: ListState,
 
     pub inner_area: Rect,
@@ -36,29 +36,34 @@ impl SatellitesState {
     /// Updates the orbital elements for selected satellites.
     pub async fn refresh_objects(&mut self) {
         self.objects.clear();
-        for item in &mut self.items {
-            if !item.selected {
+        for entry in &mut self.list_entries {
+            if !entry.selected {
                 continue;
             }
-            if let Some(elements) = item.satellite.get_elements().await {
+            if let Some(elements) = entry.satellite.get_elements().await {
                 self.objects
                     .extend(elements.into_iter().map(Object::from_elements));
             } else {
-                item.selected = false;
+                entry.selected = false;
             }
         }
     }
 
     /// Get the index of the nearest object to the given area coordinates
-    pub fn get_nearest_object(&self, time: DateTime<Utc>, lon: f64, lat: f64) -> Option<usize> {
+    pub fn get_nearest_object_index(
+        &self,
+        time: DateTime<Utc>,
+        lon: f64,
+        lat: f64,
+    ) -> Option<usize> {
         self.objects
             .iter()
             .enumerate()
             .min_by_key(|(_, obj)| {
                 let state = obj.predict(time).unwrap();
-                let dx = state.longitude() - lon;
-                let dy = state.latitude() - lat;
-                ((dx * dx + dy * dy) * 1000.0) as i32
+                let lon_diff = state.longitude() - lon;
+                let lat_diff = state.latitude() - lat;
+                ((lon_diff.powi(2) + lat_diff.powi(2)) * 1000.0) as i32
             })
             .map(|(index, _)| index)
     }
@@ -69,7 +74,7 @@ impl SatellitesState {
 
     pub fn scroll_down(&mut self) {
         let max_offset = self
-            .items
+            .list_entries
             .len()
             .saturating_sub(self.inner_area.height as usize);
         *self.list_state.offset_mut() = (self.list_state.offset() + 1).min(max_offset);
@@ -80,7 +85,7 @@ impl Default for SatellitesState {
     fn default() -> Self {
         Self {
             objects: Vec::new(),
-            items: Satellite::iter().map(Item::from).collect(),
+            list_entries: Satellite::iter().map(Entry::from).collect(),
             list_state: Default::default(),
             inner_area: Default::default(),
             last_object_update: Instant::now(),
@@ -96,18 +101,14 @@ impl Satellites {
     }
 
     fn render_list(&self, buf: &mut Buffer, state: &mut SatellitesState) {
-        let items = state.items.iter().map(|item| {
-            let style = if item.selected {
+        let items = state.list_entries.iter().map(|entry| {
+            let style = if entry.selected {
                 Style::default().fg(Color::White)
             } else {
                 Style::default()
             };
-            let text = if item.selected {
-                format!("✓ {}", item.satellite)
-            } else {
-                format!("☐ {}", item.satellite)
-            };
-            ListItem::new(Text::styled(text, style))
+            let icon = if entry.selected { "✓" } else { "☐" };
+            ListItem::new(Text::styled(format!("{} {}", icon, entry.satellite), style))
         });
 
         let list =
@@ -118,9 +119,13 @@ impl Satellites {
 
     fn render_scrollbar(&self, area: Rect, buf: &mut Buffer, state: &mut SatellitesState) {
         let inner_area = area.inner(Margin::new(0, 1));
-        let mut scrollbar_state =
-            ScrollbarState::new(state.items.len().saturating_sub(inner_area.height as usize))
-                .position(state.list_state.offset());
+        let mut scrollbar_state = ScrollbarState::new(
+            state
+                .list_entries
+                .len()
+                .saturating_sub(inner_area.height as usize),
+        )
+        .position(state.list_state.offset());
         Scrollbar::default().render(inner_area, buf, &mut scrollbar_state);
     }
 }
@@ -135,12 +140,12 @@ impl StatefulWidget for Satellites {
     }
 }
 
-pub struct Item {
+pub struct Entry {
     pub satellite: Satellite,
     selected: bool,
 }
 
-impl From<Satellite> for Item {
+impl From<Satellite> for Entry {
     fn from(satellite: Satellite) -> Self {
         Self {
             satellite,
@@ -161,11 +166,11 @@ pub async fn handle_mouse_events(event: MouseEvent, app: &mut App) -> Result<()>
 
     match event.kind {
         MouseEventKind::Down(MouseButton::Left) => {
-            // Select the clicked item.
+            // Select the clicked entry.
             if let Some(index) = app.satellites_state.list_state.selected() {
-                app.satellites_state.items[index].selected =
-                    !app.satellites_state.items[index].selected;
-                app.world_map_state.selected_object = None;
+                app.satellites_state.list_entries[index].selected =
+                    !app.satellites_state.list_entries[index].selected;
+                app.world_map_state.selected_object_index = None;
                 app.satellites_state.refresh_objects().await;
             }
         }
@@ -174,9 +179,9 @@ pub async fn handle_mouse_events(event: MouseEvent, app: &mut App) -> Result<()>
         _ => {}
     }
 
-    // Highlight the hovered item.
+    // Highlight the hovered entry.
     let row = mouse.y as usize + app.satellites_state.list_state.offset();
-    let index = if row < app.satellites_state.items.len() {
+    let index = if row < app.satellites_state.list_entries.len() {
         Some(row)
     } else {
         None
