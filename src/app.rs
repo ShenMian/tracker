@@ -2,11 +2,7 @@ use std::time::{Duration, Instant};
 
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseEvent};
-use ratatui::{
-    Terminal,
-    layout::{Constraint, Layout},
-    prelude::CrosstermBackend,
-};
+use ratatui::prelude::*;
 
 use crate::{
     event::{Event, EventHandler},

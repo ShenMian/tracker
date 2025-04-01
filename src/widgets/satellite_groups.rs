@@ -4,13 +4,8 @@ use anyhow::Result;
 use chrono::{DateTime, Utc};
 use crossterm::event::{MouseButton, MouseEvent, MouseEventKind};
 use ratatui::{
-    buffer::Buffer,
-    layout::{Margin, Position, Rect},
-    style::{Color, Modifier, Style, Stylize},
-    text::Text,
-    widgets::{
-        Block, List, ListItem, ListState, Scrollbar, ScrollbarState, StatefulWidget, Widget,
-    },
+    prelude::*,
+    widgets::{Block, List, ListItem, ListState, Scrollbar, ScrollbarState},
 };
 use strum::IntoEnumIterator;
 
@@ -36,10 +31,7 @@ impl SatelliteGroupsState {
     /// Updates the orbital elements for selected satellite group.
     pub async fn refresh_objects(&mut self) {
         self.objects.clear();
-        for entry in &mut self.list_entries {
-            if !entry.selected {
-                continue;
-            }
+        for entry in self.list_entries.iter_mut().filter(|e| e.selected) {
             if let Some(elements) = entry.satellite.get_elements().await {
                 self.objects
                     .extend(elements.into_iter().map(Object::from_elements));

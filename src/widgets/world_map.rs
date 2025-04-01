@@ -2,11 +2,9 @@ use anyhow::Result;
 use chrono::{Duration, Utc};
 use crossterm::event::{MouseButton, MouseEvent, MouseEventKind};
 use ratatui::{
-    buffer::Buffer,
-    layout::{Position, Rect},
-    style::{Color, Stylize},
+    prelude::*,
     widgets::{
-        Block, StatefulWidget, Widget,
+        Block,
         canvas::{Canvas, Line, Map, MapResolution},
     },
 };

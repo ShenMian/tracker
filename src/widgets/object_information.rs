@@ -3,13 +3,11 @@ use arboard::Clipboard;
 use chrono::Utc;
 use crossterm::event::{MouseButton, MouseEvent, MouseEventKind};
 use ratatui::{
-    buffer::Buffer,
-    layout::{Constraint, Layout, Margin, Position, Rect},
-    style::{Modifier, Style, Stylize, palette::tailwind},
-    text::Text,
+    prelude::*,
+    style::palette::tailwind,
     widgets::{
         Block, Cell, Paragraph, Row, Scrollbar, ScrollbarState, StatefulWidget, Table, TableState,
-        Widget, Wrap,
+        Wrap,
     },
 };
 use reverse_geocoder::ReverseGeocoder;

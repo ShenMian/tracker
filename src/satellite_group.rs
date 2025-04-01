@@ -104,7 +104,6 @@ impl SatelliteGroup {
         const URL: &str = "https://celestrak.com/NORAD/elements/gp.php";
 
         let mut request = reqwest::Client::new().get(URL).query(&[("FORMAT", "json")]);
-
         request = match (self.cospar_id(), self.group_name()) {
             (Some(id), None) => request.query(&[("INTDES", id)]),
             (None, Some(group)) => request.query(&[("GROUP", group)]),
