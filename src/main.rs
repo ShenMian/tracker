@@ -5,7 +5,7 @@ use crate::app::App;
 pub mod app;
 pub mod event;
 pub mod object;
-pub mod satellite;
+pub mod satellite_group;
 pub mod tui;
 pub mod widgets;
 

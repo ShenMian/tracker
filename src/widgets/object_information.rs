@@ -17,11 +17,11 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::app::App;
 
-use super::{satellites::SatellitesState, world_map::WorldMapState};
+use super::{satellite_groups::SatelliteGroupsState, world_map::WorldMapState};
 
 /// A widget to display information about a selected object.
 pub struct ObjectInformation<'a> {
-    pub satellites_state: &'a SatellitesState,
+    pub satellite_groups_state: &'a SatelliteGroupsState,
     pub world_map_state: &'a WorldMapState,
 }
 
@@ -68,7 +68,7 @@ impl ObjectInformation<'_> {
     fn render_table(&self, buf: &mut Buffer, state: &mut ObjectInformationState, index: usize) {
         const UNKNOWN_NAME: &str = "Unknown";
 
-        let object = &self.satellites_state.objects[index];
+        let object = &self.satellite_groups_state.objects[index];
         let object_state = object.predict(Utc::now()).unwrap();
 
         let result = state

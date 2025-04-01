@@ -13,7 +13,7 @@ use crate::{
     tui::Tui,
     widgets::{
         object_information::{self, ObjectInformation, ObjectInformationState},
-        satellites::{self, Satellites, SatellitesState},
+        satellite_groups::{self, SatelliteGroups, SatelliteGroupsState},
         world_map::{self, WorldMap, WorldMapState},
     },
 };
@@ -24,7 +24,7 @@ pub struct App {
     pub running: bool,
 
     pub world_map_state: WorldMapState,
-    pub satellites_state: SatellitesState,
+    pub satellite_groups_state: SatelliteGroupsState,
     pub object_information_state: ObjectInformationState,
 
     tui: Tui<CrosstermBackend<std::io::Stdout>>,
@@ -40,7 +40,7 @@ impl App {
         Ok(Self {
             running: true,
             world_map_state: Default::default(),
-            satellites_state: Default::default(),
+            satellite_groups_state: Default::default(),
             object_information_state: Default::default(),
             tui,
         })
@@ -73,12 +73,12 @@ impl App {
             let [top_right_area, right_bottom_area] = vertical.areas(right_area);
 
             let world_map = WorldMap {
-                satellites_state: &self.satellites_state,
+                satellite_groups_state: &self.satellite_groups_state,
             };
             frame.render_stateful_widget(world_map, left_area, &mut self.world_map_state);
 
             let object_information = ObjectInformation {
-                satellites_state: &self.satellites_state,
+                satellite_groups_state: &self.satellite_groups_state,
                 world_map_state: &self.world_map_state,
             };
             frame.render_stateful_widget(
@@ -87,7 +87,11 @@ impl App {
                 &mut self.object_information_state,
             );
 
-            frame.render_stateful_widget(Satellites, right_bottom_area, &mut self.satellites_state);
+            frame.render_stateful_widget(
+                SatelliteGroups,
+                right_bottom_area,
+                &mut self.satellite_groups_state,
+            );
         })?;
         Ok(())
     }
@@ -97,9 +101,11 @@ impl App {
         // Refresh satellite data every 2 minutes.
         const OBJECT_UPDATE_INTERVAL: Duration = Duration::from_secs(2 * 60);
         let now = Instant::now();
-        if now.duration_since(self.satellites_state.last_object_update) >= OBJECT_UPDATE_INTERVAL {
-            self.satellites_state.refresh_objects().await;
-            self.satellites_state.last_object_update = now;
+        if now.duration_since(self.satellite_groups_state.last_object_update)
+            >= OBJECT_UPDATE_INTERVAL
+        {
+            self.satellite_groups_state.refresh_objects().await;
+            self.satellite_groups_state.last_object_update = now;
         }
     }
 
@@ -128,7 +134,7 @@ impl App {
     async fn handle_mouse_events(&mut self, event: MouseEvent) -> Result<()> {
         world_map::handle_mouse_events(event, self).await?;
         object_information::handle_mouse_events(event, self).await?;
-        satellites::handle_mouse_events(event, self).await?;
+        satellite_groups::handle_mouse_events(event, self).await?;
         Ok(())
     }
 }

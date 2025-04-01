@@ -14,14 +14,14 @@ use ratatui::{
 };
 use strum::IntoEnumIterator;
 
-use crate::{app::App, object::Object, satellite::Satellite};
+use crate::{app::App, object::Object, satellite_group::SatelliteGroup};
 
-/// A widget to display a list of satellites.
+/// A widget to display a list of satellite groups.
 #[derive(Default)]
-pub struct Satellites;
+pub struct SatelliteGroups;
 
-/// State of a [`Satellites`] widget
-pub struct SatellitesState {
+/// State of a [`SatelliteGroups`] widget
+pub struct SatelliteGroupsState {
     pub objects: Vec<Object>,
 
     pub list_entries: Vec<Entry>,
@@ -32,8 +32,8 @@ pub struct SatellitesState {
     pub last_object_update: Instant,
 }
 
-impl SatellitesState {
-    /// Updates the orbital elements for selected satellites.
+impl SatelliteGroupsState {
+    /// Updates the orbital elements for selected satellite group.
     pub async fn refresh_objects(&mut self) {
         self.objects.clear();
         for entry in &mut self.list_entries {
@@ -81,11 +81,11 @@ impl SatellitesState {
     }
 }
 
-impl Default for SatellitesState {
+impl Default for SatelliteGroupsState {
     fn default() -> Self {
         Self {
             objects: Vec::new(),
-            list_entries: Satellite::iter().map(Entry::from).collect(),
+            list_entries: SatelliteGroup::iter().map(Entry::from).collect(),
             list_state: Default::default(),
             inner_area: Default::default(),
             last_object_update: Instant::now(),
@@ -93,14 +93,14 @@ impl Default for SatellitesState {
     }
 }
 
-impl Satellites {
-    fn render_block(&self, area: Rect, buf: &mut Buffer, state: &mut SatellitesState) {
-        let block = Block::bordered().title("Satellites".blue());
+impl SatelliteGroups {
+    fn render_block(&self, area: Rect, buf: &mut Buffer, state: &mut SatelliteGroupsState) {
+        let block = Block::bordered().title("Satellite Groups".blue());
         state.inner_area = block.inner(area);
         block.render(area, buf);
     }
 
-    fn render_list(&self, buf: &mut Buffer, state: &mut SatellitesState) {
+    fn render_list(&self, buf: &mut Buffer, state: &mut SatelliteGroupsState) {
         let items = state.list_entries.iter().map(|entry| {
             let style = if entry.selected {
                 Style::default().fg(Color::White)
@@ -117,7 +117,7 @@ impl Satellites {
         StatefulWidget::render(list, state.inner_area, buf, &mut state.list_state);
     }
 
-    fn render_scrollbar(&self, area: Rect, buf: &mut Buffer, state: &mut SatellitesState) {
+    fn render_scrollbar(&self, area: Rect, buf: &mut Buffer, state: &mut SatelliteGroupsState) {
         let inner_area = area.inner(Margin::new(0, 1));
         let mut scrollbar_state = ScrollbarState::new(
             state
@@ -130,8 +130,8 @@ impl Satellites {
     }
 }
 
-impl StatefulWidget for Satellites {
-    type State = SatellitesState;
+impl StatefulWidget for SatelliteGroups {
+    type State = SatelliteGroupsState;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         self.render_block(area, buf, state);
@@ -141,12 +141,12 @@ impl StatefulWidget for Satellites {
 }
 
 pub struct Entry {
-    pub satellite: Satellite,
+    pub satellite: SatelliteGroup,
     selected: bool,
 }
 
-impl From<Satellite> for Entry {
-    fn from(satellite: Satellite) -> Self {
+impl From<SatelliteGroup> for Entry {
+    fn from(satellite: SatelliteGroup) -> Self {
         Self {
             satellite,
             selected: false,
@@ -155,9 +155,9 @@ impl From<Satellite> for Entry {
 }
 
 pub async fn handle_mouse_events(event: MouseEvent, app: &mut App) -> Result<()> {
-    let inner_area = app.satellites_state.inner_area;
+    let inner_area = app.satellite_groups_state.inner_area;
     if !inner_area.contains(Position::new(event.column, event.row)) {
-        app.satellites_state.list_state.select(None);
+        app.satellite_groups_state.list_state.select(None);
         return Ok(());
     }
 
@@ -167,26 +167,26 @@ pub async fn handle_mouse_events(event: MouseEvent, app: &mut App) -> Result<()>
     match event.kind {
         MouseEventKind::Down(MouseButton::Left) => {
             // Select the clicked entry.
-            if let Some(index) = app.satellites_state.list_state.selected() {
-                app.satellites_state.list_entries[index].selected =
-                    !app.satellites_state.list_entries[index].selected;
+            if let Some(index) = app.satellite_groups_state.list_state.selected() {
+                app.satellite_groups_state.list_entries[index].selected =
+                    !app.satellite_groups_state.list_entries[index].selected;
                 app.world_map_state.selected_object_index = None;
-                app.satellites_state.refresh_objects().await;
+                app.satellite_groups_state.refresh_objects().await;
             }
         }
-        MouseEventKind::ScrollUp => app.satellites_state.scroll_up(),
-        MouseEventKind::ScrollDown => app.satellites_state.scroll_down(),
+        MouseEventKind::ScrollUp => app.satellite_groups_state.scroll_up(),
+        MouseEventKind::ScrollDown => app.satellite_groups_state.scroll_down(),
         _ => {}
     }
 
     // Highlight the hovered entry.
-    let row = mouse.y as usize + app.satellites_state.list_state.offset();
-    let index = if row < app.satellites_state.list_entries.len() {
+    let row = mouse.y as usize + app.satellite_groups_state.list_state.offset();
+    let index = if row < app.satellite_groups_state.list_entries.len() {
         Some(row)
     } else {
         None
     };
-    app.satellites_state.list_state.select(index);
+    app.satellite_groups_state.list_state.select(index);
 
     Ok(())
 }

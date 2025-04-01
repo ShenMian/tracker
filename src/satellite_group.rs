@@ -3,11 +3,11 @@ use std::time::Duration;
 use strum::{Display, EnumIter};
 use tokio::fs;
 
-/// The `Satellite` type.
+/// The `SatelliteGroup` type.
 ///
-/// Type [`Satellite`] represents a satellite or a group of satellites.
+/// Type [`SatelliteGroup`] represents a group of satellites.
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Display, EnumIter)]
-pub enum Satellite {
+pub enum SatelliteGroup {
     // Space stations
     #[strum(to_string = "CSS")]
     Css,
@@ -53,7 +53,7 @@ pub enum Satellite {
     CubeSats,
 }
 
-impl Satellite {
+impl SatelliteGroup {
     /// Returns SGP4 elements.
     ///
     /// If cache is older than 2 hours, fetches elements from <https://celestrak.org>.
@@ -105,7 +105,7 @@ impl Satellite {
 
         let mut request = reqwest::Client::new().get(URL).query(&[("FORMAT", "json")]);
 
-        request = match (self.cospar_id(), self.group()) {
+        request = match (self.cospar_id(), self.group_name()) {
             (Some(id), None) => request.query(&[("INTDES", id)]),
             (None, Some(group)) => request.query(&[("GROUP", group)]),
             _ => unreachable!(),
@@ -131,7 +131,7 @@ impl Satellite {
     }
 
     /// Returns CelesTrak group name.
-    fn group(&self) -> Option<&str> {
+    fn group_name(&self) -> Option<&str> {
         match self {
             Self::Weather => Some("weather"),
             Self::Noaa => Some("noaa"),

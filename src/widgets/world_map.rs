@@ -13,11 +13,11 @@ use ratatui::{
 
 use crate::app::App;
 
-use super::satellites::SatellitesState;
+use super::satellite_groups::SatelliteGroupsState;
 
 /// A widget to display a world map with satellites.
 pub struct WorldMap<'a> {
-    pub satellites_state: &'a SatellitesState,
+    pub satellite_groups_state: &'a SatelliteGroupsState,
 }
 
 /// State of a [`WorldMapState`] widget
@@ -50,7 +50,7 @@ impl WorldMap<'_> {
                 });
 
                 // Draw satellites
-                for object in self.satellites_state.objects.iter() {
+                for object in self.satellite_groups_state.objects.iter() {
                     let line = if state.selected_object_index.is_none() {
                         Self::SATELLITE_SYMBOL.light_red()
                             + format!(
@@ -88,7 +88,7 @@ impl WorldMap<'_> {
         let top_layer = Canvas::default()
             .paint(|ctx| {
                 if let Some(selected_object_index) = state.selected_object_index {
-                    let selected = &self.satellites_state.objects[selected_object_index];
+                    let selected = &self.satellite_groups_state.objects[selected_object_index];
                     let state = selected.predict(Utc::now()).unwrap();
 
                     // Calculate future positions along the trajectory
@@ -133,7 +133,7 @@ impl WorldMap<'_> {
                             .white(),
                     );
                 } else if let Some(hovered_object_index) = state.hovered_object_index {
-                    let hovered = &self.satellites_state.objects[hovered_object_index];
+                    let hovered = &self.satellite_groups_state.objects[hovered_object_index];
                     let state = hovered.predict(Utc::now()).unwrap();
 
                     // Highlight the hovered satellite
@@ -180,9 +180,9 @@ pub async fn handle_mouse_events(event: MouseEvent, app: &mut App) -> Result<()>
     let mouse = Position::new(event.column - inner_area.x, event.row - inner_area.y);
 
     let (lon, lat) = area_to_lon_lat(mouse.x, mouse.y, app.world_map_state.inner_area);
-    let nearest_object_index = app
-        .satellites_state
-        .get_nearest_object_index(Utc::now(), lon, lat);
+    let nearest_object_index =
+        app.satellite_groups_state
+            .get_nearest_object_index(Utc::now(), lon, lat);
     match event.kind {
         MouseEventKind::Down(MouseButton::Left) => {
             app.world_map_state.selected_object_index = nearest_object_index
