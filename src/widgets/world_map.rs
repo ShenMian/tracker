@@ -5,7 +5,7 @@ use ratatui::{
     prelude::*,
     widgets::{
         Block,
-        canvas::{Canvas, Line, Map, MapResolution},
+        canvas::{Canvas, Context, Line, Map, MapResolution},
     },
 };
 
@@ -49,28 +49,15 @@ impl WorldMap<'_> {
 
                 // Draw satellites
                 for object in self.satellite_groups_state.objects.iter() {
+                    let object_name = object
+                        .elements()
+                        .object_name
+                        .clone()
+                        .unwrap_or(Self::UNKNOWN_NAME.to_string());
                     let line = if state.selected_object_index.is_none() {
-                        Self::SATELLITE_SYMBOL.light_red()
-                            + format!(
-                                " {}",
-                                object
-                                    .elements()
-                                    .object_name
-                                    .clone()
-                                    .unwrap_or(Self::UNKNOWN_NAME.to_string())
-                            )
-                            .white()
+                        Self::SATELLITE_SYMBOL.light_red() + format!(" {}", object_name).white()
                     } else {
-                        Self::SATELLITE_SYMBOL.red()
-                            + format!(
-                                " {}",
-                                object
-                                    .elements()
-                                    .object_name
-                                    .clone()
-                                    .unwrap_or(Self::UNKNOWN_NAME.to_string())
-                            )
-                            .dark_gray()
+                        Self::SATELLITE_SYMBOL.red() + format!(" {}", object_name).dark_gray()
                     };
                     let state = object.predict(Utc::now()).unwrap();
                     ctx.print(state.position[0], state.position[1], line);
@@ -99,54 +86,37 @@ impl WorldMap<'_> {
 
                     // Draw the lines between predicted points
                     for window in points.windows(2) {
-                        let (x1, y1) = window[0];
-                        let (x2, y2) = window[1];
-                        // Handle trajectory crossing the international date line
-                        if (x1 - x2).abs() >= 180.0 {
-                            let x_edge = if x1 > 0.0 { 180.0 } else { -180.0 };
-                            ctx.draw(&Line::new(x1, y1, x_edge, y2, Self::TRAJECTORY_COLOR));
-                            ctx.draw(&Line::new(-x_edge, y1, x2, y2, Self::TRAJECTORY_COLOR));
-                            continue;
-                        }
-                        if (y1 - y2).abs() >= 90.0 {
-                            // TEMPSAT 1 (1512), CALSPHERE 4A (1520)
-                            continue;
-                        }
-                        ctx.draw(&Line::new(x1, y1, x2, y2, Self::TRAJECTORY_COLOR));
+                        self.draw_trajectory(ctx, window[0], window[1]);
                     }
 
                     // Highlight the selected satellite
+                    let object_name = selected
+                        .elements()
+                        .object_name
+                        .clone()
+                        .unwrap_or(Self::UNKNOWN_NAME.to_string());
                     ctx.print(
                         state.position[0],
                         state.position[1],
                         Self::SATELLITE_SYMBOL.light_green().slow_blink()
-                            + format!(
-                                " {}",
-                                selected
-                                    .elements()
-                                    .object_name
-                                    .clone()
-                                    .unwrap_or(Self::UNKNOWN_NAME.to_string())
-                            )
-                            .white(),
+                            + format!(" {}", object_name).white(),
                     );
                 } else if let Some(hovered_object_index) = state.hovered_object_index {
                     let hovered = &self.satellite_groups_state.objects[hovered_object_index];
                     let state = hovered.predict(Utc::now()).unwrap();
 
                     // Highlight the hovered satellite
+                    let object_name = hovered
+                        .elements()
+                        .object_name
+                        .clone()
+                        .unwrap_or(Self::UNKNOWN_NAME.to_string());
                     ctx.print(
                         state.position[0],
                         state.position[1],
                         Self::SATELLITE_SYMBOL.light_red().reversed()
                             + " ".into()
-                            + hovered
-                                .elements()
-                                .object_name
-                                .clone()
-                                .unwrap_or(Self::UNKNOWN_NAME.to_string())
-                                .white()
-                                .reversed(),
+                            + object_name.white().reversed(),
                     );
                 }
             })
@@ -154,6 +124,21 @@ impl WorldMap<'_> {
             .y_bounds([-90.0, 90.0]);
 
         top_layer.render(state.inner_area, buf);
+    }
+
+    fn draw_trajectory(&self, ctx: &mut Context, (x1, y1): (f64, f64), (x2, y2): (f64, f64)) {
+        // Handle trajectory crossing the international date line
+        if (x1 - x2).abs() >= 180.0 {
+            let x_edge = if x1 > 0.0 { 180.0 } else { -180.0 };
+            ctx.draw(&Line::new(x1, y1, x_edge, y2, Self::TRAJECTORY_COLOR));
+            ctx.draw(&Line::new(-x_edge, y1, x2, y2, Self::TRAJECTORY_COLOR));
+            return;
+        }
+        if (y1 - y2).abs() >= 90.0 {
+            // TEMPSAT 1 (1512), CALSPHERE 4A (1520)
+            return;
+        }
+        ctx.draw(&Line::new(x1, y1, x2, y2, Self::TRAJECTORY_COLOR));
     }
 }
 
