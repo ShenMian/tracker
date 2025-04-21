@@ -143,8 +143,21 @@ impl WorldMap<'_> {
         // Handle trajectory crossing the international date line
         if (x1 - x2).abs() >= 180.0 {
             let x_edge = if x1 > 0.0 { 180.0 } else { -180.0 };
-            ctx.draw(&Line::new(x1, y1, x_edge, y2, Self::TRAJECTORY_COLOR));
-            ctx.draw(&Line::new(-x_edge, y1, x2, y2, Self::TRAJECTORY_COLOR));
+            let y_midpoint = (y1 + y2) / 2.0;
+            ctx.draw(&Line::new(
+                x1,
+                y1,
+                x_edge,
+                y_midpoint,
+                Self::TRAJECTORY_COLOR,
+            ));
+            ctx.draw(&Line::new(
+                -x_edge,
+                y_midpoint,
+                x2,
+                y2,
+                Self::TRAJECTORY_COLOR,
+            ));
             return;
         }
         ctx.draw(&Line::new(x1, y1, x2, y2, Self::TRAJECTORY_COLOR));
