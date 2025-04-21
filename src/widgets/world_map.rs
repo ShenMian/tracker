@@ -9,7 +9,7 @@ use ratatui::{
     },
 };
 
-use crate::app::App;
+use crate::{app::App, object::Object};
 
 use super::satellite_groups::SatelliteGroupsState;
 
@@ -38,6 +38,7 @@ impl WorldMap<'_> {
         block.render(area, buf);
     }
 
+    /// Render world map and satellites
     fn render_bottom_layer(&self, buf: &mut Buffer, state: &mut WorldMapState) {
         let bottom_layer = Canvas::default()
             .paint(|ctx| {
@@ -69,6 +70,7 @@ impl WorldMap<'_> {
         bottom_layer.render(state.inner_area, buf);
     }
 
+    /// Render selected satellite and its trajectory
     fn render_top_layer(&self, buf: &mut Buffer, state: &mut WorldMapState) {
         let top_layer = Canvas::default()
             .paint(|ctx| {
@@ -76,18 +78,7 @@ impl WorldMap<'_> {
                     let selected = &self.satellite_groups_state.objects[selected_object_index];
                     let state = selected.predict(Utc::now()).unwrap();
 
-                    // Calculate future positions along the trajectory
-                    let mut points = Vec::new();
-                    for minutes in 1..selected.orbital_period().num_minutes() {
-                        let time = Utc::now() + Duration::minutes(minutes);
-                        let state = selected.predict(time).unwrap();
-                        points.push((state.position[0], state.position[1]));
-                    }
-
-                    // Draw the lines between predicted points
-                    for window in points.windows(2) {
-                        self.draw_trajectory(ctx, window[0], window[1]);
-                    }
+                    self.render_trajectory(ctx, selected);
 
                     // Highlight the selected satellite
                     let object_name = selected
@@ -126,7 +117,29 @@ impl WorldMap<'_> {
         top_layer.render(state.inner_area, buf);
     }
 
-    fn draw_trajectory(&self, ctx: &mut Context, (x1, y1): (f64, f64), (x2, y2): (f64, f64)) {
+    /// Render the trajectory of the object
+    fn render_trajectory(&self, ctx: &mut Context, object: &Object) {
+        let trajectory = self.calculate_trajectory(object);
+
+        // Draw the lines between predicted points
+        for window in trajectory.windows(2) {
+            self.render_line(ctx, window[0], window[1]);
+        }
+    }
+
+    /// Calculate the trajectory of the object
+    fn calculate_trajectory(&self, object: &Object) -> Vec<(f64, f64)> {
+        // Calculate future positions along the trajectory
+        let mut points = Vec::new();
+        for minutes in 1..object.orbital_period().num_minutes() {
+            let time = Utc::now() + Duration::minutes(minutes);
+            let state = object.predict(time).unwrap();
+            points.push((state.position[0], state.position[1]));
+        }
+        points
+    }
+
+    fn render_line(&self, ctx: &mut Context, (x1, y1): (f64, f64), (x2, y2): (f64, f64)) {
         // Handle trajectory crossing the international date line
         if (x1 - x2).abs() >= 180.0 {
             let x_edge = if x1 > 0.0 { 180.0 } else { -180.0 };
@@ -134,8 +147,11 @@ impl WorldMap<'_> {
             ctx.draw(&Line::new(-x_edge, y1, x2, y2, Self::TRAJECTORY_COLOR));
             return;
         }
+        // Handle trajectory crossing the poles
         if (y1 - y2).abs() >= 90.0 {
-            // TEMPSAT 1 (1512), CALSPHERE 4A (1520)
+            let y_edge = if y1 > 0.0 { 90.0 } else { -90.0 };
+            ctx.draw(&Line::new(x1, y1, x2, y_edge, Self::TRAJECTORY_COLOR));
+            ctx.draw(&Line::new(x1, -y_edge, x2, y2, Self::TRAJECTORY_COLOR));
             return;
         }
         ctx.draw(&Line::new(x1, y1, x2, y2, Self::TRAJECTORY_COLOR));
