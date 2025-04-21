@@ -147,13 +147,6 @@ impl WorldMap<'_> {
             ctx.draw(&Line::new(-x_edge, y1, x2, y2, Self::TRAJECTORY_COLOR));
             return;
         }
-        // Handle trajectory crossing the poles
-        if (y1 - y2).abs() >= 90.0 {
-            let y_edge = if y1 > 0.0 { 90.0 } else { -90.0 };
-            ctx.draw(&Line::new(x1, y1, x2, y_edge, Self::TRAJECTORY_COLOR));
-            ctx.draw(&Line::new(x1, -y_edge, x2, y2, Self::TRAJECTORY_COLOR));
-            return;
-        }
         ctx.draw(&Line::new(x1, y1, x2, y2, Self::TRAJECTORY_COLOR));
     }
 }
