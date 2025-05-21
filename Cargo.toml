@@ -20,7 +20,6 @@ unicode-width = "0.2"
 anyhow = "1.0"
 chrono = "0.4"
 strum = { version = "0.27", features = ["derive"] }
-dirs = "6.0"
 serde_json = "1.0"
 
 # Async
