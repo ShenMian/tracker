@@ -56,9 +56,9 @@ impl WorldMap<'_> {
                         .clone()
                         .unwrap_or(Self::UNKNOWN_NAME.to_string());
                     let line = if state.selected_object_index.is_none() {
-                        Self::SATELLITE_SYMBOL.light_red() + format!(" {}", object_name).white()
+                        Self::SATELLITE_SYMBOL.light_red() + format!(" {object_name}").white()
                     } else {
-                        Self::SATELLITE_SYMBOL.red() + format!(" {}", object_name).dark_gray()
+                        Self::SATELLITE_SYMBOL.red() + format!(" {object_name}").dark_gray()
                     };
                     let state = object.predict(Utc::now()).unwrap();
                     ctx.print(state.position[0], state.position[1], line);
@@ -90,7 +90,7 @@ impl WorldMap<'_> {
                         state.position[0],
                         state.position[1],
                         Self::SATELLITE_SYMBOL.light_green().slow_blink()
-                            + format!(" {}", object_name).white(),
+                            + format!(" {object_name}").white(),
                     );
                 } else if let Some(hovered_object_index) = state.hovered_object_index {
                     let hovered = &self.satellite_groups_state.objects[hovered_object_index];
