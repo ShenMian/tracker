@@ -87,7 +87,7 @@ impl Default for SatelliteGroupsState {
 
 impl SatelliteGroups {
     fn render_block(&self, area: Rect, buf: &mut Buffer, state: &mut SatelliteGroupsState) {
-        let block = Block::bordered().title("Satellite Groups".blue());
+        let block = Block::bordered().title("Satellite groups".blue());
         state.inner_area = block.inner(area);
         block.render(area, buf);
     }

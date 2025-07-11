@@ -105,7 +105,7 @@ impl ObjectInformation<'_> {
                     object.orbital_period().num_seconds() as f64 / 60.0
                 ),
             ),
-            ("Location", format!("{}, {}", city_name, country_name)),
+            ("Location", format!("{city_name}, {country_name}")),
             (
                 "Epoch",
                 object.epoch().format("%Y-%m-%d %H:%M:%S").to_string(),

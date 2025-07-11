@@ -59,9 +59,8 @@ impl SatelliteGroup {
     /// If cache is older than 2 hours, fetches elements from <https://celestrak.org>.
     /// Otherwise, reads elements from cache.
     pub async fn get_elements(&self) -> Option<Vec<sgp4::Elements>> {
-        let cache_path = dirs::cache_dir()
-            .expect("failed to get cache directory")
-            .join(format!("tracker/{}.json", self.to_string().to_lowercase()));
+        let cache_path =
+            std::env::temp_dir().join(format!("tracker/{}.json", self.to_string().to_lowercase()));
         fs::create_dir_all(cache_path.parent().unwrap())
             .await
             .unwrap();
