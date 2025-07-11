@@ -1,12 +1,12 @@
 use std::f64::consts::PI;
 
-use chrono::{DateTime, Datelike, Timelike, Utc};
+use chrono::{DateTime, Datelike, Duration, Timelike, Utc};
 
 /// A satellite object with orbital elements.
 #[derive(Clone, Debug)]
 pub struct Object {
     epoch: DateTime<Utc>,
-    orbital_period: chrono::Duration,
+    orbital_period: Duration,
     elements: sgp4::Elements,
     constants: sgp4::Constants,
 }
@@ -15,8 +15,7 @@ impl Object {
     /// Creates a new `Object` from SGP4 elements.
     pub fn from_elements(elements: sgp4::Elements) -> Self {
         const SECONDS_PER_DAY: f64 = 24.0 * 60.0 * 60.0;
-        let orbital_period =
-            chrono::Duration::seconds((SECONDS_PER_DAY / elements.mean_motion) as i64);
+        let orbital_period = Duration::seconds((SECONDS_PER_DAY / elements.mean_motion) as i64);
 
         Self {
             epoch: DateTime::from_naive_utc_and_offset(elements.datetime, Utc),
@@ -37,7 +36,7 @@ impl Object {
     }
 
     /// Returns the orbital period of the object.
-    pub fn orbital_period(&self) -> &chrono::Duration {
+    pub fn orbital_period(&self) -> &Duration {
         &self.orbital_period
     }
 
