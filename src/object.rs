@@ -12,6 +12,7 @@ pub struct Object {
 }
 
 impl Object {
+    /// Creates a new `Object` from SGP4 elements.
     pub fn from_elements(elements: sgp4::Elements) -> Self {
         const SECONDS_PER_DAY: f64 = 24.0 * 60.0 * 60.0;
         let orbital_period =
@@ -25,15 +26,22 @@ impl Object {
         }
     }
 
-    /// The UTC timestamp of the elements.
+    /// Returns the name of the object.
+    pub fn name(&self) -> Option<&str> {
+        self.elements.object_name.as_deref()
+    }
+
+    /// Returns the UTC timestamp of the elements.
     pub fn epoch(&self) -> DateTime<Utc> {
         self.epoch
     }
 
+    /// Returns the orbital period of the object.
     pub fn orbital_period(&self) -> &chrono::Duration {
         &self.orbital_period
     }
 
+    /// Returns the SGP4 elements of the object.
     pub fn elements(&self) -> &sgp4::Elements {
         &self.elements
     }

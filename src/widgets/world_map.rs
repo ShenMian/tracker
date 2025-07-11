@@ -50,18 +50,14 @@ impl WorldMap<'_> {
 
                 // Draw satellites
                 for object in self.satellite_groups_state.objects.iter() {
-                    let object_name = object
-                        .elements()
-                        .object_name
-                        .clone()
-                        .unwrap_or(Self::UNKNOWN_NAME.to_string());
-                    let line = if state.selected_object_index.is_none() {
+                    let object_name = object.name().unwrap_or(Self::UNKNOWN_NAME);
+                    let text = if state.selected_object_index.is_none() {
                         Self::SATELLITE_SYMBOL.light_red() + format!(" {object_name}").white()
                     } else {
                         Self::SATELLITE_SYMBOL.red() + format!(" {object_name}").dark_gray()
                     };
                     let state = object.predict(Utc::now()).unwrap();
-                    ctx.print(state.position[0], state.position[1], line);
+                    ctx.print(state.position[0], state.position[1], text);
                 }
             })
             .x_bounds([-180.0, 180.0])
@@ -76,39 +72,25 @@ impl WorldMap<'_> {
             .paint(|ctx| {
                 if let Some(selected_object_index) = state.selected_object_index {
                     let selected = &self.satellite_groups_state.objects[selected_object_index];
-                    let state = selected.predict(Utc::now()).unwrap();
 
                     self.render_trajectory(ctx, selected);
 
                     // Highlight the selected satellite
-                    let object_name = selected
-                        .elements()
-                        .object_name
-                        .clone()
-                        .unwrap_or(Self::UNKNOWN_NAME.to_string());
-                    ctx.print(
-                        state.position[0],
-                        state.position[1],
-                        Self::SATELLITE_SYMBOL.light_green().slow_blink()
-                            + format!(" {object_name}").white(),
-                    );
+                    let object_name = selected.name().unwrap_or(Self::UNKNOWN_NAME);
+                    let text = Self::SATELLITE_SYMBOL.light_green().slow_blink()
+                        + format!(" {object_name}").white();
+                    let state = selected.predict(Utc::now()).unwrap();
+                    ctx.print(state.position[0], state.position[1], text);
                 } else if let Some(hovered_object_index) = state.hovered_object_index {
                     let hovered = &self.satellite_groups_state.objects[hovered_object_index];
-                    let state = hovered.predict(Utc::now()).unwrap();
 
                     // Highlight the hovered satellite
-                    let object_name = hovered
-                        .elements()
-                        .object_name
-                        .clone()
-                        .unwrap_or(Self::UNKNOWN_NAME.to_string());
-                    ctx.print(
-                        state.position[0],
-                        state.position[1],
-                        Self::SATELLITE_SYMBOL.light_red().reversed()
-                            + " ".into()
-                            + object_name.white().reversed(),
-                    );
+                    let object_name = hovered.name().unwrap_or(Self::UNKNOWN_NAME);
+                    let text = Self::SATELLITE_SYMBOL.light_red().reversed()
+                        + " ".into()
+                        + object_name.to_string().white().reversed();
+                    let state = hovered.predict(Utc::now()).unwrap();
+                    ctx.print(state.position[0], state.position[1], text);
                 }
             })
             .x_bounds([-180.0, 180.0])
