@@ -56,7 +56,7 @@ pub enum SatelliteGroup {
 impl SatelliteGroup {
     /// Returns SGP4 elements.
     ///
-    /// If cache is older than 2 hours, fetches elements from <https://celestrak.org>.
+    /// If cache is expired, fetches elements from <https://celestrak.org>.
     /// Otherwise, reads elements from cache.
     pub async fn get_elements(&self) -> Option<Vec<sgp4::Elements>> {
         let cache_path =
@@ -85,7 +85,7 @@ impl SatelliteGroup {
             .unwrap();
         let is_cache_expired = age > Duration::from_secs(2 * 60 * 60);
 
-        // Fetch elements if cache is older than 2 hours
+        // Fetch elements if cache is expired
         if is_cache_expired {
             if let Some(elements) = self.fetch_elements().await {
                 fs::write(&cache_path, serde_json::to_string(&elements).unwrap())
