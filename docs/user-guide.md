@@ -12,15 +12,17 @@ After installation, simply run `tracker` in your terminal to start the applicati
 tracker
 ```
 
-## Interface Overview
+## Interface
 
-The Tracker interface is divided into three main sections:
+![Interface](screenshot.png)
+
+The interface is divided into three main sections:
 
 1. **World Map** (Left panel): Shows the current positions of satellites on a world map
 2. **Object Information** (Top-right panel): Displays detailed information about the selected satellite
 3. **Satellite Groups** (Bottom-right panel): Lists available satellite groups that can be enabled/disabled
 
-## Basic Navigation
+## Navigation
 
 ### Mouse Controls
 
@@ -33,7 +35,6 @@ The Tracker interface is divided into three main sections:
 ### Keyboard Controls
 
 - Press **Q** or **ESC** to quit the application
-- Press **Ctrl+C** to quit the application
 
 ## Using Tracker
 
@@ -86,8 +87,6 @@ To copy information from the object information panel:
 
 1. **Performance**: If you notice performance issues, try selecting fewer satellite groups
 2. **Updates**: Satellite data automatically updates every 2 minutes
-3. **Trajectory**: The trajectory line shows where the satellite will be in the future
-4. **International Date Line**: Trajectory lines correctly handle crossing the international date line
 
 ## Troubleshooting
 
@@ -96,24 +95,3 @@ To copy information from the object information panel:
 - Ensure you've selected at least one satellite group in the bottom-right panel
 - Check your internet connection (required for downloading satellite data)
 - Wait a moment for satellite data to load after selecting a group
-
-### Data Not Updating
-
-- Tracker automatically updates satellite data every 2 minutes
-- If data seems stale, try deselecting and reselecting the satellite group
-
-### Application Crashes
-
-- Ensure you're using the latest version of Tracker
-- Check that your terminal supports the required features
-- Report issues on the project's GitHub page with detailed error information
-
-## Customization
-
-Currently, Tracker has limited customization options. Future versions may include:
-
-- Color scheme customization
-- Update interval adjustment
-- Additional satellite data sources
-
-For feature requests or bug reports, please visit the [project's GitHub repository](https://github.com/ShenMian/tracker).
