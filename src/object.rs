@@ -2,6 +2,8 @@ use std::f64::consts::PI;
 
 use chrono::{DateTime, Datelike, Duration, Timelike, Utc};
 
+const SECONDS_PER_DAY: f64 = 24.0 * 60.0 * 60.0;
+
 /// A satellite object with orbital elements.
 #[derive(Clone, Debug)]
 pub struct Object {
@@ -14,7 +16,6 @@ pub struct Object {
 impl Object {
     /// Creates a new `Object` from SGP4 elements.
     pub fn from_elements(elements: sgp4::Elements) -> Self {
-        const SECONDS_PER_DAY: f64 = 24.0 * 60.0 * 60.0;
         let orbital_period = Duration::seconds((SECONDS_PER_DAY / elements.mean_motion) as i64);
 
         Self {
@@ -53,7 +54,9 @@ impl Object {
             .constants
             .propagate(sgp4::MinutesSinceEpoch(minutes_since_epoch))?;
 
-        let gmst_rad = gmst_rad_from_julian_days(julian_days_from_utc(time));
+        let jd_utc = julian_days_from_utc(time);
+        let jd_tt = tai_to_tt(utc_to_tai(jd_utc));
+        let gmst_rad = gmst_rad_from_julian_days_tt(jd_tt);
         let [lat, lon, alt] = ecef_to_lla(teme_to_ecef(prediction.position, gmst_rad));
 
         Ok(State {
@@ -87,7 +90,7 @@ impl State {
     }
 }
 
-/// Returns the Julian days for the given UTC datetime.
+/// Returns the Julian days in UTC for the given UTC datetime.
 fn julian_days_from_utc(datetime: DateTime<Utc>) -> f64 {
     let year = datetime.year();
     let month = datetime.month() as i32;
@@ -112,15 +115,27 @@ fn julian_days_from_utc(datetime: DateTime<Utc>) -> f64 {
         + b
 }
 
+/// Converts UTC time scale (in days) to TAI time scale (in days).
+fn utc_to_tai(utc: f64) -> f64 {
+    const TAI_MINUS_UTC: f64 = 37.0; // TAI-UTC in seconds (2025, https://datacenter.iers.org/data/html/bulletinc-069.html)
+    utc + TAI_MINUS_UTC / SECONDS_PER_DAY
+}
+
+/// Converts TAI time scale (in days) to TT time scale (in days).
+fn tai_to_tt(tai: f64) -> f64 {
+    const TT_MINUS_TAI: f64 = 32.184; // TT-TAI in seconds
+    tai + TT_MINUS_TAI / SECONDS_PER_DAY
+}
+
 /// Calculates the Greenwich Mean Sidereal Time (GMST) in radians.
 ///
 /// # Arguments
-/// * `julian_days` - The Julian days for which to calculate GMST
+/// * `julian_days` - The Julian days in TT time scale
 ///
 /// # Returns
 ///
 /// The GMST in radians, normalized to [0, 2π]
-fn gmst_rad_from_julian_days(julian_days: f64) -> f64 {
+fn gmst_rad_from_julian_days_tt(julian_days: f64) -> f64 {
     // Constants
     const J2000_EPOCH: f64 = 2451545.0; // Julian Date for J2000.0 epoch
     const JULIAN_CENTURY: f64 = 36525.0; // Days in a Julian century
