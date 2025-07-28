@@ -186,7 +186,7 @@ fn teme_to_ecef(teme: [f64; 3], gmst_rad: f64) -> [f64; 3] {
 /// * `position` - A 3D position vector [x, y, z] in the ECEF frame (in km)
 ///
 /// # Returns
-/// * A tuple (latitude, longitude, altitude) where:
+/// * A array [latitude, longitude, altitude] where:
 ///   - latitude: Geodetic latitude in degrees (-90° to +90°)
 ///   - longitude: Geodetic longitude in degrees (-180° to +180°)
 ///   - altitude: Height above WGS84 ellipsoid in km
@@ -194,6 +194,7 @@ fn ecef_to_lla(position: [f64; 3]) -> [f64; 3] {
     const A: f64 = 6378.137; // WGS84 Earth semi-major axis (km)
     const F: f64 = 1.0 / 298.257223563; // Flattening
     const B: f64 = A * (1.0 - F); // Semi-minor axis (km)
+    const E2: f64 = 1.0 - (B * B) / (A * A); // Square of first eccentricity
 
     let [x, y, z] = position;
 
@@ -201,17 +202,15 @@ fn ecef_to_lla(position: [f64; 3]) -> [f64; 3] {
     let longitude = y.atan2(x).to_degrees();
 
     // Calculate latitude
-    let e2 = 1.0 - (B * B) / (A * A); // Square of first eccentricity
     let p = (x.powi(2) + y.powi(2)).sqrt();
     let theta = (z * A) / (p * B);
-    let sin_theta = theta.sin();
-    let cos_theta = theta.cos();
-    let latitude = ((z + e2 * B * sin_theta.powi(3)) / (p - e2 * A * cos_theta.powi(3)))
+    let (sin_theta, cos_theta) = theta.sin_cos();
+    let latitude = ((z + E2 * B * sin_theta.powi(3)) / (p - E2 * A * cos_theta.powi(3)))
         .atan()
         .to_degrees();
 
     // Calculate altitude
-    let n = A / (1.0 - e2 * latitude.to_radians().sin().powi(2)).sqrt();
+    let n = A / (1.0 - E2 * latitude.to_radians().sin().powi(2)).sqrt();
     let altitude = p / latitude.to_radians().cos() - n;
 
     [latitude, longitude, altitude]
