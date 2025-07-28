@@ -54,10 +54,7 @@ impl Object {
             .constants
             .propagate(sgp4::MinutesSinceEpoch(minutes_since_epoch))?;
 
-        let jd_utc = julian_days_from_utc(time);
-        let jd_tt = tai_to_tt(utc_to_tai(jd_utc));
-        let gmst_rad = gmst_rad_from_julian_days_tt(jd_tt);
-        let [lat, lon, alt] = ecef_to_lla(teme_to_ecef(prediction.position, gmst_rad));
+        let [lat, lon, alt] = teme_to_lla(prediction.position, time);
 
         Ok(State {
             position: [lon, lat, alt],
@@ -88,6 +85,14 @@ impl State {
     pub fn speed(&self) -> f64 {
         (self.velocity[0].powi(2) + self.velocity[1].powi(2) + self.velocity[2].powi(2)).sqrt()
     }
+}
+
+/// Converts a position vector from TEME frame to LLA.
+fn teme_to_lla(teme: [f64; 3], time: DateTime<Utc>) -> [f64; 3] {
+    let jd_utc = julian_days_from_utc(time);
+    let jd_tt = tai_to_tt(utc_to_tai(jd_utc));
+    let gmst_rad = gmst_rad_from_julian_days_tt(jd_tt);
+    ecef_to_lla(teme_to_ecef(teme, gmst_rad))
 }
 
 /// Returns the Julian days in UTC for the given UTC datetime.
