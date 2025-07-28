@@ -53,11 +53,8 @@ impl Object {
             .constants
             .propagate(sgp4::MinutesSinceEpoch(minutes_since_epoch))?;
 
-        let gmst = gmst_from_julian_days(julian_days_from_utc(time));
-        let [lat, lon, alt] = ecef_to_lat_lon_alt(teme_to_ecef(prediction.position, gmst));
-
-        debug_assert!((-90.0..=90.0).contains(&lat), "latitude out of range");
-        debug_assert!((-180.0..=180.0).contains(&lon), "longitude out of range");
+        let gmst_rad = gmst_rad_from_julian_days(julian_days_from_utc(time));
+        let [lat, lon, alt] = ecef_to_lla(teme_to_ecef(prediction.position, gmst_rad));
 
         Ok(State {
             position: [lon, lat, alt],
@@ -123,7 +120,7 @@ fn julian_days_from_utc(datetime: DateTime<Utc>) -> f64 {
 /// # Returns
 ///
 /// The GMST in radians, normalized to [0, 2π]
-fn gmst_from_julian_days(julian_days: f64) -> f64 {
+fn gmst_rad_from_julian_days(julian_days: f64) -> f64 {
     // Constants
     const J2000_EPOCH: f64 = 2451545.0; // Julian Date for J2000.0 epoch
     const JULIAN_CENTURY: f64 = 36525.0; // Days in a Julian century
@@ -150,32 +147,30 @@ fn gmst_from_julian_days(julian_days: f64) -> f64 {
 /// Converts a position vector from True Equator Mean Equinox (TEME) frame to Earth-Centered Earth-Fixed (ECEF) frame
 ///
 /// # Arguments
-/// * `position` - A 3D position vector [x, y, z] in the TEME frame (typically in kilometers)
+/// * `position` - A 3D position vector [x, y, z] in the TEME frame (in km)
 /// * `gmst` - Greenwich Mean Sidereal Time in radians
 ///
 /// # Returns
 /// A 3D position vector [x, y, z] in the ECEF frame (same units as input)
-fn teme_to_ecef(position: [f64; 3], gmst: f64) -> [f64; 3] {
-    let [x, y, z] = position;
-    let cos_gmst = gmst.cos();
-    let sin_gmst = gmst.sin();
-
-    let x_ecef = cos_gmst * x + sin_gmst * y;
-    let y_ecef = -sin_gmst * x + cos_gmst * y;
-    [x_ecef, y_ecef, z]
+fn teme_to_ecef(teme: [f64; 3], gmst_rad: f64) -> [f64; 3] {
+    let [teme_x, teme_y, teme_z] = teme;
+    let (sin_theta, cos_theta) = gmst_rad.sin_cos();
+    let x = cos_theta * teme_x + sin_theta * teme_y;
+    let y = -sin_theta * teme_x + cos_theta * teme_y;
+    [x, y, teme_z]
 }
 
-/// Converts a position vector from Earth-Centered Earth-Fixed (ECEF) frame to geodetic coordinates (latitude, longitude, altitude)
+/// Converts a position vector from Earth-Centered Earth-Fixed (ECEF) frame to geodetic coordinates (LLA)
 ///
 /// # Arguments
-/// * `position` - A 3D position vector [x, y, z] in the ECEF frame (kilometers)
+/// * `position` - A 3D position vector [x, y, z] in the ECEF frame (in km)
 ///
 /// # Returns
 /// * A tuple (latitude, longitude, altitude) where:
 ///   - latitude: Geodetic latitude in degrees (-90° to +90°)
 ///   - longitude: Geodetic longitude in degrees (-180° to +180°)
-///   - altitude: Height above WGS84 ellipsoid in kilometers
-fn ecef_to_lat_lon_alt(position: [f64; 3]) -> [f64; 3] {
+///   - altitude: Height above WGS84 ellipsoid in km
+fn ecef_to_lla(position: [f64; 3]) -> [f64; 3] {
     const A: f64 = 6378.137; // WGS84 Earth semi-major axis (km)
     const F: f64 = 1.0 / 298.257223563; // Flattening
     const B: f64 = A * (1.0 - F); // Semi-minor axis (km)
