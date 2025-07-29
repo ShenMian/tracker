@@ -1,5 +1,3 @@
-use std::f64::consts::PI;
-
 use chrono::{DateTime, Datelike, Duration, Timelike, Utc};
 
 const SECONDS_PER_DAY: f64 = 24.0 * 60.0 * 60.0;
@@ -161,7 +159,7 @@ fn gmst_rad_from_julian_days_tt(julian_days: f64) -> f64 {
         + T3_COEFF * t.powi(3);
 
     // Convert to radians and normalize to [0, 2π]
-    (gmst % 360.0).to_radians().rem_euclid(2.0 * PI)
+    gmst.rem_euclid(360.0).to_radians()
 }
 
 /// Converts a position vector from True Equator Mean Equinox (TEME) frame to Earth-Centered Earth-Fixed (ECEF) frame
