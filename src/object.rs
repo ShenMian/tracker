@@ -89,13 +89,13 @@ impl State {
 
 /// Converts a position from TEME frame to LLA.
 fn teme_to_lla(teme: Point3<f64>, time: DateTime<Utc>) -> [f64; 3] {
-    let epoch = utc_to_epoch(time);
-    let gmst = gmst_from_julian_days_tt(epoch.to_jde_tt_days());
+    let epoch = epoch_from_utc(time);
+    let gmst = gmst_from_jde_tt(epoch.to_jde_tt_days());
     ecef_to_lla(teme_to_ecef(teme, gmst))
 }
 
 /// Returns the Epoch for the given UTC datetime.
-fn utc_to_epoch(datetime: DateTime<Utc>) -> Epoch {
+fn epoch_from_utc(datetime: DateTime<Utc>) -> Epoch {
     Epoch::from_gregorian_utc(
         datetime.year(),
         datetime.month() as u8,
@@ -110,12 +110,11 @@ fn utc_to_epoch(datetime: DateTime<Utc>) -> Epoch {
 /// Calculates the Greenwich Mean Sidereal Time (GMST) in radians.
 ///
 /// # Arguments
-/// * `julian_days` - The Julian days in TT time scale
+/// * `jde` - The Julian days in TT time scale
 ///
 /// # Returns
-///
 /// The GMST in radians, normalized to [0, 2π]
-fn gmst_from_julian_days_tt(julian_days: f64) -> f64 {
+fn gmst_from_jde_tt(jde: f64) -> f64 {
     // Constants
     const J2000_EPOCH: f64 = 2451545.0; // Julian Date for J2000.0 epoch
     const JULIAN_CENTURY: f64 = 36525.0; // Days in a Julian century
@@ -127,11 +126,11 @@ fn gmst_from_julian_days_tt(julian_days: f64) -> f64 {
     const T3_COEFF: f64 = -1.0 / 38710000.0;
 
     // Calculate time in Julian centuries since J2000.0
-    let t = (julian_days - J2000_EPOCH) / JULIAN_CENTURY;
+    let t = (jde - J2000_EPOCH) / JULIAN_CENTURY;
 
     // Calculate GMST in degrees
     let gmst = GMST_MEAN
-        + GMST_ADVANCE * (julian_days - J2000_EPOCH)
+        + GMST_ADVANCE * (jde - J2000_EPOCH)
         + T2_COEFF * t.powi(2)
         + T3_COEFF * t.powi(3);
 
@@ -160,7 +159,7 @@ fn teme_to_ecef(teme: Point3<f64>, gmst_rad: f64) -> Point3<f64> {
 /// * `position` - A position in the ECEF frame (in km)
 ///
 /// # Returns
-/// * A array [latitude, longitude, altitude] where:
+/// An array `[latitude, longitude, altitude]` where:
 ///   - latitude: Geodetic latitude in degrees (-90° to +90°)
 ///   - longitude: Geodetic longitude in degrees (-180° to +180°)
 ///   - altitude: Height above WGS84 ellipsoid in km
@@ -171,19 +170,18 @@ fn ecef_to_lla(ecef: Point3<f64>) -> [f64; 3] {
     const E2: f64 = 1.0 - (B * B) / (A * A); // Square of first eccentricity
 
     // Calculate longitude
-    let longitude = ecef.y.atan2(ecef.x).to_degrees();
+    let longitude = ecef.y.atan2(ecef.x);
 
     // Calculate latitude
     let p = (ecef.x.powi(2) + ecef.y.powi(2)).sqrt();
     let theta = (ecef.z * A) / (p * B);
     let (sin_theta, cos_theta) = theta.sin_cos();
-    let latitude = ((ecef.z + E2 * B * sin_theta.powi(3)) / (p - E2 * A * cos_theta.powi(3)))
-        .atan()
-        .to_degrees();
+    let latitude =
+        ((ecef.z + E2 * B * sin_theta.powi(3)) / (p - E2 * A * cos_theta.powi(3))).atan();
 
     // Calculate altitude
-    let n = A / (1.0 - E2 * latitude.to_radians().sin().powi(2)).sqrt();
-    let altitude = p / latitude.to_radians().cos() - n;
+    let n = A / (1.0 - E2 * latitude.sin().powi(2)).sqrt();
+    let altitude = p / latitude.cos() - n;
 
-    [latitude, longitude, altitude]
+    [latitude.to_degrees(), longitude.to_degrees(), altitude]
 }
