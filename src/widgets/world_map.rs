@@ -23,7 +23,7 @@ pub struct WorldMap<'a> {
 pub struct WorldMapState {
     pub selected_object_index: Option<usize>,
     pub hovered_object_index: Option<usize>,
-    pub inner_area: Rect,
+    inner_area: Rect,
 }
 
 impl WorldMap<'_> {
@@ -73,7 +73,7 @@ impl WorldMap<'_> {
                     let text = Self::OBJECT_SYMBOL.light_green().slow_blink()
                         + format!(" {object_name}").white();
                     let state = selected.predict(Utc::now()).unwrap();
-                    ctx.print(state.position[0], state.position[1], text);
+                    ctx.print(state.position.x, state.position.y, text);
                 } else if let Some(hovered_object_index) = state.hovered_object_index {
                     let hovered = &self.satellite_groups_state.objects[hovered_object_index];
 
@@ -83,7 +83,7 @@ impl WorldMap<'_> {
                         + " ".into()
                         + object_name.to_string().white().reversed();
                     let state = hovered.predict(Utc::now()).unwrap();
-                    ctx.print(state.position[0], state.position[1], text);
+                    ctx.print(state.position.x, state.position.y, text);
                 }
             });
 

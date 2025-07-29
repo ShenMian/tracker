@@ -22,9 +22,9 @@ pub struct SatelliteGroupsState {
     pub list_entries: Vec<Entry>,
     pub list_state: ListState,
 
-    pub inner_area: Rect,
-
     pub last_object_update: Instant,
+
+    inner_area: Rect,
 }
 
 impl SatelliteGroupsState {

@@ -27,7 +27,7 @@ pub struct ObjectInformation<'a> {
 pub struct ObjectInformationState {
     pub table_entries: Vec<(&'static str, String)>,
     pub table_state: TableState,
-    pub inner_area: Rect,
+    inner_area: Rect,
     geocoder: ReverseGeocoder,
 }
 
