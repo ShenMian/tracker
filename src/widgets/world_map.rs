@@ -18,12 +18,27 @@ pub struct WorldMap<'a> {
     pub satellite_groups_state: &'a SatelliteGroupsState,
 }
 
-/// State of a [`WorldMapState`] widget
+/// State of a [`WorldMapState`] widget.
 #[derive(Default)]
 pub struct WorldMapState {
     pub selected_object_index: Option<usize>,
     pub hovered_object_index: Option<usize>,
+    offset_x: f64,
     inner_area: Rect,
+}
+
+impl WorldMapState {
+    const SCROLL_DELTA: f64 = 10.0;
+
+    pub fn scroll_up(&mut self) {
+        self.offset_x -= Self::SCROLL_DELTA;
+        self.offset_x = wrap_longitude(self.offset_x);
+    }
+
+    pub fn scroll_down(&mut self) {
+        self.offset_x += Self::SCROLL_DELTA;
+        self.offset_x = wrap_longitude(self.offset_x);
+    }
 }
 
 impl WorldMap<'_> {
@@ -38,78 +53,108 @@ impl WorldMap<'_> {
         block.render(area, buf);
     }
 
-    /// Render world map
+    /// Renders the world map.
     fn render_map(&self, buf: &mut Buffer, state: &mut WorldMapState) {
-        let bottom_layer = Canvas::default()
-            .x_bounds([-180.0, 180.0])
+        let x_min = state.offset_x - 180.0;
+        let x_max = state.offset_x + 180.0;
+
+        let mut bounds_vec = vec![[x_min, x_max]];
+        if x_min < -180.0 {
+            bounds_vec.push([x_max, x_max + 360.0]); // Right side
+        } else if x_max > 180.0 {
+            bounds_vec.push([-360.0 + x_min, x_min]); // Left side
+        }
+
+        for bounds in &bounds_vec {
+            self.render_bottom_layer(buf, *bounds, state);
+        }
+        for bounds in &bounds_vec {
+            self.render_top_layer(buf, *bounds, state);
+        }
+    }
+
+    /// Renders the bottom layer of the world map, including the map and all objects.
+    fn render_bottom_layer(&self, buf: &mut Buffer, x_bounds: [f64; 2], state: &mut WorldMapState) {
+        Canvas::default()
+            .x_bounds(x_bounds)
             .y_bounds([-90.0, 90.0])
             .paint(|ctx| {
-                // Draw the world map
                 ctx.draw(&Map {
                     color: Self::MAP_COLOR,
                     resolution: MapResolution::High,
                 });
-                ctx.layer();
-
-                // Draw objects
-                for object in self.satellite_groups_state.objects.iter() {
-                    let object_name = object.name().unwrap_or(Self::UNKNOWN_NAME);
-                    let text = if state.selected_object_index.is_none() {
-                        Self::OBJECT_SYMBOL.light_red() + format!(" {object_name}").white()
-                    } else {
-                        Self::OBJECT_SYMBOL.red() + format!(" {object_name}").dark_gray()
-                    };
-                    let state = object.predict(Utc::now()).unwrap();
-                    ctx.print(state.position[0], state.position[1], text);
-                }
-
-                if let Some(selected_object_index) = state.selected_object_index {
-                    let selected = &self.satellite_groups_state.objects[selected_object_index];
-
-                    self.draw_trajectory(ctx, selected);
-
-                    // Highlight the selected object
-                    let object_name = selected.name().unwrap_or(Self::UNKNOWN_NAME);
-                    let text = Self::OBJECT_SYMBOL.light_green().slow_blink()
-                        + format!(" {object_name}").white();
-                    let state = selected.predict(Utc::now()).unwrap();
-                    ctx.print(state.position.x, state.position.y, text);
-                } else if let Some(hovered_object_index) = state.hovered_object_index {
-                    let hovered = &self.satellite_groups_state.objects[hovered_object_index];
-
-                    // Highlight the hovered object
-                    let object_name = hovered.name().unwrap_or(Self::UNKNOWN_NAME);
-                    let text = Self::OBJECT_SYMBOL.light_red().reversed()
-                        + " ".into()
-                        + object_name.to_string().white().reversed();
-                    let state = hovered.predict(Utc::now()).unwrap();
-                    ctx.print(state.position.x, state.position.y, text);
-                }
-            });
-
-        bottom_layer.render(state.inner_area, buf);
+                self.draw_objects(ctx, state);
+            })
+            .render(state.inner_area, buf);
     }
 
-    /// Render the trajectory of the object
-    fn draw_trajectory(&self, ctx: &mut Context, object: &Object) {
-        let trajectory = self.calculate_trajectory(object);
+    /// Renders the top layer of the world map, including object highlights and trajectories.
+    fn render_top_layer(&self, buf: &mut Buffer, x_bounds: [f64; 2], state: &mut WorldMapState) {
+        Canvas::default()
+            .x_bounds(x_bounds)
+            .y_bounds([-90.0, 90.0])
+            .paint(|ctx| {
+                self.draw_object_highlight(ctx, state);
+            })
+            .render(state.inner_area, buf);
+    }
 
-        // Draw the lines between predicted points
-        for window in trajectory.windows(2) {
-            self.draw_line(ctx, window[0], window[1]);
+    fn draw_objects(&self, ctx: &mut Context, state: &WorldMapState) {
+        for object in self.satellite_groups_state.objects.iter() {
+            let object_name = object.name().unwrap_or(Self::UNKNOWN_NAME);
+            let text = if state.selected_object_index.is_none() {
+                Self::OBJECT_SYMBOL.light_red() + format!(" {object_name}").white()
+            } else {
+                Self::OBJECT_SYMBOL.red() + format!(" {object_name}").dark_gray()
+            };
+            let state = object.predict(Utc::now()).unwrap();
+            ctx.print(state.position.x, state.position.y, text);
         }
     }
 
-    /// Calculate the trajectory of the object
+    fn draw_object_highlight(&self, ctx: &mut Context, state: &WorldMapState) {
+        if let Some(selected_object_index) = state.selected_object_index {
+            let selected = &self.satellite_groups_state.objects[selected_object_index];
+
+            let trajectory = self.calculate_trajectory(selected);
+            self.draw_lines(ctx, trajectory);
+
+            // Highlight the selected object
+            let object_name = selected.name().unwrap_or(Self::UNKNOWN_NAME);
+            let text =
+                Self::OBJECT_SYMBOL.light_green().slow_blink() + format!(" {object_name}").white();
+            let state = selected.predict(Utc::now()).unwrap();
+            ctx.print(state.position.x, state.position.y, text);
+        } else if let Some(hovered_object_index) = state.hovered_object_index {
+            let hovered = &self.satellite_groups_state.objects[hovered_object_index];
+
+            // Highlight the hovered object
+            let object_name = hovered.name().unwrap_or(Self::UNKNOWN_NAME);
+            let text = Self::OBJECT_SYMBOL.light_red().reversed()
+                + " ".into()
+                + object_name.to_string().white().reversed();
+            let state = hovered.predict(Utc::now()).unwrap();
+            ctx.print(state.position.x, state.position.y, text);
+        }
+    }
+
+    /// Calculates the trajectory of the object.
     fn calculate_trajectory(&self, object: &Object) -> Vec<(f64, f64)> {
         // Calculate future positions along the trajectory
         let mut points = Vec::new();
         for minutes in 1..object.orbital_period().num_minutes() {
             let time = Utc::now() + Duration::minutes(minutes);
             let state = object.predict(time).unwrap();
-            points.push((state.position[0], state.position[1]));
+            points.push((state.position.x, state.position.y));
         }
         points
+    }
+
+    /// Draws lines between points.
+    fn draw_lines(&self, ctx: &mut Context, points: Vec<(f64, f64)>) {
+        for window in points.windows(2) {
+            self.draw_line(ctx, window[0], window[1]);
+        }
     }
 
     fn draw_line(&self, ctx: &mut Context, (x1, y1): (f64, f64), (x2, y2): (f64, f64)) {
@@ -157,16 +202,20 @@ pub async fn handle_mouse_events(event: MouseEvent, app: &mut App) -> Result<()>
     let mouse = Position::new(event.column - inner_area.x, event.row - inner_area.y);
 
     let (lon, lat) = area_to_lon_lat(mouse.x, mouse.y, app.world_map_state.inner_area);
+    let lon = wrap_longitude(lon + app.world_map_state.offset_x);
+
     let nearest_object_index =
         app.satellite_groups_state
             .get_nearest_object_index(Utc::now(), lon, lat);
     match event.kind {
         MouseEventKind::Down(MouseButton::Left) => {
-            app.world_map_state.selected_object_index = nearest_object_index
+            app.world_map_state.selected_object_index = nearest_object_index;
         }
         MouseEventKind::Down(MouseButton::Right) => {
-            app.world_map_state.selected_object_index = None
+            app.world_map_state.selected_object_index = None;
         }
+        MouseEventKind::ScrollUp => app.world_map_state.scroll_up(),
+        MouseEventKind::ScrollDown => app.world_map_state.scroll_down(),
         _ => {}
     }
     app.world_map_state.hovered_object_index = nearest_object_index;
@@ -174,7 +223,12 @@ pub async fn handle_mouse_events(event: MouseEvent, app: &mut App) -> Result<()>
     Ok(())
 }
 
-/// Convert area coordinates to lon/lat coordinates
+/// Wraps a longitude value to the range [-180, 180].
+fn wrap_longitude(lon: f64) -> f64 {
+    (lon + 180.0).rem_euclid(360.0) - 180.0
+}
+
+/// Converts area coordinates to lon/lat coordinates.
 fn area_to_lon_lat(x: u16, y: u16, area: Rect) -> (f64, f64) {
     debug_assert!(x < area.width && y < area.height);
 
@@ -186,7 +240,7 @@ fn area_to_lon_lat(x: u16, y: u16, area: Rect) -> (f64, f64) {
 }
 
 #[expect(dead_code)]
-/// Convert lon/lat coordinates to area coordinates
+/// Converts lon/lat coordinates to area coordinates.
 fn lon_lat_to_area(lon: f64, lat: f64, area: Rect) -> (u16, u16) {
     debug_assert!((-180.0..=180.0).contains(&lon));
     debug_assert!((-90.0..=90.0).contains(&lat));

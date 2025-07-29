@@ -23,7 +23,7 @@ pub struct ObjectInformation<'a> {
     pub world_map_state: &'a WorldMapState,
 }
 
-/// State of a [`ObjectInformation`] widget
+/// State of a [`ObjectInformation`] widget.
 pub struct ObjectInformationState {
     pub table_entries: Vec<(&'static str, String)>,
     pub table_state: TableState,

@@ -15,7 +15,7 @@ use crate::{app::App, object::Object, satellite_group::SatelliteGroup};
 #[derive(Default)]
 pub struct SatelliteGroups;
 
-/// State of a [`SatelliteGroups`] widget
+/// State of a [`SatelliteGroups`] widget.
 pub struct SatelliteGroupsState {
     pub objects: Vec<Object>,
 
@@ -55,7 +55,7 @@ impl SatelliteGroupsState {
                 let state = obj.predict(time).unwrap();
                 let lon_diff = state.longitude() - lon;
                 let lat_diff = state.latitude() - lat;
-                ((lon_diff.powi(2) + lat_diff.powi(2)) * 1000.0) as i32
+                ((lon_diff.powi(2) + lat_diff.powi(2)) * 1000.0).round() as i32
             })
             .map(|(index, _)| index)
     }
