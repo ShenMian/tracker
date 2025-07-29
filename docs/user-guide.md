@@ -29,8 +29,8 @@ The interface is divided into three main sections:
 - **Left-click** on a satellite in the world map to select it
 - **Right-click** on the world map to deselect the current satellite
 - **Left-click** on an entry in the satellite groups list to toggle it
-- **Scroll** in the satellite groups or object information panels to navigate through the lists
 - **Left-click** on a row in the object information panel to copy that information to your clipboard
+- **Scroll** on the world map to pan the view horizontally
 
 ### Keyboard Controls
 
