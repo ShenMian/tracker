@@ -2,12 +2,13 @@ use anyhow::Result;
 
 use crate::app::App;
 
-pub mod app;
-pub mod event;
-pub mod object;
-pub mod satellite_group;
-pub mod tui;
-pub mod widgets;
+mod app;
+mod event;
+mod object;
+mod satellite_group;
+mod tui;
+mod utils;
+mod widgets;
 
 #[tokio::main]
 async fn main() -> Result<()> {
