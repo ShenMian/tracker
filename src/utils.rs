@@ -102,24 +102,24 @@ fn ecef_to_lla(ecef: Point3<f64>) -> [f64; 3] {
     [latitude.to_degrees(), longitude.to_degrees(), altitude]
 }
 
-/// Returns the Epoch for the given UTC datetime.
-fn epoch_from_utc(datetime: DateTime<Utc>) -> Epoch {
+/// Returns the Epoch for the given UTC timestamp.
+fn epoch_from_utc(time: DateTime<Utc>) -> Epoch {
     Epoch::from_gregorian_utc(
-        datetime.year(),
-        datetime.month() as u8,
-        datetime.day() as u8,
-        datetime.hour() as u8,
-        datetime.minute() as u8,
-        datetime.second() as u8,
-        datetime.nanosecond(),
+        time.year(),
+        time.month() as u8,
+        time.day() as u8,
+        time.hour() as u8,
+        time.minute() as u8,
+        time.second() as u8,
+        time.nanosecond(),
     )
 }
 
-/// Calculates the subsolar point at a given UTC time.
+/// Calculates the subsolar point at a given UTC timestamp.
 ///
 /// # Arguments
 ///
-/// * `time` - The UTC datetime for which to compute the subsolar point.
+/// * `time` - The UTC timestamp for which to compute the subsolar point.
 ///
 /// # Returns
 ///
@@ -143,11 +143,11 @@ pub fn subsolar_point(time: DateTime<Utc>) -> (f64, f64) {
     (lon, decl)
 }
 
-/// Generates a set of points representing the day-night terminator for a given UTC time.
+/// Generates a set of points representing the day-night terminator for a given UTC timestamp.
 ///
 /// # Arguments
 ///
-/// * `time` - The UTC datetime for which to compute the terminator.
+/// * `time` - The UTC timestamp for which to compute the terminator.
 ///
 /// # Returns
 ///

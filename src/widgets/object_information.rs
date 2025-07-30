@@ -1,6 +1,5 @@
 use anyhow::Result;
 use arboard::Clipboard;
-use chrono::Utc;
 use crossterm::event::{MouseButton, MouseEvent, MouseEventKind};
 use ratatui::{
     prelude::*,
@@ -67,7 +66,7 @@ impl ObjectInformation<'_> {
         const UNKNOWN_NAME: &str = "Unknown";
 
         let object = &self.satellite_groups_state.objects[index];
-        let object_state = object.predict(Utc::now()).unwrap();
+        let object_state = object.predict(self.world_map_state.time()).unwrap();
 
         let result = state
             .geocoder
