@@ -31,6 +31,7 @@ The interface is divided into three main sections:
 - **Left-click** on an entry in the satellite groups list to toggle it
 - **Left-click** on a row in the object information panel to copy that information to your clipboard
 - **Scroll** on the world map to pan the view horizontally
+- **Shift + Scroll** on the world map to adjust the time offset (fast forward or rewind time)
 
 ### Keyboard Controls
 
@@ -68,12 +69,14 @@ The top-right panel displays detailed information about the selected satellite:
 
 The world map shows:
 
-- Current positions of all tracked satellites (marked with "+" symbols)
+- Current positions of all tracked satellites
 - The trajectory of the selected satellite (light blue line showing its predicted path)
+- The position of the sun and the terminator (day/night line)
 - Different visual indicators:
-  - Red "+" for unselected satellites
-  - Blinking green "+" for the selected satellite
-  - Reversed red "+" for hovered satellites
+  - Red `+` for unselected satellites
+  - Blinking green `+` for the selected satellite
+  - Reversed red `+` for hovered satellites
+  - Yellow `*` indicates the current position of the sun (subsolar point)
 
 ### 5. Copying Information
 
