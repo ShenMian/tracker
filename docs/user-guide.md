@@ -30,12 +30,13 @@ The interface is divided into three main sections:
 - **Right-click** on the world map to deselect the current satellite
 - **Left-click** on an entry in the satellite groups list to toggle it
 - **Left-click** on a row in the object information panel to copy that information to your clipboard
-- **Scroll** on the world map to pan the view horizontally
-- **Shift + Scroll** on the world map to adjust the time offset (fast forward or rewind time)
+- **Scroll** on the world map to adjust the time offset (fast forward or rewind time)
+- **Shift + Scroll** on the world map to scroll the view horizontally (**requires terminal support for keyboard protocol**)
 
 ### Keyboard Controls
 
-- Press **Q** or **ESC** to quit the application
+- Press `[` or `]` to scroll the world map horizontally
+- Press `Q` or `ESC` to quit the application
 
 ## Using Tracker
 
