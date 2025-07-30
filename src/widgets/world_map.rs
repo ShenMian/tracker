@@ -9,11 +9,7 @@ use ratatui::{
     },
 };
 
-use crate::{
-    app::App,
-    object::Object,
-    utils::{calculate_terminator, subsolar_point, wrap_longitude_deg},
-};
+use crate::{app::App, utils::*};
 
 use super::satellite_groups::SatelliteGroupsState;
 
@@ -167,9 +163,10 @@ impl WorldMap<'_> {
         if let Some(selected_object_index) = state.selected_object_index {
             let selected = &self.satellite_groups_state.objects[selected_object_index];
 
+            // Draw the trajectory
             self.draw_lines(
                 ctx,
-                self.calculate_trajectory(selected, state),
+                calculate_trajectory(selected, state.time()),
                 Self::TRAJECTORY_COLOR,
             );
 
@@ -196,18 +193,6 @@ impl WorldMap<'_> {
         }
     }
 
-    /// Calculates the trajectory of the object.
-    fn calculate_trajectory(&self, object: &Object, state: &WorldMapState) -> Vec<(f64, f64)> {
-        // Calculate future positions along the trajectory
-        let mut points = Vec::new();
-        for minutes in 1..object.orbital_period().num_minutes() {
-            let time = state.time() + Duration::minutes(minutes);
-            let object_state = object.predict(time).unwrap();
-            points.push((object_state.position.x, object_state.position.y));
-        }
-        points
-    }
-
     /// Draws lines between points.
     fn draw_lines(&self, ctx: &mut Context, points: Vec<(f64, f64)>, color: Color) {
         for window in points.windows(2) {
@@ -215,6 +200,7 @@ impl WorldMap<'_> {
         }
     }
 
+    /// Draws a line between two points.
     fn draw_line(
         &self,
         ctx: &mut Context,

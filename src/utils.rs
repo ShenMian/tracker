@@ -1,6 +1,8 @@
-use chrono::{DateTime, Datelike, Timelike, Utc};
+use chrono::{DateTime, Datelike, Duration, Timelike, Utc};
 use hifitime::Epoch;
 use nalgebra::Point3;
+
+use crate::object::Object;
 
 /// Converts a position from TEME frame to LLA.
 ///
@@ -143,7 +145,7 @@ pub fn subsolar_point(time: DateTime<Utc>) -> (f64, f64) {
     (lon, decl)
 }
 
-/// Generates a set of points representing the day-night terminator for a given UTC timestamp.
+/// Calculates a set of points representing the day-night terminator.
 ///
 /// # Arguments
 ///
@@ -168,6 +170,18 @@ pub fn calculate_terminator(time: DateTime<Utc>) -> Vec<(f64, f64)> {
             continue;
         }
         points.push((lon.to_degrees(), lat.to_degrees()));
+    }
+    points
+}
+
+/// Calculates a set of points representing the trajectory of the object.
+pub fn calculate_trajectory(object: &Object, time: DateTime<Utc>) -> Vec<(f64, f64)> {
+    // Calculate future positions along the trajectory
+    let mut points = Vec::new();
+    for minutes in 1..object.orbital_period().num_minutes() {
+        let time = time + Duration::minutes(minutes);
+        let object_state = object.predict(time).unwrap();
+        points.push((object_state.position.x, object_state.position.y));
     }
     points
 }
