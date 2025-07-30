@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use anyhow::Result;
 use chrono::{DateTime, Utc};
@@ -9,7 +9,9 @@ use ratatui::{
 };
 use strum::IntoEnumIterator;
 
-use crate::{app::App, object::Object, satellite_group::SatelliteGroup};
+use crate::{
+    app::App, config::SatelliteGroupsConfig, object::Object, satellite_group::SatelliteGroup,
+};
 
 /// A widget to display a list of satellite groups.
 #[derive(Default)]
@@ -24,15 +26,24 @@ pub struct SatelliteGroupsState {
 
     pub last_object_update: Instant,
 
+    cache_lifetime: Duration,
+
     inner_area: Rect,
 }
 
 impl SatelliteGroupsState {
+    pub fn with_config(config: SatelliteGroupsConfig) -> Self {
+        Self {
+            cache_lifetime: Duration::from_secs(config.cache_lifetime_min * 60),
+            ..Self::default()
+        }
+    }
+
     /// Updates the orbital elements for selected satellite group.
     pub async fn refresh_objects(&mut self) {
         self.objects.clear();
         for entry in self.list_entries.iter_mut().filter(|e| e.selected) {
-            if let Some(elements) = entry.satellite.get_elements().await {
+            if let Some(elements) = entry.satellite.get_elements(self.cache_lifetime).await {
                 self.objects
                     .extend(elements.into_iter().map(Object::from_elements));
             } else {
@@ -80,6 +91,7 @@ impl Default for SatelliteGroupsState {
             list_entries: SatelliteGroup::iter().map(Entry::from).collect(),
             list_state: Default::default(),
             inner_area: Default::default(),
+            cache_lifetime: Default::default(),
             last_object_update: Instant::now(),
         }
     }

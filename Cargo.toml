@@ -7,9 +7,11 @@ edition = "2024"
 
 [dependencies]
 sgp4 = "2.3"
-reverse_geocoder = "4.1" # Convert latitude and longitude to country code
-isocountry = "0.3"       # Convert country code to country name
-arboard = "3.6"          # Access system clipboard
+reverse_geocoder = "4.1"                                  # Convert latitude and longitude to country code
+isocountry = "0.3"                                        # Convert country code to country name
+arboard = "3.6"                                           # Access system clipboard
+nalgebra = { version = "0.33", default-features = false }
+hifitime = { version = "4.1" }
 
 # TUI
 ratatui = "0.29"
@@ -20,11 +22,11 @@ unicode-width = "0.2"
 anyhow = "1.0"
 chrono = "0.4"
 strum = { version = "0.27", features = ["derive"] }
+serde = { version = "1.0", features = ["derive"] }
+toml = "0.9"
 serde_json = "1.0"
 
 # Async
 tokio = { version = "1.47", features = ["full"] }
 futures = "0.3"
 reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
-nalgebra = { version = "0.33.2", default-features = false }
-hifitime = { version = "4.1.2" }

@@ -9,7 +9,7 @@ use ratatui::{
     },
 };
 
-use crate::{app::App, utils::*};
+use crate::{app::App, config::WorldMapConfig, utils::*};
 
 use super::satellite_groups::SatelliteGroupsState;
 
@@ -27,39 +27,57 @@ pub struct WorldMapState {
     time_offset: Duration,
     lon_offset: f64,
 
+    /// Whether to follow the selected object by adjusting the map longitude.
+    follow_selected_object: bool,
+    /// The amount of longitude (in degrees) to move the map when scrolling left or right.
+    lon_delta: f64,
+    /// The time step to advance or rewind when scrolling time.
+    time_delta: Duration,
+
+    map_color: Color,
+    trajectory_color: Color,
+    terminator_color: Color,
+
     inner_area: Rect,
 }
 
 impl WorldMapState {
-    const LON_DELTA: f64 = 10.0;
-    const TIME_DELTA: Duration = Duration::minutes(1);
+    pub fn with_config(config: WorldMapConfig) -> Self {
+        Self {
+            follow_selected_object: config.follow_selected_object,
+            lon_delta: config.lon_delta_deg,
+            time_delta: Duration::minutes(config.time_delta_min),
+            map_color: config.map_color.parse().unwrap(),
+            trajectory_color: config.trajectory_color.parse().unwrap(),
+            terminator_color: config.terminator_color.parse().unwrap(),
+            ..Self::default()
+        }
+    }
 
     pub fn time(&self) -> DateTime<Utc> {
         Utc::now() + self.time_offset
     }
 
     fn scroll_map_left(&mut self) {
-        self.lon_offset = wrap_longitude_deg(self.lon_offset - Self::LON_DELTA);
+        self.lon_offset = wrap_longitude_deg(self.lon_offset - self.lon_delta);
     }
 
     fn scroll_map_right(&mut self) {
-        self.lon_offset = wrap_longitude_deg(self.lon_offset + Self::LON_DELTA);
+        self.lon_offset = wrap_longitude_deg(self.lon_offset + self.lon_delta);
     }
 
     fn advance_time(&mut self) {
-        self.time_offset += Self::TIME_DELTA;
+        self.time_offset += self.time_delta;
     }
 
     fn rewind_time(&mut self) {
-        self.time_offset -= Self::TIME_DELTA;
+        self.time_offset -= self.time_delta;
     }
 }
 
 impl WorldMap<'_> {
-    const MAP_COLOR: Color = Color::Gray;
-    const TRAJECTORY_COLOR: Color = Color::LightBlue;
-    const TERMINATOR_COLOR: Color = Color::DarkGray;
     const OBJECT_SYMBOL: &'static str = "+";
+    const SUBSOLAR_SYMBOL: &'static str = "*";
     const UNKNOWN_NAME: &'static str = "UNK";
 
     fn render_block(&self, area: Rect, buf: &mut Buffer, state: &mut WorldMapState) {
@@ -80,6 +98,15 @@ impl WorldMap<'_> {
 
     /// Renders the world map.
     fn render_map(&self, buf: &mut Buffer, state: &mut WorldMapState) {
+        // Follow the longitude of the selected object
+        if state.follow_selected_object
+            && let Some(index) = state.selected_object_index
+        {
+            let selected = &self.satellite_groups_state.objects[index];
+            let object_state = selected.predict(state.time()).unwrap();
+            state.lon_offset = object_state.longitude();
+        }
+
         let x_min = state.lon_offset - 180.0;
         let x_max = state.lon_offset + 180.0;
 
@@ -105,7 +132,7 @@ impl WorldMap<'_> {
             .y_bounds([-90.0, 90.0])
             .paint(|ctx| {
                 ctx.draw(&Map {
-                    color: Self::MAP_COLOR,
+                    color: state.map_color,
                     resolution: MapResolution::High,
                 });
                 ctx.layer();
@@ -132,7 +159,7 @@ impl WorldMap<'_> {
         self.draw_lines(
             ctx,
             calculate_terminator(state.time()),
-            Self::TERMINATOR_COLOR,
+            state.terminator_color,
         );
 
         // Mark the subsolar point
@@ -140,7 +167,7 @@ impl WorldMap<'_> {
         ctx.print(
             sub_lon.to_degrees(),
             sub_lat.to_degrees(),
-            "*".yellow().bold(),
+            Self::SUBSOLAR_SYMBOL.yellow().bold(),
         );
     }
 
@@ -167,7 +194,7 @@ impl WorldMap<'_> {
             self.draw_lines(
                 ctx,
                 calculate_trajectory(selected, state.time()),
-                Self::TRAJECTORY_COLOR,
+                state.trajectory_color,
             );
 
             // Highlight the selected object

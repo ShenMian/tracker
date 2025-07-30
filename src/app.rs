@@ -5,6 +5,7 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseEvent};
 use ratatui::prelude::*;
 
 use crate::{
+    config::Config,
     event::{Event, EventHandler},
     tui::Tui,
     widgets::{
@@ -27,16 +28,16 @@ pub struct App {
 }
 
 impl App {
-    /// Creates a new `App`.
-    pub fn new() -> Result<Self> {
+    /// Creates a new `App` with the configuration.
+    pub fn with_config(config: Config) -> Result<Self> {
         let backend = CrosstermBackend::new(std::io::stdout());
         let terminal = Terminal::new(backend)?;
         let events = EventHandler::new();
         let tui = Tui::new(terminal, events);
         Ok(Self {
             running: true,
-            world_map_state: Default::default(),
-            satellite_groups_state: Default::default(),
+            world_map_state: WorldMapState::with_config(config.world_map),
+            satellite_groups_state: SatelliteGroupsState::with_config(config.satellite_groups),
             object_information_state: Default::default(),
             tui,
         })
