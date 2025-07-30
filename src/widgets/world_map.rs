@@ -1,6 +1,6 @@
 use anyhow::Result;
 use chrono::{DateTime, Duration, Local, Utc};
-use crossterm::event::{KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
 use ratatui::{
     prelude::*,
     widgets::{
@@ -243,6 +243,16 @@ impl StatefulWidget for WorldMap<'_> {
     }
 }
 
+pub async fn handle_key_events(event: KeyEvent, app: &mut App) -> Result<()> {
+    match event.code {
+        KeyCode::Char('[') => app.world_map_state.scroll_map_left(),
+        KeyCode::Char(']') => app.world_map_state.scroll_map_right(),
+        _ => {}
+    }
+
+    Ok(())
+}
+
 pub async fn handle_mouse_events(event: MouseEvent, app: &mut App) -> Result<()> {
     let inner_area = app.world_map_state.inner_area;
     if !inner_area.contains(Position::new(event.column, event.row)) {
@@ -261,23 +271,23 @@ pub async fn handle_mouse_events(event: MouseEvent, app: &mut App) -> Result<()>
             .get_nearest_object_index(app.world_map_state.time(), lon, lat);
     match event.kind {
         MouseEventKind::Down(MouseButton::Left) => {
-            app.world_map_state.selected_object_index = nearest_object_index;
+            app.world_map_state.selected_object_index = nearest_object_index
         }
         MouseEventKind::Down(MouseButton::Right) => {
             app.world_map_state.selected_object_index = None;
         }
         MouseEventKind::ScrollUp => {
             if event.modifiers == KeyModifiers::SHIFT {
-                app.world_map_state.rewind_time();
-            } else {
                 app.world_map_state.scroll_map_left();
+            } else {
+                app.world_map_state.rewind_time();
             }
         }
         MouseEventKind::ScrollDown => {
             if event.modifiers == KeyModifiers::SHIFT {
-                app.world_map_state.advance_time();
-            } else {
                 app.world_map_state.scroll_map_right();
+            } else {
+                app.world_map_state.advance_time();
             }
         }
         _ => {}

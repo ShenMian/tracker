@@ -124,6 +124,7 @@ impl App {
             }
             _ => {}
         }
+        world_map::handle_key_events(event, self).await?;
         Ok(())
     }
 
