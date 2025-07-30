@@ -1,15 +1,29 @@
 use anyhow::Result;
 
-use crate::app::App;
+use crate::{app::App, config::Config};
 
-pub mod app;
-pub mod event;
-pub mod object;
-pub mod satellite_group;
-pub mod tui;
-pub mod widgets;
+mod app;
+mod config;
+mod event;
+mod object;
+mod satellite_group;
+mod tui;
+mod utils;
+mod widgets;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    App::new()?.run().await
+    let path = std::env::home_dir()
+        .unwrap()
+        .join(".config/tracker/config.toml");
+
+    let config = if path.exists() {
+        let content = std::fs::read_to_string(&path).expect("Failed to read config file");
+        let config: Config = toml::from_str(&content).expect("Failed to parse config file");
+        config
+    } else {
+        Config::default()
+    };
+
+    App::with_config(config)?.run().await
 }

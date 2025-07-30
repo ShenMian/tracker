@@ -58,7 +58,11 @@ impl SatelliteGroup {
     ///
     /// If cache is expired, fetches elements from <https://celestrak.org>.
     /// Otherwise, reads elements from cache.
-    pub async fn get_elements(&self) -> Option<Vec<sgp4::Elements>> {
+    ///
+    /// # Arguments
+    ///
+    /// * `cache_lifetime` - Duration for which the cache is considered valid.
+    pub async fn get_elements(&self, cache_lifetime: Duration) -> Option<Vec<sgp4::Elements>> {
         let cache_path =
             std::env::temp_dir().join(format!("tracker/{}.json", self.to_string().to_lowercase()));
         fs::create_dir_all(cache_path.parent().unwrap())
@@ -83,7 +87,7 @@ impl SatelliteGroup {
             .unwrap()
             .elapsed()
             .unwrap();
-        let is_cache_expired = age > Duration::from_secs(2 * 60 * 60);
+        let is_cache_expired = age > cache_lifetime;
 
         // Fetch elements if cache is expired
         if is_cache_expired {
