@@ -139,11 +139,17 @@ impl WorldMap<'_> {
         let x_min = state.lon_offset - 180.0;
         let x_max = state.lon_offset + 180.0;
 
-        let mut bounds_vec = vec![[x_min, x_max]];
+        // Adjust the rendering order to prevent the labels on the left mapfrom being
+        // covered by the right map
+        let mut bounds_vec = Vec::new();
         if x_min < -180.0 {
+            bounds_vec.push([x_min, x_max]);
             bounds_vec.push([x_max, x_max + 360.0]); // Right side
         } else if x_max > 180.0 {
             bounds_vec.push([-360.0 + x_min, x_min]); // Left side
+            bounds_vec.push([x_min, x_max]);
+        } else {
+            bounds_vec.push([x_min, x_max]);
         }
 
         for bounds in &bounds_vec {
