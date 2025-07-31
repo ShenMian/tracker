@@ -76,7 +76,7 @@ impl ObjectInformation<'_> {
         let result = state
             .geocoder
             .search((object_state.latitude(), object_state.longitude()));
-        let city_name = result.record.name.clone();
+        let city_name = &result.record.name;
         let country_name = isocountry::CountryCode::for_alpha2(&result.record.cc)
             .unwrap()
             .name();
@@ -87,15 +87,17 @@ impl ObjectInformation<'_> {
                 "Name",
                 elements
                     .object_name
-                    .clone()
-                    .unwrap_or(UNKNOWN_NAME.to_string()),
+                    .as_deref()
+                    .unwrap_or(UNKNOWN_NAME)
+                    .to_string(),
             ),
             (
                 "COSPAR ID",
                 elements
                     .international_designator
-                    .clone()
-                    .unwrap_or(UNKNOWN_NAME.to_string()),
+                    .as_deref()
+                    .unwrap_or(UNKNOWN_NAME)
+                    .to_string(),
             ),
             ("NORAD ID", elements.norad_id.to_string()),
             ("Longitude", format!("{:9.4}°", object_state.longitude())),
@@ -154,9 +156,9 @@ impl ObjectInformation<'_> {
                         .map(|(i, _)| i)
                         .nth(right.saturating_sub(ellipsis.width()))
                         .unwrap();
-                    value[..end].to_string() + ellipsis
+                    format!("{}{}", &value[..end], ellipsis)
                 } else {
-                    value.to_string()
+                    value.clone()
                 };
                 Row::new([
                     Cell::from(Text::from(key.bold())),
@@ -222,7 +224,7 @@ pub async fn handle_mouse_events(event: MouseEvent, app: &mut App) -> Result<()>
             if let Some(index) = app.object_information_state.table_state.selected()
                 && let Ok(mut clipboard) = Clipboard::new()
             {
-                let value = app.object_information_state.table_entries[index].1.clone();
+                let value = &app.object_information_state.table_entries[index].1;
                 clipboard
                     .set_text(value)
                     .expect("Failed to copy to clipboard");

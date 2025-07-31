@@ -262,12 +262,8 @@ impl WorldMap<'_> {
             let text = Self::OBJECT_SYMBOL.light_red().reversed()
                 + " ".into()
                 + object_name.to_string().white().reversed();
-            let object_statestate = hovered.predict(state.time()).unwrap();
-            ctx.print(
-                object_statestate.position.x,
-                object_statestate.position.y,
-                text,
-            );
+            let object_state = hovered.predict(state.time()).unwrap();
+            ctx.print(object_state.position.x, object_state.position.y, text);
         }
     }
 
