@@ -144,11 +144,11 @@ impl WorldMap<'_> {
         // covered by the right map
         let mut bounds_vec = Vec::new();
         if x_min < -180.0 {
-            bounds_vec.push([x_min, x_max]);
-            bounds_vec.push([x_max, x_max + 360.0]);
+            bounds_vec.push([x_min, x_max]); // Left side
+            bounds_vec.push([x_max, x_max + 360.0]); // Right side
         } else if x_max > 180.0 {
-            bounds_vec.push([-360.0 + x_min, x_min]);
-            bounds_vec.push([x_min, x_max]);
+            bounds_vec.push([-360.0 + x_min, x_min]); // Left side
+            bounds_vec.push([x_min, x_max]); // Right side
         } else {
             bounds_vec.push([x_min, x_max]);
         }
