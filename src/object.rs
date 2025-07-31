@@ -66,7 +66,8 @@ impl Object {
 
 #[derive(Clone, Debug)]
 pub struct State {
-    /// The position of the object in geodetic coordinates (longitude, latitude, altitude) in km.
+    /// The position of the object in geodetic coordinates (longitude, latitude,
+    /// altitude) in km.
     pub position: Point3<f64>,
     /// The velocity of the object in km/s.
     pub velocity: Vector3<f64>,

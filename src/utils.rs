@@ -51,7 +51,8 @@ fn gmst_from_jde_tt(jde: f64) -> f64 {
     gmst.rem_euclid(360.0).to_radians()
 }
 
-/// Converts a position vector from True Equator Mean Equinox (TEME) frame to Earth-Centered Earth-Fixed (ECEF) frame
+/// Converts a position vector from True Equator Mean Equinox (TEME) frame to
+/// Earth-Centered Earth-Fixed (ECEF) frame
 ///
 /// # Arguments
 ///
@@ -68,7 +69,8 @@ fn teme_to_ecef(teme: Point3<f64>, gmst_rad: f64) -> Point3<f64> {
     Point3::new(x, y, teme.z)
 }
 
-/// Converts a position vector from Earth-Centered Earth-Fixed (ECEF) frame to geodetic coordinates (LLA)
+/// Converts a position vector from Earth-Centered Earth-Fixed (ECEF) frame to
+/// geodetic coordinates (LLA)
 ///
 /// # Arguments
 ///
@@ -153,7 +155,8 @@ pub fn subsolar_point(time: DateTime<Utc>) -> (f64, f64) {
 ///
 /// # Returns
 ///
-/// A vector of `(longitude, latitude)` pairs in degrees, representing the terminator line.
+/// A vector of `(longitude, latitude)` pairs in degrees, representing the
+/// terminator line.
 pub fn calculate_terminator(time: DateTime<Utc>) -> Vec<(f64, f64)> {
     const LON_STEP: usize = 5;
 

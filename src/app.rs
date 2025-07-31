@@ -17,7 +17,8 @@ use crate::{
 
 /// Application.
 pub struct App {
-    /// Indicates if the application is currently active and running. When set to false, triggers application shutdown.
+    /// Indicates if the application is currently active and running. When set
+    /// to false, triggers application shutdown.
     pub running: bool,
 
     pub world_map_state: WorldMapState,

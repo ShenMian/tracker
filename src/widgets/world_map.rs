@@ -32,7 +32,8 @@ pub struct WorldMapState {
     follow_object: bool,
     /// Whether to display the day-night terminator line.
     show_terminator: bool,
-    /// The amount of longitude (in degrees) to move the map when scrolling left or right.
+    /// The amount of longitude (in degrees) to move the map when scrolling left
+    /// or right.
     lon_delta: f64,
     /// The time step to advance or rewind when scrolling time.
     time_delta: Duration,
@@ -144,9 +145,9 @@ impl WorldMap<'_> {
         let mut bounds_vec = Vec::new();
         if x_min < -180.0 {
             bounds_vec.push([x_min, x_max]);
-            bounds_vec.push([x_max, x_max + 360.0]); // Right side
+            bounds_vec.push([x_max, x_max + 360.0]);
         } else if x_max > 180.0 {
-            bounds_vec.push([-360.0 + x_min, x_min]); // Left side
+            bounds_vec.push([-360.0 + x_min, x_min]);
             bounds_vec.push([x_min, x_max]);
         } else {
             bounds_vec.push([x_min, x_max]);
@@ -160,7 +161,8 @@ impl WorldMap<'_> {
         }
     }
 
-    /// Renders the bottom layer of the world map, including the map and all objects.
+    /// Renders the bottom layer of the world map, including the map and all
+    /// objects.
     fn render_bottom_layer(&self, buf: &mut Buffer, x_bounds: [f64; 2], state: &mut WorldMapState) {
         Canvas::default()
             .x_bounds(x_bounds)
@@ -179,7 +181,8 @@ impl WorldMap<'_> {
             .render(state.inner_area, buf);
     }
 
-    /// Renders the top layer of the world map, including object highlights and trajectories.
+    /// Renders the top layer of the world map, including object highlights and
+    /// trajectories.
     fn render_top_layer(&self, buf: &mut Buffer, x_bounds: [f64; 2], state: &mut WorldMapState) {
         Canvas::default()
             .x_bounds(x_bounds)
