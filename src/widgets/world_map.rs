@@ -62,6 +62,8 @@ impl WorldMapState {
 
         Self {
             follow_object: config.follow_selected_object,
+            show_terminator: config.show_terminator,
+            show_subsolar_point: config.show_subsolar_point,
             lon_delta: config.lon_delta_deg,
             time_delta: Duration::minutes(config.time_delta_min),
             map_color,
