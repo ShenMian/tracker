@@ -19,13 +19,17 @@ pub struct WorldMap<'a> {
     pub satellite_groups_state: &'a SatelliteGroupsState,
 }
 
-/// State of a [`WorldMapState`] widget.
+/// State of a [`WorldMap`] widget.
 #[derive(Default)]
 pub struct WorldMapState {
+    /// Index of the selected object.
     pub selected_object_index: Option<usize>,
-    pub hovered_object_index: Option<usize>,
+    /// Index of the hovered object.
+    hovered_object_index: Option<usize>,
 
+    /// Time offset from the current UTC time for time simulation.
     time_offset: Duration,
+    /// Center longitude offset for horizontal map scrolling in degrees.
     lon_offset: f64,
 
     /// Whether to follow the selected object by adjusting the map longitude.
@@ -42,10 +46,12 @@ pub struct WorldMapState {
     trajectory_color: Color,
     terminator_color: Color,
 
+    /// The inner rendering area of the widget.
     inner_area: Rect,
 }
 
 impl WorldMapState {
+    /// Creates a new `WorldMapState` with the given configuration.
     pub fn with_config(config: WorldMapConfig) -> Self {
         let map_color = config
             .map_color
@@ -72,22 +78,27 @@ impl WorldMapState {
         }
     }
 
+    /// Returns the current simulation time.
     pub fn time(&self) -> DateTime<Utc> {
         Utc::now() + self.time_offset
     }
 
+    /// Scrolls the map view to the left.
     fn scroll_map_left(&mut self) {
         self.lon_offset = wrap_longitude_deg(self.lon_offset - self.lon_delta);
     }
 
+    /// Scrolls the map view to the right.
     fn scroll_map_right(&mut self) {
         self.lon_offset = wrap_longitude_deg(self.lon_offset + self.lon_delta);
     }
 
+    /// Advances the simulation time.
     fn advance_time(&mut self) {
         self.time_offset += self.time_delta;
     }
 
+    /// Rewinds the simulation time.
     fn rewind_time(&mut self) {
         self.time_offset -= self.time_delta;
     }

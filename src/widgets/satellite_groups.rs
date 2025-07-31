@@ -19,19 +19,25 @@ pub struct SatelliteGroups;
 
 /// State of a [`SatelliteGroups`] widget.
 pub struct SatelliteGroupsState {
+    /// Collection of satellite objects loaded from the selected satellite
+    /// groups.
     pub objects: Vec<Object>,
-
-    pub list_entries: Vec<Entry>,
-    pub list_state: ListState,
-
+    /// List entries representing available satellite groups with their
+    /// selection state.
+    list_entries: Vec<Entry>,
+    /// The current state of the list widget.
+    list_state: ListState,
+    /// Timestamp of the last orbital elements update.
     pub last_object_update: Instant,
-
+    /// Duration that cached orbital elements remain valid before requiring a
+    /// refresh.
     cache_lifetime: Duration,
-
+    /// The inner rendering area of the widget.
     inner_area: Rect,
 }
 
 impl SatelliteGroupsState {
+    /// Creates a new `SatelliteGroupsState` with the given configuration.
     pub fn with_config(config: SatelliteGroupsConfig) -> Self {
         Self {
             cache_lifetime: Duration::from_secs(config.cache_lifetime_min * 60),
@@ -71,11 +77,11 @@ impl SatelliteGroupsState {
             .map(|(index, _)| index)
     }
 
-    pub fn scroll_up(&mut self) {
+    fn scroll_up(&mut self) {
         *self.list_state.offset_mut() = self.list_state.offset().saturating_sub(1);
     }
 
-    pub fn scroll_down(&mut self) {
+    fn scroll_down(&mut self) {
         let max_offset = self
             .list_entries
             .len()

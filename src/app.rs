@@ -29,7 +29,7 @@ pub struct App {
 }
 
 impl App {
-    /// Creates a new `App` with the configuration.
+    /// Creates a new `App` with the given configuration.
     pub fn with_config(config: Config) -> Result<Self> {
         let backend = CrosstermBackend::new(std::io::stdout());
         let terminal = Terminal::new(backend)?;

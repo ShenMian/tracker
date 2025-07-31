@@ -24,18 +24,23 @@ pub struct ObjectInformation<'a> {
 
 /// State of a [`ObjectInformation`] widget.
 pub struct ObjectInformationState {
-    pub table_entries: Vec<(&'static str, String)>,
-    pub table_state: TableState,
+    /// Key-value pairs representing the object information to display in the
+    /// table.
+    table_entries: Vec<(&'static str, String)>,
+    /// The current state of the table widget.
+    table_state: TableState,
+    /// Reverse geocoder instance used to convert coordinates to location names.
     geocoder: ReverseGeocoder,
+    /// The inner rendering area of the widget.
     inner_area: Rect,
 }
 
 impl ObjectInformationState {
-    pub fn scroll_up(&mut self) {
+    fn scroll_up(&mut self) {
         *self.table_state.offset_mut() = self.table_state.offset().saturating_sub(1);
     }
 
-    pub fn scroll_down(&mut self) {
+    fn scroll_down(&mut self) {
         let max_offset = self
             .table_entries
             .len()
