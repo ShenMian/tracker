@@ -21,3 +21,24 @@ terminator_color = "dark_gray"
 [satellite_groups]
 cache_lifetime_min = 120
 ```
+
+## Color
+
+Available colors:
+
+- `black`.
+- `red`.
+- `green`.
+- `yellow`.
+- `blue`.
+- `magenta`.
+- `cyan`.
+- `gray`.
+- `dark_gray`.
+- `light_red`.
+- `light_green`.
+- `light_yellow`.
+- `light_blue`.
+- `light_magenta`.
+- `light_cyan`.
+- `white`.
