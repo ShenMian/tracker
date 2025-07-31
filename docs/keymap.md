@@ -10,3 +10,4 @@
 | `Shift` + Mouse wheel Down / `]` | Move the world map right            |
 | `F`                              | Toggle satellite tracking (follow)  |
 | `R`                              | Reset time offset                   |
+| `T`                              | Toggle day-night terminator         |

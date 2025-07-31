@@ -32,8 +32,6 @@ pub struct WorldMapState {
     follow_object: bool,
     /// Whether to display the day-night terminator line.
     show_terminator: bool,
-    /// Whether to display the subsolar point.
-    show_subsolar_point: bool,
     /// The amount of longitude (in degrees) to move the map when scrolling left or right.
     lon_delta: f64,
     /// The time step to advance or rewind when scrolling time.
@@ -64,7 +62,6 @@ impl WorldMapState {
         Self {
             follow_object: config.follow_selected_object,
             show_terminator: config.show_terminator,
-            show_subsolar_point: config.show_subsolar_point,
             lon_delta: config.lon_delta_deg,
             time_delta: Duration::minutes(config.time_delta_min),
             map_color,
@@ -168,7 +165,9 @@ impl WorldMap<'_> {
                     resolution: MapResolution::High,
                 });
                 ctx.layer();
-                self.draw_terminator(ctx, state);
+                if state.show_terminator {
+                    self.draw_terminator(ctx, state);
+                }
                 self.draw_objects(ctx, state);
             })
             .render(state.inner_area, buf);
@@ -188,23 +187,19 @@ impl WorldMap<'_> {
     /// Draws the day-night terminator and subsolar point.
     fn draw_terminator(&self, ctx: &mut Context, state: &WorldMapState) {
         // Draw the terminator line
-        if state.show_terminator {
-            self.draw_lines(
-                ctx,
-                calculate_terminator(state.time()),
-                state.terminator_color,
-            );
-        }
+        self.draw_lines(
+            ctx,
+            calculate_terminator(state.time()),
+            state.terminator_color,
+        );
 
         // Mark the subsolar point
-        if state.show_subsolar_point {
-            let (sub_lon, sub_lat) = subsolar_point(state.time());
-            ctx.print(
-                sub_lon.to_degrees(),
-                sub_lat.to_degrees(),
-                Self::SUBSOLAR_SYMBOL.yellow().bold(),
-            );
-        }
+        let (sub_lon, sub_lat) = subsolar_point(state.time());
+        ctx.print(
+            sub_lon.to_degrees(),
+            sub_lat.to_degrees(),
+            Self::SUBSOLAR_SYMBOL.yellow().bold(),
+        );
     }
 
     /// Draws all objects and their labels.
@@ -300,6 +295,9 @@ pub async fn handle_key_events(event: KeyEvent, app: &mut App) -> Result<()> {
             app.world_map_state.follow_object = !app.world_map_state.follow_object;
         }
         KeyCode::Char('r') => app.world_map_state.time_offset = chrono::Duration::zero(),
+        KeyCode::Char('t') => {
+            app.world_map_state.show_terminator = !app.world_map_state.show_terminator;
+        }
         _ => {}
     }
 

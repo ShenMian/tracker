@@ -5,7 +5,6 @@ use serde::Deserialize;
 pub struct WorldMapConfig {
     pub follow_selected_object: bool,
     pub show_terminator: bool,
-    pub show_subsolar_point: bool,
 
     pub lon_delta_deg: f64,
     pub time_delta_min: i64,
@@ -20,7 +19,6 @@ impl Default for WorldMapConfig {
         Self {
             follow_selected_object: true,
             show_terminator: true,
-            show_subsolar_point: true,
             lon_delta_deg: 10.0,
             time_delta_min: 1,
             map_color: "gray".into(),
