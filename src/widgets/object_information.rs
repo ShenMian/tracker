@@ -211,7 +211,7 @@ impl StatefulWidget for ObjectInformation<'_> {
 pub async fn handle_mouse_events(event: MouseEvent, app: &mut App) -> Result<()> {
     let inner_area = app.object_information_state.inner_area;
     if !inner_area.contains(Position::new(event.column, event.row)) {
-        app.object_information_state.table_state.select(None);
+        *app.object_information_state.table_state.selected_mut() = None;
         return Ok(());
     }
 

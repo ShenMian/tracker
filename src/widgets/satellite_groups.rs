@@ -167,7 +167,7 @@ impl From<SatelliteGroup> for Entry {
 pub async fn handle_mouse_events(event: MouseEvent, app: &mut App) -> Result<()> {
     let inner_area = app.satellite_groups_state.inner_area;
     if !inner_area.contains(Position::new(event.column, event.row)) {
-        app.satellite_groups_state.list_state.select(None);
+        *app.satellite_groups_state.list_state.selected_mut() = None;
         return Ok(());
     }
 
