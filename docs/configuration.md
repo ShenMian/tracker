@@ -11,7 +11,7 @@ Default locations of configuration files on different platforms:
 
 ```toml
 [world_map]
-follow_selected_object = false
+follow_selected_object = true
 show_terminator = true
 show_subsolar_point = true
 lon_delta_deg = 10.0

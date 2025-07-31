@@ -18,7 +18,7 @@ pub struct WorldMapConfig {
 impl Default for WorldMapConfig {
     fn default() -> Self {
         Self {
-            follow_selected_object: false,
+            follow_selected_object: true,
             show_terminator: true,
             show_subsolar_point: true,
             lon_delta_deg: 10.0,

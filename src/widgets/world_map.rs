@@ -3,6 +3,7 @@ use chrono::{DateTime, Duration, Local, Utc};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
 use ratatui::{
     prelude::*,
+    style::Styled,
     widgets::{
         Block,
         canvas::{Canvas, Context, Line, Map, MapResolution},
@@ -100,7 +101,7 @@ impl WorldMap<'_> {
     const UNKNOWN_NAME: &'static str = "UNK";
 
     fn render_block(&self, area: Rect, buf: &mut Buffer, state: &mut WorldMapState) {
-        let block = Block::bordered().title("World map".blue()).title_bottom(
+        let mut block = Block::bordered().title("World map".blue()).title_bottom(
             format!(
                 "{} ({:+} mins)",
                 state
@@ -111,6 +112,18 @@ impl WorldMap<'_> {
             )
             .white(),
         );
+
+        if state.follow_object {
+            let style = if state.selected_object_index.is_none() {
+                Style::default().dark_gray()
+            } else {
+                Style::default().green().slow_blink()
+            };
+            block = block.title_bottom(
+                ratatui::text::Line::from("(Follow)".set_style(style)).right_aligned(),
+            );
+        }
+
         state.inner_area = block.inner(area);
         block.render(area, buf);
     }
@@ -283,6 +296,10 @@ pub async fn handle_key_events(event: KeyEvent, app: &mut App) -> Result<()> {
     match event.code {
         KeyCode::Char('[') => app.world_map_state.scroll_map_left(),
         KeyCode::Char(']') => app.world_map_state.scroll_map_right(),
+        KeyCode::Char('f') => {
+            app.world_map_state.follow_object = !app.world_map_state.follow_object;
+        }
+        KeyCode::Char('r') => app.world_map_state.time_offset = chrono::Duration::zero(),
         _ => {}
     }
 
