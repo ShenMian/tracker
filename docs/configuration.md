@@ -12,6 +12,8 @@ Default locations of configuration files on different platforms:
 ```toml
 [world_map]
 follow_selected_object = false
+show_terminator = true
+show_subsolar_point = true
 lon_delta_deg = 10.0
 time_delta_min = 1
 map_color = "gray"
