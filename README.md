@@ -40,8 +40,8 @@ cargo install --git https://github.com/ShenMian/tracker
 
 ## Documentation
 
+- [Keymap](docs/keymap.md).
 - [Configuration](docs/configuration.md).
-- [User Guide](docs/user-guide.md).
 
 ## License
 
