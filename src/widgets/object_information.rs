@@ -26,8 +26,8 @@ pub struct ObjectInformation<'a> {
 pub struct ObjectInformationState {
     pub table_entries: Vec<(&'static str, String)>,
     pub table_state: TableState,
-    inner_area: Rect,
     geocoder: ReverseGeocoder,
+    inner_area: Rect,
 }
 
 impl ObjectInformationState {
@@ -49,8 +49,8 @@ impl Default for ObjectInformationState {
         Self {
             table_entries: Default::default(),
             table_state: Default::default(),
-            inner_area: Default::default(),
             geocoder: ReverseGeocoder::new(),
+            inner_area: Default::default(),
         }
     }
 }

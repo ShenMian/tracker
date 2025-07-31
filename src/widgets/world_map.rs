@@ -43,13 +43,26 @@ pub struct WorldMapState {
 
 impl WorldMapState {
     pub fn with_config(config: WorldMapConfig) -> Self {
+        let map_color = config
+            .map_color
+            .parse()
+            .expect("Invalid map color in config");
+        let trajectory_color = config
+            .trajectory_color
+            .parse()
+            .expect("Invalid trajectory color in config");
+        let terminator_color = config
+            .terminator_color
+            .parse()
+            .expect("Invalid terminator color in config");
+
         Self {
             follow_selected_object: config.follow_selected_object,
             lon_delta: config.lon_delta_deg,
             time_delta: Duration::minutes(config.time_delta_min),
-            map_color: config.map_color.parse().unwrap(),
-            trajectory_color: config.trajectory_color.parse().unwrap(),
-            terminator_color: config.terminator_color.parse().unwrap(),
+            map_color,
+            trajectory_color,
+            terminator_color,
             ..Self::default()
         }
     }
