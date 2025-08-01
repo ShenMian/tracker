@@ -7,10 +7,9 @@ edition = "2024"
 
 [dependencies]
 sgp4 = "2.3"
-reverse_geocoder = "4.1"                                  # Convert latitude and longitude to country code
-isocountry = "0.3"                                        # Convert country code to country name
-arboard = "3.6"                                           # Access system clipboard
-nalgebra = { version = "0.33", default-features = false }
+reverse_geocoder = "4.1"       # Convert latitude and longitude to country code
+isocountry = "0.3"             # Convert country code to country name
+arboard = "3.6"                # Access system clipboard
 hifitime = { version = "4.1" }
 
 # TUI
