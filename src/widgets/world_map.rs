@@ -6,7 +6,7 @@ use ratatui::{
     style::Styled,
     widgets::{
         Block,
-        canvas::{Canvas, Context, Line, Map, MapResolution},
+        canvas::{self, Canvas, Context, Map, MapResolution},
     },
 };
 
@@ -26,6 +26,8 @@ pub struct WorldMapState {
     pub selected_object_index: Option<usize>,
     /// Index of the hovered object.
     hovered_object_index: Option<usize>,
+
+    cursor_position: Option<(f64, f64)>,
 
     /// Time offset from the current UTC time for time simulation.
     time_offset: Duration,
@@ -122,15 +124,18 @@ impl WorldMap<'_> {
             .white(),
         );
 
+        if let Some((lon, lat)) = state.cursor_position {
+            // Draw the mouse position label
+            block = block
+                .title_bottom(Line::from(format!("{lat:.0}°, {lon:.0}°").white()).right_aligned());
+        }
         if state.follow_object {
             let style = if state.selected_object_index.is_none() {
                 Style::default().dark_gray()
             } else {
                 Style::default().green().slow_blink()
             };
-            block = block.title_bottom(
-                ratatui::text::Line::from("(Follow)".set_style(style)).right_aligned(),
-            );
+            block = block.title_bottom(Line::from("(Follow)".set_style(style)).right_aligned());
         }
 
         state.inner_area = block.inner(area);
@@ -232,7 +237,11 @@ impl WorldMap<'_> {
                 Self::OBJECT_SYMBOL.red() + format!(" {object_name}").dark_gray()
             };
             let object_state = object.predict(state.time()).unwrap();
-            ctx.print(object_state.position.x, object_state.position.y, text);
+            ctx.print(
+                object_state.position.longitude,
+                object_state.position.latitude,
+                text,
+            );
         }
     }
 
@@ -253,7 +262,11 @@ impl WorldMap<'_> {
             let text =
                 Self::OBJECT_SYMBOL.light_green().slow_blink() + format!(" {object_name}").white();
             let object_state = selected.predict(state.time()).unwrap();
-            ctx.print(object_state.position.x, object_state.position.y, text);
+            ctx.print(
+                object_state.position.longitude,
+                object_state.position.latitude,
+                text,
+            );
         } else if let Some(hovered_object_index) = state.hovered_object_index {
             let hovered = &self.satellite_groups_state.objects[hovered_object_index];
 
@@ -263,7 +276,11 @@ impl WorldMap<'_> {
                 + " ".into()
                 + object_name.to_string().white().reversed();
             let object_state = hovered.predict(state.time()).unwrap();
-            ctx.print(object_state.position.x, object_state.position.y, text);
+            ctx.print(
+                object_state.position.longitude,
+                object_state.position.latitude,
+                text,
+            );
         }
     }
 
@@ -286,11 +303,11 @@ impl WorldMap<'_> {
         if (x1 - x2).abs() >= 180.0 {
             let x_edge = if x1 > 0.0 { 180.0 } else { -180.0 };
             let y_midpoint = (y1 + y2) / 2.0;
-            ctx.draw(&Line::new(x1, y1, x_edge, y_midpoint, color));
-            ctx.draw(&Line::new(-x_edge, y_midpoint, x2, y2, color));
+            ctx.draw(&canvas::Line::new(x1, y1, x_edge, y_midpoint, color));
+            ctx.draw(&canvas::Line::new(-x_edge, y_midpoint, x2, y2, color));
             return;
         }
-        ctx.draw(&Line::new(x1, y1, x2, y2, color));
+        ctx.draw(&canvas::Line::new(x1, y1, x2, y2, color));
     }
 }
 
@@ -324,6 +341,7 @@ pub async fn handle_mouse_events(event: MouseEvent, app: &mut App) -> Result<()>
     let inner_area = app.world_map_state.inner_area;
     if !inner_area.contains(Position::new(event.column, event.row)) {
         app.world_map_state.hovered_object_index = None;
+        app.world_map_state.cursor_position = None;
         return Ok(());
     }
 
@@ -332,6 +350,8 @@ pub async fn handle_mouse_events(event: MouseEvent, app: &mut App) -> Result<()>
 
     let (lon, lat) = area_to_lon_lat(mouse.x, mouse.y, app.world_map_state.inner_area);
     let lon = wrap_longitude_deg(lon + app.world_map_state.lon_offset);
+
+    app.world_map_state.cursor_position = Some((lon, lat));
 
     let nearest_object_index =
         app.satellite_groups_state

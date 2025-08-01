@@ -106,10 +106,7 @@ impl ObjectInformation<'_> {
             ("Speed", format!("{:.2} km/s", object_state.speed())),
             (
                 "Period",
-                format!(
-                    "{:.2} min",
-                    object.orbital_period().num_seconds() as f64 / 60.0
-                ),
+                format!("{:.2} min", object.orbital_period().as_seconds_f64() / 60.0),
             ),
             ("Location", format!("{city_name}, {country_name}")),
             (
