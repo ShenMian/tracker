@@ -10,7 +10,8 @@ use ratatui::{
 use strum::IntoEnumIterator;
 
 use crate::{
-    app::App, config::SatelliteGroupsConfig, object::Object, satellite_group::SatelliteGroup,
+    config::SatelliteGroupsConfig, object::Object, satellite_group::SatelliteGroup,
+    widgets::world_map::WorldMapState,
 };
 
 /// A widget to display a list of satellite groups.
@@ -43,6 +44,46 @@ impl SatelliteGroupsState {
             cache_lifetime: Duration::from_secs(config.cache_lifetime_min * 60),
             ..Self::default()
         }
+    }
+
+    pub async fn handle_mouse_events(
+        &mut self,
+        event: MouseEvent,
+        world_map_state: &mut WorldMapState,
+    ) -> Result<()> {
+        let inner_area = self.inner_area;
+        if !inner_area.contains(Position::new(event.column, event.row)) {
+            *self.list_state.selected_mut() = None;
+            return Ok(());
+        }
+
+        // Convert window coordinates to area coordinates
+        let mouse = Position::new(event.column - inner_area.x, event.row - inner_area.y);
+
+        match event.kind {
+            MouseEventKind::Down(MouseButton::Left) => {
+                // Select the clicked entry.
+                if let Some(index) = self.list_state.selected() {
+                    self.list_entries[index].selected = !self.list_entries[index].selected;
+                    world_map_state.selected_object_index = None;
+                    self.refresh_objects().await;
+                }
+            }
+            MouseEventKind::ScrollUp => self.scroll_up(),
+            MouseEventKind::ScrollDown => self.scroll_down(),
+            _ => {}
+        }
+
+        // Highlight the hovered entry.
+        let row = mouse.y as usize + self.list_state.offset();
+        let index = if row < self.list_entries.len() {
+            Some(row)
+        } else {
+            None
+        };
+        self.list_state.select(index);
+
+        Ok(())
     }
 
     /// Updates the orbital elements for selected satellite group.
@@ -162,41 +203,4 @@ impl From<SatelliteGroup> for Entry {
             selected: false,
         }
     }
-}
-
-pub async fn handle_mouse_events(event: MouseEvent, app: &mut App) -> Result<()> {
-    let inner_area = app.satellite_groups_state.inner_area;
-    if !inner_area.contains(Position::new(event.column, event.row)) {
-        *app.satellite_groups_state.list_state.selected_mut() = None;
-        return Ok(());
-    }
-
-    // Convert window coordinates to area coordinates
-    let mouse = Position::new(event.column - inner_area.x, event.row - inner_area.y);
-
-    match event.kind {
-        MouseEventKind::Down(MouseButton::Left) => {
-            // Select the clicked entry.
-            if let Some(index) = app.satellite_groups_state.list_state.selected() {
-                app.satellite_groups_state.list_entries[index].selected =
-                    !app.satellite_groups_state.list_entries[index].selected;
-                app.world_map_state.selected_object_index = None;
-                app.satellite_groups_state.refresh_objects().await;
-            }
-        }
-        MouseEventKind::ScrollUp => app.satellite_groups_state.scroll_up(),
-        MouseEventKind::ScrollDown => app.satellite_groups_state.scroll_down(),
-        _ => {}
-    }
-
-    // Highlight the hovered entry.
-    let row = mouse.y as usize + app.satellite_groups_state.list_state.offset();
-    let index = if row < app.satellite_groups_state.list_entries.len() {
-        Some(row)
-    } else {
-        None
-    };
-    app.satellite_groups_state.list_state.select(index);
-
-    Ok(())
 }

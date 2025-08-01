@@ -9,9 +9,9 @@ use crate::{
     event::{Event, EventHandler},
     tui::Tui,
     widgets::{
-        object_information::{self, ObjectInformation, ObjectInformationState},
-        satellite_groups::{self, SatelliteGroups, SatelliteGroupsState},
-        world_map::{self, WorldMap, WorldMapState},
+        object_information::{ObjectInformation, ObjectInformationState},
+        satellite_groups::{SatelliteGroups, SatelliteGroupsState},
+        world_map::{WorldMap, WorldMapState},
     },
 };
 
@@ -126,14 +126,20 @@ impl App {
             }
             _ => {}
         }
-        world_map::handle_key_events(event, self).await?;
+        self.world_map_state.handle_key_events(event).await?;
         Ok(())
     }
 
     async fn handle_mouse_events(&mut self, event: MouseEvent) -> Result<()> {
-        world_map::handle_mouse_events(event, self).await?;
-        object_information::handle_mouse_events(event, self).await?;
-        satellite_groups::handle_mouse_events(event, self).await?;
+        self.world_map_state
+            .handle_mouse_events(event, &mut self.satellite_groups_state)
+            .await?;
+        self.object_information_state
+            .handle_mouse_events(event)
+            .await?;
+        self.satellite_groups_state
+            .handle_mouse_events(event, &mut self.world_map_state)
+            .await?;
         Ok(())
     }
 }

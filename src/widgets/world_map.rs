@@ -10,7 +10,7 @@ use ratatui::{
     },
 };
 
-use crate::{app::App, config::WorldMapConfig, utils::*};
+use crate::{config::WorldMapConfig, utils::*};
 
 use super::satellite_groups::SatelliteGroupsState;
 
@@ -81,6 +81,73 @@ impl WorldMapState {
             terminator_color,
             ..Self::default()
         }
+    }
+
+    pub async fn handle_key_events(&mut self, event: KeyEvent) -> Result<()> {
+        match event.code {
+            KeyCode::Char('[') => self.scroll_map_left(),
+            KeyCode::Char(']') => self.scroll_map_right(),
+            KeyCode::Char('f') => {
+                self.follow_object = !self.follow_object;
+            }
+            KeyCode::Char('r') => self.time_offset = chrono::Duration::zero(),
+            KeyCode::Char('t') => {
+                self.show_terminator = !self.show_terminator;
+            }
+            _ => {}
+        }
+
+        Ok(())
+    }
+
+    pub async fn handle_mouse_events(
+        &mut self,
+        event: MouseEvent,
+        satellite_groups_state: &mut SatelliteGroupsState,
+    ) -> Result<()> {
+        let inner_area = self.inner_area;
+        if !inner_area.contains(Position::new(event.column, event.row)) {
+            self.hovered_object_index = None;
+            self.cursor_position = None;
+            return Ok(());
+        }
+
+        // Convert window coordinates to area coordinates
+        let mouse = Position::new(event.column - inner_area.x, event.row - inner_area.y);
+
+        let (lon, lat) = area_to_lon_lat(mouse.x, mouse.y, self.inner_area);
+        let lon = wrap_longitude_deg(lon + self.lon_offset);
+
+        self.cursor_position = Some((lon, lat));
+
+        let nearest_object_index =
+            satellite_groups_state.get_nearest_object_index(self.time(), lon, lat);
+        match event.kind {
+            MouseEventKind::Down(MouseButton::Left) => {
+                self.selected_object_index = nearest_object_index
+            }
+            MouseEventKind::Down(MouseButton::Right) => {
+                self.selected_object_index = None;
+            }
+            MouseEventKind::ScrollUp => {
+                if event.modifiers == KeyModifiers::SHIFT {
+                    self.scroll_map_left();
+                } else {
+                    self.rewind_time();
+                }
+            }
+            MouseEventKind::ScrollDown => {
+                if event.modifiers == KeyModifiers::SHIFT {
+                    self.scroll_map_right();
+                } else {
+                    self.advance_time();
+                }
+            }
+            _ => {}
+        }
+        self.hovered_object_index = nearest_object_index;
+
+        Ok(())
     }
 
     /// Returns the current simulation time.
@@ -328,70 +395,6 @@ impl StatefulWidget for WorldMap<'_> {
         self.render_block(area, buf, state);
         self.render_map(buf, state);
     }
-}
-
-pub async fn handle_key_events(event: KeyEvent, app: &mut App) -> Result<()> {
-    match event.code {
-        KeyCode::Char('[') => app.world_map_state.scroll_map_left(),
-        KeyCode::Char(']') => app.world_map_state.scroll_map_right(),
-        KeyCode::Char('f') => {
-            app.world_map_state.follow_object = !app.world_map_state.follow_object;
-        }
-        KeyCode::Char('r') => app.world_map_state.time_offset = chrono::Duration::zero(),
-        KeyCode::Char('t') => {
-            app.world_map_state.show_terminator = !app.world_map_state.show_terminator;
-        }
-        _ => {}
-    }
-
-    Ok(())
-}
-
-pub async fn handle_mouse_events(event: MouseEvent, app: &mut App) -> Result<()> {
-    let inner_area = app.world_map_state.inner_area;
-    if !inner_area.contains(Position::new(event.column, event.row)) {
-        app.world_map_state.hovered_object_index = None;
-        app.world_map_state.cursor_position = None;
-        return Ok(());
-    }
-
-    // Convert window coordinates to area coordinates
-    let mouse = Position::new(event.column - inner_area.x, event.row - inner_area.y);
-
-    let (lon, lat) = area_to_lon_lat(mouse.x, mouse.y, app.world_map_state.inner_area);
-    let lon = wrap_longitude_deg(lon + app.world_map_state.lon_offset);
-
-    app.world_map_state.cursor_position = Some((lon, lat));
-
-    let nearest_object_index =
-        app.satellite_groups_state
-            .get_nearest_object_index(app.world_map_state.time(), lon, lat);
-    match event.kind {
-        MouseEventKind::Down(MouseButton::Left) => {
-            app.world_map_state.selected_object_index = nearest_object_index
-        }
-        MouseEventKind::Down(MouseButton::Right) => {
-            app.world_map_state.selected_object_index = None;
-        }
-        MouseEventKind::ScrollUp => {
-            if event.modifiers == KeyModifiers::SHIFT {
-                app.world_map_state.scroll_map_left();
-            } else {
-                app.world_map_state.rewind_time();
-            }
-        }
-        MouseEventKind::ScrollDown => {
-            if event.modifiers == KeyModifiers::SHIFT {
-                app.world_map_state.scroll_map_right();
-            } else {
-                app.world_map_state.advance_time();
-            }
-        }
-        _ => {}
-    }
-    app.world_map_state.hovered_object_index = nearest_object_index;
-
-    Ok(())
 }
 
 /// Converts area coordinates to lon/lat coordinates.
