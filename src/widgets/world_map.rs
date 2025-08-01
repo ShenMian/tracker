@@ -26,7 +26,7 @@ pub struct WorldMapState {
     pub selected_object_index: Option<usize>,
     /// Index of the hovered object.
     hovered_object_index: Option<usize>,
-
+    /// Position of the cursor in the map.
     cursor_position: Option<(f64, f64)>,
 
     /// Time offset from the current UTC time for time simulation.
@@ -124,11 +124,15 @@ impl WorldMap<'_> {
             .white(),
         );
 
+        // Show cursor position with cardinal direction
         if let Some((lon, lat)) = state.cursor_position {
-            // Draw the mouse position label
-            block = block
-                .title_bottom(Line::from(format!("{lat:.0}°, {lon:.0}°").white()).right_aligned());
+            let ns = if lat >= 0.0 { "N" } else { "S" };
+            let ew = if lon >= 0.0 { "E" } else { "W" };
+            block = block.title_bottom(
+                Line::from(format!("{:.0}°{ns}, {:.0}°{ew}", lat.abs(), lon.abs())).right_aligned(),
+            );
         }
+        // Show follow mode indicator if enabled
         if state.follow_object {
             let style = if state.selected_object_index.is_none() {
                 Style::default().dark_gray()
