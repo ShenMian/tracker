@@ -12,7 +12,7 @@ use ratatui::{
 use reverse_geocoder::ReverseGeocoder;
 use unicode_width::UnicodeWidthStr;
 
-use crate::app::App;
+use crate::{app::App, event::Event};
 
 use super::{satellite_groups::SatelliteGroupsState, world_map::WorldMapState};
 
@@ -205,7 +205,14 @@ impl StatefulWidget for ObjectInformation<'_> {
     }
 }
 
-pub async fn handle_mouse_events(event: MouseEvent, app: &mut App) -> Result<()> {
+pub async fn handle_event(event: Event, app: &mut App) -> Result<()> {
+    match event {
+        Event::Mouse(event) => handle_mouse_event(event, app).await,
+        _ => Ok(()),
+    }
+}
+
+async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
     let inner_area = app.object_information_state.inner_area;
     if !inner_area.contains(Position::new(event.column, event.row)) {
         *app.object_information_state.table_state.selected_mut() = None;

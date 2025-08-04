@@ -10,7 +10,7 @@ use ratatui::{
     },
 };
 
-use crate::{app::App, config::WorldMapConfig, utils::*};
+use crate::{app::App, config::WorldMapConfig, event::Event, utils::*};
 
 use super::satellite_groups::SatelliteGroupsState;
 
@@ -330,7 +330,15 @@ impl StatefulWidget for WorldMap<'_> {
     }
 }
 
-pub async fn handle_key_events(event: KeyEvent, app: &mut App) -> Result<()> {
+pub async fn handle_event(event: Event, app: &mut App) -> Result<()> {
+    match event {
+        Event::Key(event) => handle_key_event(event, app).await,
+        Event::Mouse(event) => handle_mouse_event(event, app).await,
+        _ => Ok(()),
+    }
+}
+
+async fn handle_key_event(event: KeyEvent, app: &mut App) -> Result<()> {
     match event.code {
         KeyCode::Char('[') => app.world_map_state.scroll_map_left(),
         KeyCode::Char(']') => app.world_map_state.scroll_map_right(),
@@ -347,7 +355,7 @@ pub async fn handle_key_events(event: KeyEvent, app: &mut App) -> Result<()> {
     Ok(())
 }
 
-pub async fn handle_mouse_events(event: MouseEvent, app: &mut App) -> Result<()> {
+async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
     let inner_area = app.world_map_state.inner_area;
     if !inner_area.contains(Position::new(event.column, event.row)) {
         app.world_map_state.hovered_object_index = None;
