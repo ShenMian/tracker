@@ -12,6 +12,8 @@ use ratatui::{
 use reverse_geocoder::ReverseGeocoder;
 use unicode_width::UnicodeWidthStr;
 
+use crate::app::App;
+
 use super::{satellite_groups::SatelliteGroupsState, world_map::WorldMapState};
 
 /// A widget to display information about a selected object.
@@ -34,44 +36,6 @@ pub struct ObjectInformationState {
 }
 
 impl ObjectInformationState {
-    pub async fn handle_mouse_events(&mut self, event: MouseEvent) -> Result<()> {
-        let inner_area = self.inner_area;
-        if !inner_area.contains(Position::new(event.column, event.row)) {
-            *self.table_state.selected_mut() = None;
-            return Ok(());
-        }
-
-        // Convert window coordinates to area coordinates
-        let mouse = Position::new(event.column - inner_area.x, event.row - inner_area.y);
-
-        match event.kind {
-            MouseEventKind::Down(MouseButton::Left) => {
-                // Copy the clicked value to the clipboard.
-                if let Some(index) = self.table_state.selected()
-                    && let Ok(mut clipboard) = Clipboard::new()
-                {
-                    let value = &self.table_entries[index].1;
-                    clipboard
-                        .set_text(value)
-                        .expect("Failed to copy to clipboard");
-                }
-            }
-            MouseEventKind::ScrollUp => self.scroll_up(),
-            MouseEventKind::ScrollDown => self.scroll_down(),
-            _ => {}
-        }
-        // Highlight the hovered row.
-        let row = mouse.y as usize + self.table_state.offset();
-        let index = if row < self.table_entries.len() {
-            Some(row)
-        } else {
-            None
-        };
-        self.table_state.select(index);
-
-        Ok(())
-    }
-
     fn scroll_up(&mut self) {
         *self.table_state.offset_mut() = self.table_state.offset().saturating_sub(1);
     }
@@ -118,7 +82,7 @@ impl ObjectInformation<'_> {
             .name();
 
         let elements = object.elements();
-        state.table_entries = vec![
+        state.table_entries = Vec::from([
             (
                 "Name",
                 elements
@@ -156,7 +120,7 @@ impl ObjectInformation<'_> {
             ("M. anomaly", format!("{}°", elements.mean_anomaly)),
             ("M. motion", format!("{} 1/day", elements.mean_motion)),
             ("Rev. #", elements.revolution_number.to_string()),
-        ];
+        ]);
 
         let (max_key_width, _max_value_width) = state
             .table_entries
@@ -239,4 +203,42 @@ impl StatefulWidget for ObjectInformation<'_> {
             self.render_no_object_selected(buf, state);
         }
     }
+}
+
+pub async fn handle_mouse_events(event: MouseEvent, app: &mut App) -> Result<()> {
+    let inner_area = app.object_information_state.inner_area;
+    if !inner_area.contains(Position::new(event.column, event.row)) {
+        *app.object_information_state.table_state.selected_mut() = None;
+        return Ok(());
+    }
+
+    // Convert window coordinates to area coordinates
+    let mouse = Position::new(event.column - inner_area.x, event.row - inner_area.y);
+
+    match event.kind {
+        MouseEventKind::Down(MouseButton::Left) => {
+            // Copy the clicked value to the clipboard.
+            if let Some(index) = app.object_information_state.table_state.selected()
+                && let Ok(mut clipboard) = Clipboard::new()
+            {
+                let value = &app.object_information_state.table_entries[index].1;
+                clipboard
+                    .set_text(value)
+                    .expect("Failed to copy to clipboard");
+            }
+        }
+        MouseEventKind::ScrollUp => app.object_information_state.scroll_up(),
+        MouseEventKind::ScrollDown => app.object_information_state.scroll_down(),
+        _ => {}
+    }
+    // Highlight the hovered row.
+    let row = mouse.y as usize + app.object_information_state.table_state.offset();
+    let index = if row < app.object_information_state.table_entries.len() {
+        Some(row)
+    } else {
+        None
+    };
+    app.object_information_state.table_state.select(index);
+
+    Ok(())
 }
