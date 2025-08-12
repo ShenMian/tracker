@@ -128,16 +128,16 @@ impl WorldMap<'_> {
         );
 
         // Show cursor position with cardinal direction
-        if state.show_cursor_position {
-            if let Some((lon, lat)) = state.cursor_position {
-                let ns = if lat >= 0.0 { "N" } else { "S" };
-                let ew = if lon >= 0.0 { "E" } else { "W" };
-                block = block.title_bottom(
-                    Line::from(format!("{:.0}°{ns},{:.0}°{ew}", lat.abs(), lon.abs()))
-                        .right_aligned(),
-                );
-            }
+        if state.show_cursor_position
+            && let Some((lon, lat)) = state.cursor_position
+        {
+            let ns = if lat >= 0.0 { "N" } else { "S" };
+            let ew = if lon >= 0.0 { "E" } else { "W" };
+            block = block.title_bottom(
+                Line::from(format!("{:.0}°{ns},{:.0}°{ew}", lat.abs(), lon.abs())).right_aligned(),
+            );
         }
+
         // Show follow mode indicator if enabled
         if state.follow_object {
             let style = if state.selected_object_index.is_none() {
