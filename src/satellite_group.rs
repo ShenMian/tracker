@@ -90,12 +90,10 @@ impl SatelliteGroup {
         let is_cache_expired = age > cache_lifetime;
 
         // Fetch elements if cache is expired
-        if is_cache_expired {
-            if let Some(elements) = self.fetch_elements().await {
-                fs::write(&cache_path, serde_json::to_string(&elements).unwrap())
-                    .await
-                    .unwrap();
-            }
+        if is_cache_expired && let Some(elements) = self.fetch_elements().await {
+            fs::write(&cache_path, serde_json::to_string(&elements).unwrap())
+                .await
+                .unwrap();
         }
 
         let json = fs::read_to_string(&cache_path).await.unwrap();
