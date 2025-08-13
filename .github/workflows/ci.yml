@@ -53,12 +53,13 @@ jobs:
           key: cargo-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: nightly
           components: rustfmt
 
       - name: Run cargo fmt
-        run: cargo fmt --all -- --check
+        run: cargo +nightly fmt --all -- --check
 
   doc:
     name: Docs

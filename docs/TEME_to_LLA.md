@@ -57,7 +57,12 @@ flowchart LR
 | UTC  | 协调世界时         | Coordinated Universal Time         |
 | TAI  | 国际原子时         | International Atomic Time          |
 | TT   | 地球时             | Terrestrial Time                   |
+| UT1  | 世界时             | Universal Time                     |
 | GMST | 格林尼治平恒星时   | Greenwich Mean Sidereal Time       |
 | TLE  | 两行轨道根数       | Two-Line Element Set               |
 | OMM  | 轨道平均根数信息   | Orbit Mean-Elements Message        |
 | SGP4 |                    | Simplified General Perturbations 4 |
+
+## 参见
+
+- <https://aa.usno.navy.mil/faq/GAST>.

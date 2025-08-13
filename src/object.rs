@@ -1,7 +1,6 @@
 use chrono::{DateTime, Duration, Utc};
-use nalgebra::{Point3, Vector3};
 
-use crate::utils::teme_to_lla;
+use crate::utils::*;
 
 const SECONDS_PER_DAY: f64 = 24.0 * 60.0 * 60.0;
 
@@ -55,37 +54,41 @@ impl Object {
             .constants
             .propagate(sgp4::MinutesSinceEpoch(minutes_since_epoch))?;
 
-        let [lat, lon, alt] = teme_to_lla(Point3::from(prediction.position), time);
+        let teme = Teme::from(prediction.position);
+
+        let epoch = epoch_from_utc(time);
+        let gmst = gmst_from_jd_tt(epoch.to_jde_tt_days());
+        let cefe = teme.to_ecef(gmst);
 
         Ok(State {
-            position: Point3::new(lon, lat, alt),
-            velocity: Vector3::from(prediction.velocity),
+            position: cefe.to_lla(),
+            velocity: prediction.velocity,
         })
     }
 }
 
 #[derive(Clone, Debug)]
 pub struct State {
-    /// The position of the object in geodetic coordinates (longitude, latitude, altitude) in km.
-    pub position: Point3<f64>,
+    /// The position of the object in geodetic coordinates in km.
+    pub position: Lla,
     /// The velocity of the object in km/s.
-    pub velocity: Vector3<f64>,
+    pub velocity: [f64; 3],
 }
 
 impl State {
     pub fn latitude(&self) -> f64 {
-        self.position.y
+        self.position.latitude
     }
 
     pub fn longitude(&self) -> f64 {
-        self.position.x
+        self.position.longitude
     }
 
     pub fn altitude(&self) -> f64 {
-        self.position.z
+        self.position.altitude
     }
 
     pub fn speed(&self) -> f64 {
-        (self.velocity.x.powi(2) + self.velocity.y.powi(2) + self.velocity.z.powi(2)).sqrt()
+        (self.velocity[0].powi(2) + self.velocity[1].powi(2) + self.velocity[2].powi(2)).sqrt()
     }
 }

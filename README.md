@@ -38,9 +38,10 @@ scoop install tracker
 cargo install --git https://github.com/ShenMian/tracker
 ```
 
-## Usage
+## Documentation
 
-For detailed instructions on how to use `tracker`, please see our [User Guide](docs/user-guide.md).
+- [Keymap](docs/keymap.md).
+- [Configuration](docs/configuration.md).
 
 ## License
 

@@ -1,57 +1,85 @@
 use chrono::{DateTime, Datelike, Duration, Timelike, Utc};
 use hifitime::Epoch;
-use nalgebra::Point3;
 
 use crate::object::Object;
 
-/// Converts a position from TEME frame to LLA.
-///
-/// # Returns
-///
-/// An array `[latitude, longitude, altitude]` where:
-///   - latitude: Geodetic latitude in degrees (-90° to +90°)
-///   - longitude: Geodetic longitude in degrees (-180° to +180°)
-///   - altitude: Height above WGS84 ellipsoid in km
-pub fn teme_to_lla(teme: Point3<f64>, time: DateTime<Utc>) -> [f64; 3] {
-    let epoch = epoch_from_utc(time);
-    let gmst = gmst_from_jde_tt(epoch.to_jde_tt_days());
-    ecef_to_lla(teme_to_ecef(teme, gmst))
+/// A position in True Equator Mean Equinox (TEME) frame.
+#[derive(Clone, PartialEq, Debug)]
+pub struct Teme {
+    pub x: f64,
+    pub y: f64,
+    pub z: f64,
 }
 
-/// Calculates the Greenwich Mean Sidereal Time (GMST) in radians.
-///
-/// # Arguments
-///
-/// * `jde` - The Julian days in TT time scale
-///
-/// # Returns
-///
-/// The GMST in radians, normalized to [0, 2π]
-fn gmst_from_jde_tt(jde: f64) -> f64 {
-    // Constants
-    const J2000_EPOCH: f64 = 2451545.0; // Julian Date for J2000.0 epoch
-    const JULIAN_CENTURY: f64 = 36525.0; // Days in a Julian century
+impl Teme {
+    /// Creates a new `Teme`.
+    pub fn new(x: f64, y: f64, z: f64) -> Self {
+        Teme { x, y, z }
+    }
 
-    // GMST formula coefficients (in degrees)
-    const GMST_MEAN: f64 = 280.46061837;
-    const GMST_ADVANCE: f64 = 360.98564736629;
-    const T2_COEFF: f64 = 0.000387933;
-    const T3_COEFF: f64 = -1.0 / 38710000.0;
-
-    // Calculate time in Julian centuries since J2000.0
-    let t = (jde - J2000_EPOCH) / JULIAN_CENTURY;
-
-    // Calculate GMST in degrees
-    let gmst = GMST_MEAN
-        + GMST_ADVANCE * (jde - J2000_EPOCH)
-        + T2_COEFF * t.powi(2)
-        + T3_COEFF * t.powi(3);
-
-    // Convert to radians and normalize to [0, 2π]
-    gmst.rem_euclid(360.0).to_radians()
+    /// Converts the position to a ECEF position.
+    ///
+    /// # Arguments
+    ///
+    /// * `gmst` - Greenwich Mean Sidereal Time in radians
+    ///
+    /// # Returns
+    ///
+    /// A position in the ECEF frame (same units as input)
+    pub fn to_ecef(&self, gmst: f64) -> Ecef {
+        teme_to_ecef(self, gmst)
+    }
 }
 
-/// Converts a position vector from True Equator Mean Equinox (TEME) frame to Earth-Centered Earth-Fixed (ECEF) frame
+impl From<[f64; 3]> for Teme {
+    fn from([x, y, z]: [f64; 3]) -> Self {
+        Self::new(x, y, z)
+    }
+}
+
+/// A position in Earth-Centered Earth-Fixed (ECEF) frame.
+#[derive(Clone, PartialEq, Debug)]
+pub struct Ecef {
+    pub x: f64,
+    pub y: f64,
+    pub z: f64,
+}
+
+impl Ecef {
+    /// Creates a new `Ecef`.
+    pub fn new(x: f64, y: f64, z: f64) -> Self {
+        Ecef { x, y, z }
+    }
+
+    /// Converts the position to a geodetic position.
+    pub fn to_lla(&self) -> Lla {
+        ecef_to_lla(self)
+    }
+}
+
+/// A position in geodetic coordinates.
+#[derive(Clone, PartialEq, Debug)]
+pub struct Lla {
+    pub latitude: f64,
+    pub longitude: f64,
+    pub altitude: f64,
+}
+
+impl Lla {
+    pub fn new(lat: f64, lon: f64, alt: f64) -> Self {
+        debug_assert!((-90.0..=90.0).contains(&lat));
+        debug_assert!((-180.0..=180.0).contains(&lon));
+        debug_assert!(alt >= 0.0);
+        Lla {
+            latitude: lat,
+            longitude: lon,
+            altitude: alt,
+        }
+    }
+}
+
+/// Converts a position vector from True Equator Mean Equinox (TEME) frame to
+/// Earth-Centered Earth-Fixed (ECEF) frame
 ///
 /// # Arguments
 ///
@@ -61,14 +89,15 @@ fn gmst_from_jde_tt(jde: f64) -> f64 {
 /// # Returns
 ///
 /// A position in the ECEF frame (same units as input)
-fn teme_to_ecef(teme: Point3<f64>, gmst_rad: f64) -> Point3<f64> {
+fn teme_to_ecef(teme: &Teme, gmst_rad: f64) -> Ecef {
     let (sin_theta, cos_theta) = gmst_rad.sin_cos();
     let x = cos_theta * teme.x + sin_theta * teme.y;
     let y = -sin_theta * teme.x + cos_theta * teme.y;
-    Point3::new(x, y, teme.z)
+    Ecef::new(x, y, teme.z)
 }
 
-/// Converts a position vector from Earth-Centered Earth-Fixed (ECEF) frame to geodetic coordinates (LLA)
+/// Converts a position vector from Earth-Centered Earth-Fixed (ECEF) frame to
+/// geodetic coordinates (LLA)
 ///
 /// # Arguments
 ///
@@ -76,11 +105,8 @@ fn teme_to_ecef(teme: Point3<f64>, gmst_rad: f64) -> Point3<f64> {
 ///
 /// # Returns
 ///
-/// An array `[latitude, longitude, altitude]` where:
-///   - latitude: Geodetic latitude in degrees (-90° to +90°)
-///   - longitude: Geodetic longitude in degrees (-180° to +180°)
-///   - altitude: Height above WGS84 ellipsoid in km
-fn ecef_to_lla(ecef: Point3<f64>) -> [f64; 3] {
+/// A position in geodetic coordinates
+fn ecef_to_lla(ecef: &Ecef) -> Lla {
     // Constants for WGS84 ellipsoid
     const A: f64 = 6378.137; // Earth semi-major axis (km)
     const F: f64 = 1.0 / 298.257223563; // Flattening
@@ -101,11 +127,11 @@ fn ecef_to_lla(ecef: Point3<f64>) -> [f64; 3] {
     let n = A / (1.0 - E2 * latitude.sin().powi(2)).sqrt();
     let altitude = p / latitude.cos() - n;
 
-    [latitude.to_degrees(), longitude.to_degrees(), altitude]
+    Lla::new(latitude.to_degrees(), longitude.to_degrees(), altitude)
 }
 
 /// Returns the Epoch for the given UTC timestamp.
-fn epoch_from_utc(time: DateTime<Utc>) -> Epoch {
+pub fn epoch_from_utc(time: DateTime<Utc>) -> Epoch {
     Epoch::from_gregorian_utc(
         time.year(),
         time.month() as u8,
@@ -115,6 +141,36 @@ fn epoch_from_utc(time: DateTime<Utc>) -> Epoch {
         time.second() as u8,
         time.nanosecond(),
     )
+}
+
+/// Calculates the Greenwich Mean Sidereal Time (GMST) in radians.
+///
+/// # Arguments
+///
+/// * `jd` - The Julian days in TT time scale
+///
+/// # Returns
+///
+/// The GMST in radians, normalized to [0, 2π]
+pub fn gmst_from_jd_tt(jd: f64) -> f64 {
+    const J2000_EPOCH: f64 = 2451545.0; // Julian Date for J2000.0 epoch
+    const JULIAN_CENTURY: f64 = 36525.0; // Days in a Julian century
+
+    // GMST formula coefficients (in degrees)
+    const GMST_MEAN: f64 = 280.46061837;
+    const GMST_ADVANCE: f64 = 360.98564736629;
+    const T2_COEFF: f64 = 0.000387933;
+    const T3_COEFF: f64 = -1.0 / 38710000.0;
+
+    // Calculate time in Julian centuries since J2000.0
+    let t = (jd - J2000_EPOCH) / JULIAN_CENTURY;
+
+    // Calculate GMST in degrees
+    let gmst =
+        GMST_MEAN + GMST_ADVANCE * (jd - J2000_EPOCH) + T2_COEFF * t.powi(2) + T3_COEFF * t.powi(3);
+
+    // Convert to radians and normalize to [0, 2π]
+    gmst.rem_euclid(360.0).to_radians()
 }
 
 /// Calculates the subsolar point at a given UTC timestamp.
@@ -140,7 +196,7 @@ pub fn subsolar_point(time: DateTime<Utc>) -> (f64, f64) {
         + 0.02_f64.to_radians() * (2.0 * mean_anom).sin();
     let obliq = 23.439_f64.to_radians();
     let decl = (obliq.sin() * eclip_long.sin()).asin();
-    let gmst = gmst_from_jde_tt(jd);
+    let gmst = gmst_from_jd_tt(jd);
     let lon = wrap_longitude_rad(mean_long - gmst);
     (lon, decl)
 }
@@ -153,7 +209,8 @@ pub fn subsolar_point(time: DateTime<Utc>) -> (f64, f64) {
 ///
 /// # Returns
 ///
-/// A vector of `(longitude, latitude)` pairs in degrees, representing the terminator line.
+/// A vector of `(longitude, latitude)` pairs in degrees, representing the
+/// terminator line.
 pub fn calculate_terminator(time: DateTime<Utc>) -> Vec<(f64, f64)> {
     const LON_STEP: usize = 5;
 
@@ -180,8 +237,8 @@ pub fn calculate_trajectory(object: &Object, time: DateTime<Utc>) -> Vec<(f64, f
     let mut points = Vec::new();
     for minutes in 1..object.orbital_period().num_minutes() {
         let time = time + Duration::minutes(minutes);
-        let object_state = object.predict(time).unwrap();
-        points.push((object_state.position.x, object_state.position.y));
+        let state = object.predict(time).unwrap();
+        points.push((state.position.longitude, state.position.latitude));
     }
     points
 }

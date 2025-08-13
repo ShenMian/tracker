@@ -12,7 +12,7 @@ use ratatui::{
 use reverse_geocoder::ReverseGeocoder;
 use unicode_width::UnicodeWidthStr;
 
-use crate::app::App;
+use crate::{app::App, event::Event};
 
 use super::{satellite_groups::SatelliteGroupsState, world_map::WorldMapState};
 
@@ -24,18 +24,23 @@ pub struct ObjectInformation<'a> {
 
 /// State of a [`ObjectInformation`] widget.
 pub struct ObjectInformationState {
-    pub table_entries: Vec<(&'static str, String)>,
-    pub table_state: TableState,
-    inner_area: Rect,
+    /// Key-value pairs representing the object information to display in the
+    /// table.
+    table_entries: Vec<(&'static str, String)>,
+    /// The current state of the table widget.
+    table_state: TableState,
+    /// Reverse geocoder instance used to convert coordinates to location names.
     geocoder: ReverseGeocoder,
+    /// The inner rendering area of the widget.
+    inner_area: Rect,
 }
 
 impl ObjectInformationState {
-    pub fn scroll_up(&mut self) {
+    fn scroll_up(&mut self) {
         *self.table_state.offset_mut() = self.table_state.offset().saturating_sub(1);
     }
 
-    pub fn scroll_down(&mut self) {
+    fn scroll_down(&mut self) {
         let max_offset = self
             .table_entries
             .len()
@@ -49,8 +54,8 @@ impl Default for ObjectInformationState {
         Self {
             table_entries: Default::default(),
             table_state: Default::default(),
-            inner_area: Default::default(),
             geocoder: ReverseGeocoder::new(),
+            inner_area: Default::default(),
         }
     }
 }
@@ -71,7 +76,7 @@ impl ObjectInformation<'_> {
         let result = state
             .geocoder
             .search((object_state.latitude(), object_state.longitude()));
-        let city_name = result.record.name.clone();
+        let city_name = &result.record.name;
         let country_name = isocountry::CountryCode::for_alpha2(&result.record.cc)
             .unwrap()
             .name();
@@ -82,15 +87,17 @@ impl ObjectInformation<'_> {
                 "Name",
                 elements
                     .object_name
-                    .clone()
-                    .unwrap_or(UNKNOWN_NAME.to_string()),
+                    .as_deref()
+                    .unwrap_or(UNKNOWN_NAME)
+                    .to_string(),
             ),
             (
                 "COSPAR ID",
                 elements
                     .international_designator
-                    .clone()
-                    .unwrap_or(UNKNOWN_NAME.to_string()),
+                    .as_deref()
+                    .unwrap_or(UNKNOWN_NAME)
+                    .to_string(),
             ),
             ("NORAD ID", elements.norad_id.to_string()),
             ("Longitude", format!("{:9.4}°", object_state.longitude())),
@@ -99,10 +106,7 @@ impl ObjectInformation<'_> {
             ("Speed", format!("{:.2} km/s", object_state.speed())),
             (
                 "Period",
-                format!(
-                    "{:.2} min",
-                    object.orbital_period().num_seconds() as f64 / 60.0
-                ),
+                format!("{:.2} min", object.orbital_period().as_seconds_f64() / 60.0),
             ),
             ("Location", format!("{city_name}, {country_name}")),
             (
@@ -149,9 +153,9 @@ impl ObjectInformation<'_> {
                         .map(|(i, _)| i)
                         .nth(right.saturating_sub(ellipsis.width()))
                         .unwrap();
-                    value[..end].to_string() + ellipsis
+                    format!("{}{}", &value[..end], ellipsis)
                 } else {
-                    value.to_string()
+                    value.clone()
                 };
                 Row::new([
                     Cell::from(Text::from(key.bold())),
@@ -201,10 +205,17 @@ impl StatefulWidget for ObjectInformation<'_> {
     }
 }
 
-pub async fn handle_mouse_events(event: MouseEvent, app: &mut App) -> Result<()> {
+pub async fn handle_event(event: Event, app: &mut App) -> Result<()> {
+    match event {
+        Event::Mouse(event) => handle_mouse_event(event, app).await,
+        _ => Ok(()),
+    }
+}
+
+async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
     let inner_area = app.object_information_state.inner_area;
     if !inner_area.contains(Position::new(event.column, event.row)) {
-        app.object_information_state.table_state.select(None);
+        *app.object_information_state.table_state.selected_mut() = None;
         return Ok(());
     }
 
@@ -217,7 +228,7 @@ pub async fn handle_mouse_events(event: MouseEvent, app: &mut App) -> Result<()>
             if let Some(index) = app.object_information_state.table_state.selected()
                 && let Ok(mut clipboard) = Clipboard::new()
             {
-                let value = app.object_information_state.table_entries[index].1.clone();
+                let value = &app.object_information_state.table_entries[index].1;
                 clipboard
                     .set_text(value)
                     .expect("Failed to copy to clipboard");

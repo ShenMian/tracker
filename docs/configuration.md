@@ -11,7 +11,9 @@ Default locations of configuration files on different platforms:
 
 ```toml
 [world_map]
-follow_selected_object = false
+follow_selected_object = true
+show_terminator = true
+show_cursor_position = false
 lon_delta_deg = 10.0
 time_delta_min = 1
 map_color = "gray"
@@ -21,3 +23,24 @@ terminator_color = "dark_gray"
 [satellite_groups]
 cache_lifetime_min = 120
 ```
+
+## Color
+
+Available colors:
+
+- `black`.
+- `red`.
+- `green`.
+- `yellow`.
+- `blue`.
+- `magenta`.
+- `cyan`.
+- `gray`.
+- `dark_gray`.
+- `light_red`.
+- `light_green`.
+- `light_yellow`.
+- `light_blue`.
+- `light_magenta`.
+- `light_cyan`.
+- `white`.

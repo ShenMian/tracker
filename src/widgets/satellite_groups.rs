@@ -10,7 +10,8 @@ use ratatui::{
 use strum::IntoEnumIterator;
 
 use crate::{
-    app::App, config::SatelliteGroupsConfig, object::Object, satellite_group::SatelliteGroup,
+    app::App, config::SatelliteGroupsConfig, event::Event, object::Object,
+    satellite_group::SatelliteGroup,
 };
 
 /// A widget to display a list of satellite groups.
@@ -19,19 +20,25 @@ pub struct SatelliteGroups;
 
 /// State of a [`SatelliteGroups`] widget.
 pub struct SatelliteGroupsState {
+    /// Collection of satellite objects loaded from the selected satellite
+    /// groups.
     pub objects: Vec<Object>,
-
-    pub list_entries: Vec<Entry>,
-    pub list_state: ListState,
-
-    pub last_object_update: Instant,
-
+    /// List entries representing available satellite groups with their
+    /// selection state.
+    list_entries: Vec<Entry>,
+    /// The current state of the list widget.
+    list_state: ListState,
+    /// Timestamp of the last orbital elements update.
+    last_update_instant: Instant,
+    /// Duration that cached orbital elements remain valid before requiring a
+    /// refresh.
     cache_lifetime: Duration,
-
+    /// The inner rendering area of the widget.
     inner_area: Rect,
 }
 
 impl SatelliteGroupsState {
+    /// Creates a new `SatelliteGroupsState` with the given configuration.
     pub fn with_config(config: SatelliteGroupsConfig) -> Self {
         Self {
             cache_lifetime: Duration::from_secs(config.cache_lifetime_min * 60),
@@ -71,11 +78,11 @@ impl SatelliteGroupsState {
             .map(|(index, _)| index)
     }
 
-    pub fn scroll_up(&mut self) {
+    fn scroll_up(&mut self) {
         *self.list_state.offset_mut() = self.list_state.offset().saturating_sub(1);
     }
 
-    pub fn scroll_down(&mut self) {
+    fn scroll_down(&mut self) {
         let max_offset = self
             .list_entries
             .len()
@@ -92,7 +99,7 @@ impl Default for SatelliteGroupsState {
             list_state: Default::default(),
             inner_area: Default::default(),
             cache_lifetime: Default::default(),
-            last_object_update: Instant::now(),
+            last_update_instant: Instant::now(),
         }
     }
 }
@@ -158,10 +165,33 @@ impl From<SatelliteGroup> for Entry {
     }
 }
 
-pub async fn handle_mouse_events(event: MouseEvent, app: &mut App) -> Result<()> {
+pub async fn handle_event(event: Event, app: &mut App) -> Result<()> {
+    match event {
+        Event::Update => {
+            handle_update_event(app).await;
+            Ok(())
+        }
+        Event::Mouse(event) => handle_mouse_event(event, app).await,
+        _ => Ok(()),
+    }
+}
+
+/// Handle update events.
+async fn handle_update_event(app: &mut App) {
+    // Refresh satellite data every 2 minutes.
+    const OBJECT_UPDATE_INTERVAL: Duration = Duration::from_secs(2 * 60);
+    let now = Instant::now();
+    if now.duration_since(app.satellite_groups_state.last_update_instant) >= OBJECT_UPDATE_INTERVAL
+    {
+        app.satellite_groups_state.refresh_objects().await;
+        app.satellite_groups_state.last_update_instant = now;
+    }
+}
+
+async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
     let inner_area = app.satellite_groups_state.inner_area;
     if !inner_area.contains(Position::new(event.column, event.row)) {
-        app.satellite_groups_state.list_state.select(None);
+        *app.satellite_groups_state.list_state.selected_mut() = None;
         return Ok(());
     }
 

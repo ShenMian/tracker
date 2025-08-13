@@ -3,13 +3,14 @@ use chrono::{DateTime, Duration, Local, Utc};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
 use ratatui::{
     prelude::*,
+    style::Styled,
     widgets::{
         Block,
-        canvas::{Canvas, Context, Line, Map, MapResolution},
+        canvas::{self, Canvas, Context, Map, MapResolution},
     },
 };
 
-use crate::{app::App, config::WorldMapConfig, utils::*};
+use crate::{app::App, config::WorldMapConfig, event::Event, utils::*};
 
 use super::satellite_groups::SatelliteGroupsState;
 
@@ -18,18 +19,29 @@ pub struct WorldMap<'a> {
     pub satellite_groups_state: &'a SatelliteGroupsState,
 }
 
-/// State of a [`WorldMapState`] widget.
+/// State of a [`WorldMap`] widget.
 #[derive(Default)]
 pub struct WorldMapState {
+    /// Index of the selected object.
     pub selected_object_index: Option<usize>,
-    pub hovered_object_index: Option<usize>,
+    /// Index of the hovered object.
+    hovered_object_index: Option<usize>,
+    /// Position of the cursor in the map.
+    cursor_position: Option<(f64, f64)>,
 
+    /// Time offset from the current UTC time for time simulation.
     time_offset: Duration,
+    /// Center longitude offset for horizontal map scrolling in degrees.
     lon_offset: f64,
 
     /// Whether to follow the selected object by adjusting the map longitude.
-    follow_selected_object: bool,
-    /// The amount of longitude (in degrees) to move the map when scrolling left or right.
+    follow_object: bool,
+    /// Whether to display the day-night terminator line.
+    show_terminator: bool,
+    /// Whether to show the cursor position.
+    show_cursor_position: bool,
+    /// The amount of longitude (in degrees) to move the map when scrolling left
+    /// or right.
     lon_delta: f64,
     /// The time step to advance or rewind when scrolling time.
     time_delta: Duration,
@@ -38,38 +50,60 @@ pub struct WorldMapState {
     trajectory_color: Color,
     terminator_color: Color,
 
+    /// The inner rendering area of the widget.
     inner_area: Rect,
 }
 
 impl WorldMapState {
+    /// Creates a new `WorldMapState` with the given configuration.
     pub fn with_config(config: WorldMapConfig) -> Self {
+        let map_color = config
+            .map_color
+            .parse()
+            .expect("Invalid map color in config");
+        let trajectory_color = config
+            .trajectory_color
+            .parse()
+            .expect("Invalid trajectory color in config");
+        let terminator_color = config
+            .terminator_color
+            .parse()
+            .expect("Invalid terminator color in config");
+
         Self {
-            follow_selected_object: config.follow_selected_object,
+            follow_object: config.follow_selected_object,
+            show_terminator: config.show_terminator,
+            show_cursor_position: config.show_cursor_position,
             lon_delta: config.lon_delta_deg,
             time_delta: Duration::minutes(config.time_delta_min),
-            map_color: config.map_color.parse().unwrap(),
-            trajectory_color: config.trajectory_color.parse().unwrap(),
-            terminator_color: config.terminator_color.parse().unwrap(),
+            map_color,
+            trajectory_color,
+            terminator_color,
             ..Self::default()
         }
     }
 
+    /// Returns the current simulation time.
     pub fn time(&self) -> DateTime<Utc> {
         Utc::now() + self.time_offset
     }
 
+    /// Scrolls the map view to the left.
     fn scroll_map_left(&mut self) {
         self.lon_offset = wrap_longitude_deg(self.lon_offset - self.lon_delta);
     }
 
+    /// Scrolls the map view to the right.
     fn scroll_map_right(&mut self) {
         self.lon_offset = wrap_longitude_deg(self.lon_offset + self.lon_delta);
     }
 
+    /// Advances the simulation time.
     fn advance_time(&mut self) {
         self.time_offset += self.time_delta;
     }
 
+    /// Rewinds the simulation time.
     fn rewind_time(&mut self) {
         self.time_offset -= self.time_delta;
     }
@@ -81,7 +115,7 @@ impl WorldMap<'_> {
     const UNKNOWN_NAME: &'static str = "UNK";
 
     fn render_block(&self, area: Rect, buf: &mut Buffer, state: &mut WorldMapState) {
-        let block = Block::bordered().title("World map".blue()).title_bottom(
+        let mut block = Block::bordered().title("World map".blue()).title_bottom(
             format!(
                 "{} ({:+} mins)",
                 state
@@ -92,6 +126,28 @@ impl WorldMap<'_> {
             )
             .white(),
         );
+
+        // Show cursor position with cardinal direction
+        if state.show_cursor_position
+            && let Some((lon, lat)) = state.cursor_position
+        {
+            let ns = if lat >= 0.0 { "N" } else { "S" };
+            let ew = if lon >= 0.0 { "E" } else { "W" };
+            block = block.title_bottom(
+                Line::from(format!("{:.0}°{ns},{:.0}°{ew}", lat.abs(), lon.abs())).right_aligned(),
+            );
+        }
+
+        // Show follow mode indicator if enabled
+        if state.follow_object {
+            let style = if state.selected_object_index.is_none() {
+                Style::default().dark_gray()
+            } else {
+                Style::default().green().slow_blink()
+            };
+            block = block.title_bottom(Line::from("(Follow)".set_style(style)).right_aligned());
+        }
+
         state.inner_area = block.inner(area);
         block.render(area, buf);
     }
@@ -99,7 +155,7 @@ impl WorldMap<'_> {
     /// Renders the world map.
     fn render_map(&self, buf: &mut Buffer, state: &mut WorldMapState) {
         // Follow the longitude of the selected object
-        if state.follow_selected_object
+        if state.follow_object
             && let Some(index) = state.selected_object_index
         {
             let selected = &self.satellite_groups_state.objects[index];
@@ -110,11 +166,17 @@ impl WorldMap<'_> {
         let x_min = state.lon_offset - 180.0;
         let x_max = state.lon_offset + 180.0;
 
-        let mut bounds_vec = vec![[x_min, x_max]];
+        // Adjust the rendering order to prevent the labels on the left mapfrom being
+        // covered by the right map
+        let mut bounds_vec = Vec::new();
         if x_min < -180.0 {
+            bounds_vec.push([x_min, x_max]); // Left side
             bounds_vec.push([x_max, x_max + 360.0]); // Right side
         } else if x_max > 180.0 {
             bounds_vec.push([-360.0 + x_min, x_min]); // Left side
+            bounds_vec.push([x_min, x_max]); // Right side
+        } else {
+            bounds_vec.push([x_min, x_max]);
         }
 
         for bounds in &bounds_vec {
@@ -125,7 +187,8 @@ impl WorldMap<'_> {
         }
     }
 
-    /// Renders the bottom layer of the world map, including the map and all objects.
+    /// Renders the bottom layer of the world map, including the map and all
+    /// objects.
     fn render_bottom_layer(&self, buf: &mut Buffer, x_bounds: [f64; 2], state: &mut WorldMapState) {
         Canvas::default()
             .x_bounds(x_bounds)
@@ -136,13 +199,16 @@ impl WorldMap<'_> {
                     resolution: MapResolution::High,
                 });
                 ctx.layer();
-                self.draw_terminator(ctx, state);
+                if state.show_terminator {
+                    self.draw_terminator(ctx, state);
+                }
                 self.draw_objects(ctx, state);
             })
             .render(state.inner_area, buf);
     }
 
-    /// Renders the top layer of the world map, including object highlights and trajectories.
+    /// Renders the top layer of the world map, including object highlights and
+    /// trajectories.
     fn render_top_layer(&self, buf: &mut Buffer, x_bounds: [f64; 2], state: &mut WorldMapState) {
         Canvas::default()
             .x_bounds(x_bounds)
@@ -181,7 +247,11 @@ impl WorldMap<'_> {
                 Self::OBJECT_SYMBOL.red() + format!(" {object_name}").dark_gray()
             };
             let object_state = object.predict(state.time()).unwrap();
-            ctx.print(object_state.position.x, object_state.position.y, text);
+            ctx.print(
+                object_state.position.longitude,
+                object_state.position.latitude,
+                text,
+            );
         }
     }
 
@@ -202,7 +272,11 @@ impl WorldMap<'_> {
             let text =
                 Self::OBJECT_SYMBOL.light_green().slow_blink() + format!(" {object_name}").white();
             let object_state = selected.predict(state.time()).unwrap();
-            ctx.print(object_state.position.x, object_state.position.y, text);
+            ctx.print(
+                object_state.position.longitude,
+                object_state.position.latitude,
+                text,
+            );
         } else if let Some(hovered_object_index) = state.hovered_object_index {
             let hovered = &self.satellite_groups_state.objects[hovered_object_index];
 
@@ -211,10 +285,10 @@ impl WorldMap<'_> {
             let text = Self::OBJECT_SYMBOL.light_red().reversed()
                 + " ".into()
                 + object_name.to_string().white().reversed();
-            let object_statestate = hovered.predict(state.time()).unwrap();
+            let object_state = hovered.predict(state.time()).unwrap();
             ctx.print(
-                object_statestate.position.x,
-                object_statestate.position.y,
+                object_state.position.longitude,
+                object_state.position.latitude,
                 text,
             );
         }
@@ -239,11 +313,11 @@ impl WorldMap<'_> {
         if (x1 - x2).abs() >= 180.0 {
             let x_edge = if x1 > 0.0 { 180.0 } else { -180.0 };
             let y_midpoint = (y1 + y2) / 2.0;
-            ctx.draw(&Line::new(x1, y1, x_edge, y_midpoint, color));
-            ctx.draw(&Line::new(-x_edge, y_midpoint, x2, y2, color));
+            ctx.draw(&canvas::Line::new(x1, y1, x_edge, y_midpoint, color));
+            ctx.draw(&canvas::Line::new(-x_edge, y_midpoint, x2, y2, color));
             return;
         }
-        ctx.draw(&Line::new(x1, y1, x2, y2, color));
+        ctx.draw(&canvas::Line::new(x1, y1, x2, y2, color));
     }
 }
 
@@ -256,20 +330,36 @@ impl StatefulWidget for WorldMap<'_> {
     }
 }
 
-pub async fn handle_key_events(event: KeyEvent, app: &mut App) -> Result<()> {
+pub async fn handle_event(event: Event, app: &mut App) -> Result<()> {
+    match event {
+        Event::Key(event) => handle_key_event(event, app).await,
+        Event::Mouse(event) => handle_mouse_event(event, app).await,
+        _ => Ok(()),
+    }
+}
+
+async fn handle_key_event(event: KeyEvent, app: &mut App) -> Result<()> {
     match event.code {
         KeyCode::Char('[') => app.world_map_state.scroll_map_left(),
         KeyCode::Char(']') => app.world_map_state.scroll_map_right(),
+        KeyCode::Char('f') => {
+            app.world_map_state.follow_object = !app.world_map_state.follow_object;
+        }
+        KeyCode::Char('r') => app.world_map_state.time_offset = chrono::Duration::zero(),
+        KeyCode::Char('t') => {
+            app.world_map_state.show_terminator = !app.world_map_state.show_terminator;
+        }
         _ => {}
     }
 
     Ok(())
 }
 
-pub async fn handle_mouse_events(event: MouseEvent, app: &mut App) -> Result<()> {
+async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
     let inner_area = app.world_map_state.inner_area;
     if !inner_area.contains(Position::new(event.column, event.row)) {
         app.world_map_state.hovered_object_index = None;
+        app.world_map_state.cursor_position = None;
         return Ok(());
     }
 
@@ -278,6 +368,8 @@ pub async fn handle_mouse_events(event: MouseEvent, app: &mut App) -> Result<()>
 
     let (lon, lat) = area_to_lon_lat(mouse.x, mouse.y, app.world_map_state.inner_area);
     let lon = wrap_longitude_deg(lon + app.world_map_state.lon_offset);
+
+    app.world_map_state.cursor_position = Some((lon, lat));
 
     let nearest_object_index =
         app.satellite_groups_state
