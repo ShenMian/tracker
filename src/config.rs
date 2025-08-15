@@ -44,101 +44,25 @@ impl Default for SatelliteGroupsConfig {
         Self {
             cache_lifetime_min: 2 * 60,
             groups: vec![
-                SatelliteGroup {
-                    label: "ISS".into(),
-                    cospar_id: Some("1998-067A".into()),
-                    group_name: None,
-                },
-                SatelliteGroup {
-                    label: "CSS".into(),
-                    cospar_id: Some("2021-035A".into()),
-                    group_name: None,
-                },
-                SatelliteGroup {
-                    label: "Weather".into(),
-                    cospar_id: None,
-                    group_name: Some("weather".into()),
-                },
-                SatelliteGroup {
-                    label: "NOAA".into(),
-                    cospar_id: None,
-                    group_name: Some("noaa".into()),
-                },
-                SatelliteGroup {
-                    label: "GOES".into(),
-                    cospar_id: None,
-                    group_name: Some("goes".into()),
-                },
-                SatelliteGroup {
-                    label: "Earth resources".into(),
-                    cospar_id: None,
-                    group_name: Some("resource".into()),
-                },
-                SatelliteGroup {
-                    label: "Search & rescue".into(),
-                    cospar_id: None,
-                    group_name: Some("sarsat".into()),
-                },
-                SatelliteGroup {
-                    label: "Disaster monitoring".into(),
-                    cospar_id: None,
-                    group_name: Some("dmc".into()),
-                },
-                SatelliteGroup {
-                    label: "GPS Operational".into(),
-                    cospar_id: None,
-                    group_name: Some("gps-ops".into()),
-                },
-                SatelliteGroup {
-                    label: "GLONASS Operational".into(),
-                    cospar_id: None,
-                    group_name: Some("glo-ops".into()),
-                },
-                SatelliteGroup {
-                    label: "Galileo".into(),
-                    cospar_id: None,
-                    group_name: Some("galileo".into()),
-                },
-                SatelliteGroup {
-                    label: "Beidou".into(),
-                    cospar_id: None,
-                    group_name: Some("beidou".into()),
-                },
-                SatelliteGroup {
-                    label: "Space & Earth Science".into(),
-                    cospar_id: None,
-                    group_name: Some("science".into()),
-                },
-                SatelliteGroup {
-                    label: "Geodetic".into(),
-                    cospar_id: None,
-                    group_name: Some("geodetic".into()),
-                },
-                SatelliteGroup {
-                    label: "Engineering".into(),
-                    cospar_id: None,
-                    group_name: Some("engineering".into()),
-                },
-                SatelliteGroup {
-                    label: "Education".into(),
-                    cospar_id: None,
-                    group_name: Some("education".into()),
-                },
-                SatelliteGroup {
-                    label: "Military".into(),
-                    cospar_id: None,
-                    group_name: Some("military".into()),
-                },
-                SatelliteGroup {
-                    label: "Radar calibration".into(),
-                    cospar_id: None,
-                    group_name: Some("radar".into()),
-                },
-                SatelliteGroup {
-                    label: "CubeSats".into(),
-                    cospar_id: None,
-                    group_name: Some("cubesat".into()),
-                },
+                SatelliteGroup::with_cospar_id("ISS".into(), "1998-067A".into()),
+                SatelliteGroup::with_cospar_id("CSS".into(), "2021-035A".into()),
+                SatelliteGroup::with_group_name("Weather".into(), "weather".into()),
+                SatelliteGroup::with_group_name("NOAA".into(), "noaa".into()),
+                SatelliteGroup::with_group_name("GOES".into(), "goes".into()),
+                SatelliteGroup::with_group_name("Earth resources".into(), "resource".into()),
+                SatelliteGroup::with_group_name("Search & rescue".into(), "sarsat".into()),
+                SatelliteGroup::with_group_name("Disaster monitoring".into(), "dmc".into()),
+                SatelliteGroup::with_group_name("GPS Operational".into(), "gps-ops".into()),
+                SatelliteGroup::with_group_name("GLONASS Operational".into(), "glo-ops".into()),
+                SatelliteGroup::with_group_name("Galileo".into(), "galileo".into()),
+                SatelliteGroup::with_group_name("Beidou".into(), "beidou".into()),
+                SatelliteGroup::with_group_name("Space & Earth Science".into(), "science".into()),
+                SatelliteGroup::with_group_name("Geodetic".into(), "geodetic".into()),
+                SatelliteGroup::with_group_name("Engineering".into(), "engineering".into()),
+                SatelliteGroup::with_group_name("Education".into(), "education".into()),
+                SatelliteGroup::with_group_name("Military".into(), "military".into()),
+                SatelliteGroup::with_group_name("Radar calibration".into(), "radar".into()),
+                SatelliteGroup::with_group_name("CubeSats".into(), "cubesat".into()),
             ],
         }
     }
