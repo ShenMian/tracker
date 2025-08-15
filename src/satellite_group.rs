@@ -1,56 +1,16 @@
 use std::time::Duration;
 
-use strum::{Display, EnumIter};
+use serde::Deserialize;
 use tokio::fs;
 
 /// The `SatelliteGroup` type.
 ///
 /// Type [`SatelliteGroup`] represents a group of satellites.
-#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Display, EnumIter)]
-pub enum SatelliteGroup {
-    // Space stations
-    #[strum(to_string = "CSS")]
-    Css,
-    #[strum(to_string = "ISS")]
-    Iss,
-
-    // Weather satellites
-    Weather,
-    #[strum(to_string = "NOAA")]
-    Noaa,
-    #[strum(to_string = "GOES")]
-    Goes,
-
-    // Earth resources satellites
-    #[strum(to_string = "Earth resources")]
-    EarthResources,
-    #[strum(to_string = "Search & rescue")]
-    SearchRescue,
-    #[strum(to_string = "Disaster monitoring")]
-    DisasterMonitoring,
-
-    // Navigation satellites
-    #[strum(to_string = "GPS Operational")]
-    Gps,
-    #[strum(to_string = "GLONASS Operational")]
-    Glonass,
-    Galileo,
-    Beidou,
-
-    // Scientific satellites
-    #[strum(to_string = "Space & Earth Science")]
-    SpaceEarthScience,
-    Geodetic,
-    Engineering,
-    Education,
-
-    // Miscellaneous satellites
-    #[strum(to_string = "DFH-1")]
-    Dfh1,
-    Military,
-    #[strum(to_string = "Radar calibration")]
-    RadarCalibration,
-    CubeSats,
+#[derive(Clone, Debug, Deserialize)]
+pub struct SatelliteGroup {
+    pub label: String,
+    pub cospar_id: Option<String>,
+    pub group_name: Option<String>,
 }
 
 impl SatelliteGroup {
@@ -64,7 +24,7 @@ impl SatelliteGroup {
     /// * `cache_lifetime` - Duration for which the cache is considered valid.
     pub async fn get_elements(&self, cache_lifetime: Duration) -> Option<Vec<sgp4::Elements>> {
         let cache_path =
-            std::env::temp_dir().join(format!("tracker/{}.json", self.to_string().to_lowercase()));
+            std::env::temp_dir().join(format!("tracker/{}.json", self.label.to_lowercase()));
         fs::create_dir_all(cache_path.parent().unwrap())
             .await
             .unwrap();
@@ -122,35 +82,11 @@ impl SatelliteGroup {
 
     /// Returns the international designator.
     fn cospar_id(&self) -> Option<&str> {
-        match self {
-            Self::Iss => Some("1998-067A"),
-            Self::Css => Some("2021-035A"),
-            Self::Dfh1 => Some("1970-034A"),
-            _ => None,
-        }
+        self.cospar_id.as_deref()
     }
 
     /// Returns CelesTrak group name.
     fn group_name(&self) -> Option<&str> {
-        match self {
-            Self::Weather => Some("weather"),
-            Self::Noaa => Some("noaa"),
-            Self::Goes => Some("goes"),
-            Self::EarthResources => Some("resource"),
-            Self::SearchRescue => Some("sarsat"),
-            Self::DisasterMonitoring => Some("dmc"),
-            Self::Gps => Some("gps-ops"),
-            Self::Glonass => Some("glo-ops"),
-            Self::Galileo => Some("galileo"),
-            Self::Beidou => Some("beidou"),
-            Self::SpaceEarthScience => Some("science"),
-            Self::Geodetic => Some("geodetic"),
-            Self::Engineering => Some("engineering"),
-            Self::Education => Some("education"),
-            Self::Military => Some("military"),
-            Self::RadarCalibration => Some("radar"),
-            Self::CubeSats => Some("cubesat"),
-            _ => None,
-        }
+        self.group_name.as_deref()
     }
 }
