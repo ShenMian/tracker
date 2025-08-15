@@ -24,29 +24,29 @@ terminator_color = "dark_gray"
 cache_lifetime_min = 120
 groups = [
     # Space Stations
-	{ label = "ISS", cospar_id = "1998-067A" },
-	{ label = "CSS", cospar_id = "2021-035A" },
+    { label = "ISS", id = "1998-067A" },
+    { label = "CSS", id = "2021-035A" },
     # Weather & Earth Resources Satellites
-	{ label = "Weather", group_name = "weather" },
-	{ label = "NOAA", group_name = "noaa" },
-	{ label = "GOES", group_name = "goes" },
-	{ label = "Earth resources", group_name = "resource" },
-	{ label = "Search & rescue", group_name = "sarsat" },
-	{ label = "Disaster monitoring", group_name = "dmc" },
+    { label = "Weather", group = "weather" },
+    { label = "NOAA", group = "noaa" },
+    { label = "GOES", group = "goes" },
+    { label = "Earth resources", group = "resource" },
+    { label = "Search & rescue", group = "sarsat" },
+    { label = "Disaster monitoring", group = "dmc" },
     # Navigation Satellites
-	{ label = "GPS Operational", group_name = "gps-ops" },
-	{ label = "GLONASS Operational", group_name = "glo-ops" },
-	{ label = "Galileo", group_name = "galileo" },
-	{ label = "Beidou", group_name = "beidou" },
+    { label = "GPS", group = "gps-ops" },
+    { label = "GLONASS", group = "glo-ops" },
+    { label = "Galileo", group = "galileo" },
+    { label = "Beidou", group = "beidou" },
     # Scientific Satellites
-	{ label = "Space & Earth Science", group_name = "science" },
-	{ label = "Geodetic", group_name = "geodetic" },
-	{ label = "Engineering", group_name = "engineering" },
-	{ label = "Education", group_name = "education" },
+    { label = "Space & Earth Science", group = "science" },
+    { label = "Geodetic", group = "geodetic" },
+    { label = "Engineering", group = "engineering" },
+    { label = "Education", group = "education" },
     # Miscellaneous Satellites
-	{ label = "Military", group_name = "military" },
-	{ label = "Radar calibration", group_name = "radar" },
-	{ label = "CubeSats", group_name = "cubesat" },
+    { label = "Military", group = "military" },
+    { label = "Radar calibration", group = "radar" },
+    { label = "CubeSats", group = "cubesat" },
 ]
 ```
 

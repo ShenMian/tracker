@@ -1,50 +1,36 @@
 use std::time::Duration;
 
-use serde::Deserialize;
 use tokio::fs;
+
+use crate::config::SatelliteGroupConfig;
 
 /// The `SatelliteGroup` type.
 ///
 /// Type [`SatelliteGroup`] represents a group of satellites.
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Eq, Debug)]
 pub struct SatelliteGroup {
     label: String,
-    cospar_id: Option<String>,
-    group_name: Option<String>,
+    celestrak_id: CelestrakId,
+}
+
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
+pub enum CelestrakId {
+    CosparId(String),
+    GroupName(String),
 }
 
 impl SatelliteGroup {
-    /// Creates a new `SatelliteGroup` with the given COSPAR ID.
-    pub fn with_cospar_id(label: String, cospar_id: String) -> Self {
+    /// Creates a new `SatelliteGroup`.
+    pub fn new(label: String, celestrak_id: CelestrakId) -> Self {
         Self {
             label,
-            cospar_id: Some(cospar_id),
-            group_name: None,
-        }
-    }
-
-    /// Creates a new `SatelliteGroup` with the given group name.
-    pub fn with_group_name(label: String, group_name: String) -> Self {
-        Self {
-            label,
-            cospar_id: None,
-            group_name: Some(group_name),
+            celestrak_id,
         }
     }
 
     /// Returns the label.
     pub fn label(&self) -> &str {
         &self.label
-    }
-
-    /// Returns the international designator.
-    fn cospar_id(&self) -> Option<&str> {
-        self.cospar_id.as_deref()
-    }
-
-    /// Returns CelesTrak group name.
-    fn group_name(&self) -> Option<&str> {
-        self.group_name.as_deref()
     }
 
     /// Returns SGP4 elements.
@@ -57,7 +43,7 @@ impl SatelliteGroup {
     /// * `cache_lifetime` - Duration for which the cache is considered valid.
     pub async fn get_elements(&self, cache_lifetime: Duration) -> Option<Vec<sgp4::Elements>> {
         let cache_path =
-            std::env::temp_dir().join(format!("tracker/{}.json", self.label.to_lowercase()));
+            std::env::temp_dir().join(format!("tracker/{}.json", self.label().to_lowercase()));
         fs::create_dir_all(cache_path.parent().unwrap())
             .await
             .unwrap();
@@ -98,10 +84,9 @@ impl SatelliteGroup {
         const URL: &str = "https://celestrak.com/NORAD/elements/gp.php";
 
         let mut request = reqwest::Client::new().get(URL).query(&[("FORMAT", "json")]);
-        request = match (self.cospar_id(), self.group_name()) {
-            (Some(id), None) => request.query(&[("INTDES", id)]),
-            (None, Some(group)) => request.query(&[("GROUP", group)]),
-            _ => unreachable!(),
+        request = match &self.celestrak_id {
+            CelestrakId::CosparId(id) => request.query(&[("INTDES", id)]),
+            CelestrakId::GroupName(group) => request.query(&[("GROUP", group)]),
         };
 
         let response = request.send().await.ok()?;
@@ -111,5 +96,21 @@ impl SatelliteGroup {
                 .await
                 .expect("failed to parse JSON from celestrak.org"),
         )
+    }
+}
+
+impl PartialEq for SatelliteGroup {
+    fn eq(&self, other: &Self) -> bool {
+        self.celestrak_id == other.celestrak_id
+    }
+}
+
+impl From<SatelliteGroupConfig> for SatelliteGroup {
+    fn from(config: SatelliteGroupConfig) -> Self {
+        match (config.id, config.group) {
+            (Some(cospar_id), None) => Self::new(config.label, CelestrakId::CosparId(cospar_id)),
+            (None, Some(group_name)) => Self::new(config.label, CelestrakId::GroupName(group_name)),
+            _ => unreachable!(),
+        }
     }
 }

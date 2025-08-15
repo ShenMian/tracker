@@ -39,7 +39,12 @@ impl SatelliteGroupsState {
     /// Creates a new `SatelliteGroupsState` with the given configuration.
     pub fn with_config(config: SatelliteGroupsConfig) -> Self {
         Self {
-            list_entries: config.groups.into_iter().map(Entry::from).collect(),
+            list_entries: config
+                .groups
+                .into_iter()
+                .map(SatelliteGroup::from)
+                .map(Entry::from)
+                .collect(),
             cache_lifetime: Duration::from_secs(config.cache_lifetime_min * 60),
             ..Self::default()
         }
