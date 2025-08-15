@@ -1,5 +1,12 @@
 use serde::Deserialize;
 
+#[derive(Default, Deserialize)]
+#[serde(default)]
+pub struct Config {
+    pub world_map: WorldMapConfig,
+    pub satellite_groups: SatelliteGroupsConfig,
+}
+
 #[derive(Deserialize)]
 #[serde(default)]
 pub struct WorldMapConfig {
@@ -34,18 +41,18 @@ impl Default for WorldMapConfig {
 #[serde(default)]
 pub struct SatelliteGroupsConfig {
     pub cache_lifetime_min: u64,
-    pub groups: Vec<SatelliteGroupConfig>,
+    pub groups: Vec<GroupConfig>,
 }
 
 #[derive(Deserialize)]
-pub struct SatelliteGroupConfig {
+pub struct GroupConfig {
     pub label: String,
     pub id: Option<String>,
     pub group: Option<String>,
 }
 
-impl SatelliteGroupConfig {
-    fn with_cospar_id(label: String, cospar_id: String) -> Self {
+impl GroupConfig {
+    fn with_id(label: String, cospar_id: String) -> Self {
         Self {
             label,
             id: Some(cospar_id),
@@ -53,7 +60,7 @@ impl SatelliteGroupConfig {
         }
     }
 
-    fn with_group_name(label: String, group_name: String) -> Self {
+    fn with_group(label: String, group_name: String) -> Self {
         Self {
             label,
             id: None,
@@ -67,39 +74,26 @@ impl Default for SatelliteGroupsConfig {
         Self {
             cache_lifetime_min: 2 * 60,
             groups: vec![
-                SatelliteGroupConfig::with_cospar_id("ISS".into(), "1998-067A".into()),
-                SatelliteGroupConfig::with_cospar_id("CSS".into(), "2021-035A".into()),
-                SatelliteGroupConfig::with_group_name("Weather".into(), "weather".into()),
-                SatelliteGroupConfig::with_group_name("NOAA".into(), "noaa".into()),
-                SatelliteGroupConfig::with_group_name("GOES".into(), "goes".into()),
-                SatelliteGroupConfig::with_group_name("Earth resources".into(), "resource".into()),
-                SatelliteGroupConfig::with_group_name("Search & rescue".into(), "sarsat".into()),
-                SatelliteGroupConfig::with_group_name("Disaster monitoring".into(), "dmc".into()),
-                SatelliteGroupConfig::with_group_name("GPS Operational".into(), "gps-ops".into()),
-                SatelliteGroupConfig::with_group_name(
-                    "GLONASS Operational".into(),
-                    "glo-ops".into(),
-                ),
-                SatelliteGroupConfig::with_group_name("Galileo".into(), "galileo".into()),
-                SatelliteGroupConfig::with_group_name("Beidou".into(), "beidou".into()),
-                SatelliteGroupConfig::with_group_name(
-                    "Space & Earth Science".into(),
-                    "science".into(),
-                ),
-                SatelliteGroupConfig::with_group_name("Geodetic".into(), "geodetic".into()),
-                SatelliteGroupConfig::with_group_name("Engineering".into(), "engineering".into()),
-                SatelliteGroupConfig::with_group_name("Education".into(), "education".into()),
-                SatelliteGroupConfig::with_group_name("Military".into(), "military".into()),
-                SatelliteGroupConfig::with_group_name("Radar calibration".into(), "radar".into()),
-                SatelliteGroupConfig::with_group_name("CubeSats".into(), "cubesat".into()),
+                GroupConfig::with_id("ISS".into(), "1998-067A".into()),
+                GroupConfig::with_id("CSS".into(), "2021-035A".into()),
+                GroupConfig::with_group("Weather".into(), "weather".into()),
+                GroupConfig::with_group("NOAA".into(), "noaa".into()),
+                GroupConfig::with_group("GOES".into(), "goes".into()),
+                GroupConfig::with_group("Earth resources".into(), "resource".into()),
+                GroupConfig::with_group("Search & rescue".into(), "sarsat".into()),
+                GroupConfig::with_group("Disaster monitoring".into(), "dmc".into()),
+                GroupConfig::with_group("GPS Operational".into(), "gps-ops".into()),
+                GroupConfig::with_group("GLONASS Operational".into(), "glo-ops".into()),
+                GroupConfig::with_group("Galileo".into(), "galileo".into()),
+                GroupConfig::with_group("Beidou".into(), "beidou".into()),
+                GroupConfig::with_group("Space & Earth Science".into(), "science".into()),
+                GroupConfig::with_group("Geodetic".into(), "geodetic".into()),
+                GroupConfig::with_group("Engineering".into(), "engineering".into()),
+                GroupConfig::with_group("Education".into(), "education".into()),
+                GroupConfig::with_group("Military".into(), "military".into()),
+                GroupConfig::with_group("Radar calibration".into(), "radar".into()),
+                GroupConfig::with_group("CubeSats".into(), "cubesat".into()),
             ],
         }
     }
-}
-
-#[derive(Default, Deserialize)]
-#[serde(default)]
-pub struct Config {
-    pub world_map: WorldMapConfig,
-    pub satellite_groups: SatelliteGroupsConfig,
 }

@@ -1,9 +1,6 @@
 use std::time::{Duration, Instant};
 
-use crate::{
-    app::App, config::SatelliteGroupsConfig, event::Event, object::Object,
-    satellite_group::SatelliteGroup,
-};
+use crate::{app::App, config::SatelliteGroupsConfig, event::Event, group::Group, object::Object};
 use anyhow::Result;
 use chrono::{DateTime, Utc};
 use crossterm::event::{MouseButton, MouseEvent, MouseEventKind};
@@ -42,7 +39,7 @@ impl SatelliteGroupsState {
             list_entries: config
                 .groups
                 .into_iter()
-                .map(SatelliteGroup::from)
+                .map(Group::from)
                 .map(Entry::from)
                 .collect(),
             cache_lifetime: Duration::from_secs(config.cache_lifetime_min * 60),
@@ -159,12 +156,12 @@ impl StatefulWidget for SatelliteGroups {
 }
 
 pub struct Entry {
-    pub satellite: SatelliteGroup,
+    pub satellite: Group,
     selected: bool,
 }
 
-impl From<SatelliteGroup> for Entry {
-    fn from(satellite: SatelliteGroup) -> Self {
+impl From<Group> for Entry {
+    fn from(satellite: Group) -> Self {
         Self {
             satellite,
             selected: false,
