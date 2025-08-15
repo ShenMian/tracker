@@ -2,32 +2,26 @@ use std::time::Duration;
 
 use tokio::fs;
 
-use crate::config::SatelliteGroupConfig;
+use crate::config::GroupConfig;
 
-/// The `SatelliteGroup` type.
+/// The `Group` type.
 ///
-/// Type [`SatelliteGroup`] represents a group of satellites.
+/// Type [`Group`] represents a group of satellites.
 #[derive(Clone, Eq, Debug)]
-pub struct SatelliteGroup {
+pub struct Group {
     label: String,
     celestrak_id: CelestrakId,
 }
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub enum CelestrakId {
-    CosparId(String),
-    GroupName(String),
+    /// COSPAR ID.
+    Id(String),
+    /// Group name.
+    Group(String),
 }
 
-impl SatelliteGroup {
-    /// Creates a new `SatelliteGroup`.
-    pub fn new(label: String, celestrak_id: CelestrakId) -> Self {
-        Self {
-            label,
-            celestrak_id,
-        }
-    }
-
+impl Group {
     /// Returns the label.
     pub fn label(&self) -> &str {
         &self.label
@@ -85,8 +79,8 @@ impl SatelliteGroup {
 
         let mut request = reqwest::Client::new().get(URL).query(&[("FORMAT", "json")]);
         request = match &self.celestrak_id {
-            CelestrakId::CosparId(id) => request.query(&[("INTDES", id)]),
-            CelestrakId::GroupName(group) => request.query(&[("GROUP", group)]),
+            CelestrakId::Id(id) => request.query(&[("INTDES", id)]),
+            CelestrakId::Group(group) => request.query(&[("GROUP", group)]),
         };
 
         let response = request.send().await.ok()?;
@@ -99,17 +93,23 @@ impl SatelliteGroup {
     }
 }
 
-impl PartialEq for SatelliteGroup {
+impl PartialEq for Group {
     fn eq(&self, other: &Self) -> bool {
         self.celestrak_id == other.celestrak_id
     }
 }
 
-impl From<SatelliteGroupConfig> for SatelliteGroup {
-    fn from(config: SatelliteGroupConfig) -> Self {
+impl From<GroupConfig> for Group {
+    fn from(config: GroupConfig) -> Self {
         match (config.id, config.group) {
-            (Some(cospar_id), None) => Self::new(config.label, CelestrakId::CosparId(cospar_id)),
-            (None, Some(group_name)) => Self::new(config.label, CelestrakId::GroupName(group_name)),
+            (Some(id), None) => Self {
+                label: config.label,
+                celestrak_id: CelestrakId::Id(id),
+            },
+            (None, Some(group)) => Self {
+                label: config.label,
+                celestrak_id: CelestrakId::Group(group),
+            },
             _ => unreachable!(),
         }
     }
