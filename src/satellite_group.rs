@@ -8,12 +8,45 @@ use tokio::fs;
 /// Type [`SatelliteGroup`] represents a group of satellites.
 #[derive(Clone, Debug, Deserialize)]
 pub struct SatelliteGroup {
-    pub label: String,
-    pub cospar_id: Option<String>,
-    pub group_name: Option<String>,
+    label: String,
+    cospar_id: Option<String>,
+    group_name: Option<String>,
 }
 
 impl SatelliteGroup {
+    /// Creates a new `SatelliteGroup` with the given COSPAR ID.
+    pub fn with_cospar_id(label: String, cospar_id: String) -> Self {
+        Self {
+            label,
+            cospar_id: Some(cospar_id),
+            group_name: None,
+        }
+    }
+
+    /// Creates a new `SatelliteGroup` with the given group name.
+    pub fn with_group_name(label: String, group_name: String) -> Self {
+        Self {
+            label,
+            cospar_id: None,
+            group_name: Some(group_name),
+        }
+    }
+
+    /// Returns the label.
+    pub fn label(&self) -> &str {
+        &self.label
+    }
+
+    /// Returns the international designator.
+    fn cospar_id(&self) -> Option<&str> {
+        self.cospar_id.as_deref()
+    }
+
+    /// Returns CelesTrak group name.
+    fn group_name(&self) -> Option<&str> {
+        self.group_name.as_deref()
+    }
+
     /// Returns SGP4 elements.
     ///
     /// If cache is expired, fetches elements from <https://celestrak.org>.
@@ -78,15 +111,5 @@ impl SatelliteGroup {
                 .await
                 .expect("failed to parse JSON from celestrak.org"),
         )
-    }
-
-    /// Returns the international designator.
-    fn cospar_id(&self) -> Option<&str> {
-        self.cospar_id.as_deref()
-    }
-
-    /// Returns CelesTrak group name.
-    fn group_name(&self) -> Option<&str> {
-        self.group_name.as_deref()
     }
 }

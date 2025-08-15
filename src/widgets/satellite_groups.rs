@@ -119,7 +119,7 @@ impl SatelliteGroups {
             };
             let icon = if entry.selected { "✓" } else { "☐" };
             ListItem::new(Text::styled(
-                format!("{} {}", icon, entry.satellite.label),
+                format!("{} {}", icon, entry.satellite.label()),
                 style,
             ))
         });
