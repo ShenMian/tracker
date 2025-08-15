@@ -22,7 +22,40 @@ terminator_color = "dark_gray"
 
 [satellite_groups]
 cache_lifetime_min = 120
+groups = [
+    # Space Stations
+    { label = "ISS", id = "1998-067A" },
+    { label = "CSS", id = "2021-035A" },
+    # Weather & Earth Resources Satellites
+    { label = "Weather", group = "weather" },
+    { label = "NOAA", group = "noaa" },
+    { label = "GOES", group = "goes" },
+    { label = "Earth resources", group = "resource" },
+    { label = "Search & rescue", group = "sarsat" },
+    { label = "Disaster monitoring", group = "dmc" },
+    # Navigation Satellites
+    { label = "GPS", group = "gps-ops" },
+    { label = "GLONASS", group = "glo-ops" },
+    { label = "Galileo", group = "galileo" },
+    { label = "Beidou", group = "beidou" },
+    # Scientific Satellites
+    { label = "Space & Earth Science", group = "science" },
+    { label = "Geodetic", group = "geodetic" },
+    { label = "Engineering", group = "engineering" },
+    { label = "Education", group = "education" },
+    # Miscellaneous Satellites
+    { label = "Military", group = "military" },
+    { label = "Radar calibration", group = "radar" },
+    { label = "CubeSats", group = "cubesat" },
+]
 ```
+
+## Groups
+
+Satellite TLE (Two-Line Element) data is retrieved from [CelesTrak](https://celestrak.org).
+
+- **Grouped by function** – See [Current GP Element Sets](https://celestrak.org/NORAD/elements/) for available groups. The `group_name` field in the configuration corresponds to these group identifiers.
+- **Individual satellites** – Use the [Search Satellite Catalog](https://celestrak.org/satcat/search.php) to find specific satellites. The `cospar_id` field corresponds to the satellite's International Designator.
 
 ## Color
 

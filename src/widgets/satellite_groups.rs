@@ -1,17 +1,12 @@
 use std::time::{Duration, Instant};
 
+use crate::{app::App, config::SatelliteGroupsConfig, event::Event, group::Group, object::Object};
 use anyhow::Result;
 use chrono::{DateTime, Utc};
 use crossterm::event::{MouseButton, MouseEvent, MouseEventKind};
 use ratatui::{
     prelude::*,
     widgets::{Block, List, ListItem, ListState, Scrollbar, ScrollbarState},
-};
-use strum::IntoEnumIterator;
-
-use crate::{
-    app::App, config::SatelliteGroupsConfig, event::Event, object::Object,
-    satellite_group::SatelliteGroup,
 };
 
 /// A widget to display a list of satellite groups.
@@ -41,6 +36,12 @@ impl SatelliteGroupsState {
     /// Creates a new `SatelliteGroupsState` with the given configuration.
     pub fn with_config(config: SatelliteGroupsConfig) -> Self {
         Self {
+            list_entries: config
+                .groups
+                .into_iter()
+                .map(Group::from)
+                .map(Entry::from)
+                .collect(),
             cache_lifetime: Duration::from_secs(config.cache_lifetime_min * 60),
             ..Self::default()
         }
@@ -95,7 +96,7 @@ impl Default for SatelliteGroupsState {
     fn default() -> Self {
         Self {
             objects: Vec::new(),
-            list_entries: SatelliteGroup::iter().map(Entry::from).collect(),
+            list_entries: Default::default(),
             list_state: Default::default(),
             inner_area: Default::default(),
             cache_lifetime: Default::default(),
@@ -119,7 +120,10 @@ impl SatelliteGroups {
                 Style::default()
             };
             let icon = if entry.selected { "✓" } else { "☐" };
-            ListItem::new(Text::styled(format!("{} {}", icon, entry.satellite), style))
+            ListItem::new(Text::styled(
+                format!("{} {}", icon, entry.satellite.label()),
+                style,
+            ))
         });
 
         let list =
@@ -152,12 +156,12 @@ impl StatefulWidget for SatelliteGroups {
 }
 
 pub struct Entry {
-    pub satellite: SatelliteGroup,
+    pub satellite: Group,
     selected: bool,
 }
 
-impl From<SatelliteGroup> for Entry {
-    fn from(satellite: SatelliteGroup) -> Self {
+impl From<Group> for Entry {
+    fn from(satellite: Group) -> Self {
         Self {
             satellite,
             selected: false,
