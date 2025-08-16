@@ -10,9 +10,8 @@ pub struct Config {
 #[derive(Deserialize)]
 #[serde(default)]
 pub struct WorldMapConfig {
-    pub follow_selected_object: bool,
+    pub follow_object: bool,
     pub show_terminator: bool,
-    pub show_cursor_position: bool,
 
     pub lon_delta_deg: f64,
     pub time_delta_min: i64,
@@ -25,9 +24,8 @@ pub struct WorldMapConfig {
 impl Default for WorldMapConfig {
     fn default() -> Self {
         Self {
-            follow_selected_object: true,
+            follow_object: true,
             show_terminator: true,
-            show_cursor_position: false,
             lon_delta_deg: 10.0,
             time_delta_min: 1,
             map_color: "gray".into(),

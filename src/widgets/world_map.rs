@@ -27,8 +27,6 @@ pub struct WorldMapState {
     pub selected_object_index: Option<usize>,
     /// Index of the hovered object.
     hovered_object_index: Option<usize>,
-    /// Position of the cursor in the map.
-    cursor_position: Option<(f64, f64)>,
 
     /// Time offset from the current UTC time for time simulation.
     time_offset: Duration,
@@ -39,8 +37,6 @@ pub struct WorldMapState {
     follow_object: bool,
     /// Whether to display the day-night terminator line.
     show_terminator: bool,
-    /// Whether to show the cursor position.
-    show_cursor_position: bool,
     /// The amount of longitude (in degrees) to move the map when scrolling left
     /// or right.
     lon_delta: f64,
@@ -72,9 +68,8 @@ impl WorldMapState {
             .expect("Invalid terminator color in config");
 
         Self {
-            follow_object: config.follow_selected_object,
+            follow_object: config.follow_object,
             show_terminator: config.show_terminator,
-            show_cursor_position: config.show_cursor_position,
             lon_delta: config.lon_delta_deg,
             time_delta: Duration::minutes(config.time_delta_min),
             map_color,
@@ -129,17 +124,6 @@ impl WorldMap<'_> {
                 )
                 .white(),
             );
-
-        // Show cursor position with cardinal direction
-        if state.show_cursor_position
-            && let Some((lon, lat)) = state.cursor_position
-        {
-            let ns = if lat >= 0.0 { 'N' } else { 'S' };
-            let ew = if lon >= 0.0 { 'E' } else { 'W' };
-            block = block.title_bottom(
-                Line::from(format!("{:.0}°{ns},{:.0}°{ew}", lat.abs(), lon.abs())).right_aligned(),
-            );
-        }
 
         // Show follow mode indicator if enabled
         if state.follow_object {
@@ -364,21 +348,13 @@ async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
     let inner_area = app.world_map_state.inner_area;
     if !inner_area.contains(Position::new(event.column, event.row)) {
         app.world_map_state.hovered_object_index = None;
-        app.world_map_state.cursor_position = None;
         return Ok(());
     }
 
     // Convert window coordinates to area coordinates
     let mouse = Position::new(event.column - inner_area.x, event.row - inner_area.y);
 
-    let (lon, lat) = area_to_lon_lat(mouse.x, mouse.y, app.world_map_state.inner_area);
-    let lon = wrap_longitude_deg(lon + app.world_map_state.lon_offset);
-
-    app.world_map_state.cursor_position = Some((lon, lat));
-
-    let nearest_object_index =
-        app.satellite_groups_state
-            .get_nearest_object_index(app.world_map_state.time(), lon, lat);
+    let nearest_object_index = get_nearest_object_index(app, mouse, inner_area);
     match event.kind {
         MouseEventKind::Down(MouseButton::Left) => {
             app.world_map_state.selected_object_index = nearest_object_index
@@ -407,6 +383,26 @@ async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
     Ok(())
 }
 
+/// Get the index of the nearest object to the given area position
+fn get_nearest_object_index(app: &mut App, position: Position, inner_area: Rect) -> Option<usize> {
+    app.satellite_groups_state
+        .objects
+        .iter()
+        .enumerate()
+        .min_by_key(|(_, obj)| {
+            let state = obj.predict(app.world_map_state.time()).unwrap();
+            // Convert to area position
+            let (x, y) = lon_lat_to_area(
+                wrap_longitude_deg(state.longitude() - app.world_map_state.lon_offset),
+                state.latitude(),
+                inner_area,
+            );
+            (x as i32 - position.x as i32).abs() + (y as i32 - position.y as i32).abs()
+        })
+        .map(|(index, _)| index)
+}
+
+#[expect(dead_code)]
 /// Converts area coordinates to lon/lat coordinates.
 fn area_to_lon_lat(x: u16, y: u16, area: Rect) -> (f64, f64) {
     debug_assert!(x < area.width && y < area.height);
@@ -419,7 +415,6 @@ fn area_to_lon_lat(x: u16, y: u16, area: Rect) -> (f64, f64) {
     (lon, lat)
 }
 
-#[expect(dead_code)]
 /// Converts lon/lat coordinates to area coordinates.
 fn lon_lat_to_area(lon: f64, lat: f64, area: Rect) -> (u16, u16) {
     debug_assert!((-180.0..=180.0).contains(&lon));

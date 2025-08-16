@@ -3,7 +3,6 @@ use std::time::{Duration, Instant};
 
 use crate::{app::App, config::SatelliteGroupsConfig, event::Event, group::Group, object::Object};
 use anyhow::Result;
-use chrono::{DateTime, Utc};
 use crossterm::event::{MouseButton, MouseEvent, MouseEventKind};
 use ratatui::{
     prelude::*,
@@ -59,25 +58,6 @@ impl SatelliteGroupsState {
                 entry.selected = false;
             }
         }
-    }
-
-    /// Get the index of the nearest object to the given area coordinates
-    pub fn get_nearest_object_index(
-        &self,
-        time: DateTime<Utc>,
-        lon: f64,
-        lat: f64,
-    ) -> Option<usize> {
-        self.objects
-            .iter()
-            .enumerate()
-            .min_by_key(|(_, obj)| {
-                let state = obj.predict(time).unwrap();
-                let lon_diff = state.longitude() - lon;
-                let lat_diff = state.latitude() - lat;
-                ((lon_diff.powi(2) + lat_diff.powi(2)) * 1000.0).round() as i32
-            })
-            .map(|(index, _)| index)
     }
 
     fn scroll_up(&mut self) {
