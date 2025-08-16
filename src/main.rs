@@ -24,8 +24,8 @@ async fn main() -> Result<()> {
         .join(".config/tracker/config.toml");
 
     let config = if path.exists() {
-        let content = std::fs::read_to_string(&path).expect("Failed to read config file");
-        let config: Config = toml::from_str(&content).expect("Failed to parse config file");
+        let content = std::fs::read_to_string(&path).expect("failed to read config file");
+        let config: Config = toml::from_str(&content).expect("failed to parse config file");
         config
     } else {
         Config::default()
