@@ -32,16 +32,18 @@ pub struct WorldMapState {
     time_offset: Duration,
     /// Center longitude offset for horizontal map scrolling in degrees.
     lon_offset: f64,
-
-    /// Whether to follow the selected object by adjusting the map longitude.
-    follow_object: bool,
-    /// Whether to display the day-night terminator line.
-    show_terminator: bool,
+    /// The time step to advance or rewind when scrolling time.
+    time_delta: Duration,
     /// The amount of longitude (in degrees) to move the map when scrolling left
     /// or right.
     lon_delta: f64,
-    /// The time step to advance or rewind when scrolling time.
-    time_delta: Duration,
+
+    /// Whether to follow the selected object by adjusting the map longitude.
+    follow_object: bool,
+    /// The smoothing factor for follow mode.
+    follow_smoothing: f64,
+    /// Whether to display the day-night terminator line.
+    show_terminator: bool,
 
     map_color: Color,
     trajectory_color: Color,
@@ -69,9 +71,10 @@ impl WorldMapState {
 
         Self {
             follow_object: config.follow_object,
+            follow_smoothing: config.follow_smoothing,
             show_terminator: config.show_terminator,
-            lon_delta: config.lon_delta_deg,
             time_delta: Duration::minutes(config.time_delta_min),
+            lon_delta: config.lon_delta_deg,
             map_color,
             trajectory_color,
             terminator_color,
@@ -149,7 +152,11 @@ impl WorldMap<'_> {
         {
             let selected = &self.satellite_groups_state.objects[index];
             let object_state = selected.predict(&state.time()).unwrap();
-            state.lon_offset = object_state.longitude();
+            // state.lon_offset = object_state.longitude();
+
+            state.lon_offset += wrap_longitude_deg(object_state.longitude() - state.lon_offset)
+                * state.follow_smoothing;
+            state.lon_offset = wrap_longitude_deg(state.lon_offset);
         }
 
         let x_min = state.lon_offset - 180.0;
