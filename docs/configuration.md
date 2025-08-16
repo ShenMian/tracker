@@ -4,10 +4,10 @@
 
 Default locations of configuration files on different platforms:
 
-- Linux/macOS: `$HOME/.config/tracker/config.toml`.
-- Windows: `%USERPROFILE%\.config\tracker\config.toml`.
+- **Linux/macOS**: `$HOME/.config/tracker/config.toml`.
+- **Windows**: `%USERPROFILE%\.config\tracker\config.toml`.
 
-## Default
+## Default settings
 
 ```toml
 [world_map]
@@ -50,14 +50,14 @@ groups = [
 ]
 ```
 
-## Groups
+## Satellite groups
 
-Satellite TLE (Two-Line Element) data is retrieved from [CelesTrak](https://celestrak.org).
+Satellite TLE (Two-Line Element) data is retrieved from [CelesTrak](https://celestrak.org), a 501(c)(3) non-profit organization dedicated to providing free orbital data and resources to the space community.
 
-- **Grouped by function** – See [Current GP Element Sets](https://celestrak.org/NORAD/elements/) for available groups. The `group_name` field in the configuration corresponds to these group identifiers.
-- **Individual satellites** – Use the [Search Satellite Catalog](https://celestrak.org/satcat/search.php) to find specific satellites. The `cospar_id` field corresponds to the satellite's International Designator.
+- **Individual satellites**: Use the [Search Satellite Catalog](https://celestrak.org/satcat/search.php) to locate specific satellites. The `id` field should match the satellite's International Designator as listed in the catalog.
+- **Function-based groups**: Complete list of available satellite categories can be found at [Current GP Element Sets](https://celestrak.org/NORAD/elements/). The `group` field in the configuration corresponds to these category identifiers.
 
-## Color
+## Color options
 
 Available colors:
 
