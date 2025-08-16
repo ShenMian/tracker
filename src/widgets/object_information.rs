@@ -135,7 +135,7 @@ impl ObjectInformation<'_> {
         const UNKNOWN_NAME: &str = "Unknown";
 
         let object = &self.satellite_groups_state.objects[index];
-        let object_state = object.predict(self.world_map_state.time()).unwrap();
+        let object_state = object.predict(&self.world_map_state.time()).unwrap();
 
         let result = state
             .geocoder

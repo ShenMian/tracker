@@ -148,7 +148,7 @@ impl WorldMap<'_> {
             && let Some(index) = state.selected_object_index
         {
             let selected = &self.satellite_groups_state.objects[index];
-            let object_state = selected.predict(state.time()).unwrap();
+            let object_state = selected.predict(&state.time()).unwrap();
             state.lon_offset = object_state.longitude();
         }
 
@@ -213,12 +213,12 @@ impl WorldMap<'_> {
         // Draw the terminator line
         self.draw_lines(
             ctx,
-            calculate_terminator(state.time()),
+            calculate_terminator(&state.time()),
             state.terminator_color,
         );
 
         // Mark the subsolar point
-        let (sub_lon, sub_lat) = subsolar_point(state.time());
+        let (sub_lon, sub_lat) = subsolar_point(&state.time());
         ctx.print(
             sub_lon.to_degrees(),
             sub_lat.to_degrees(),
@@ -235,7 +235,7 @@ impl WorldMap<'_> {
             } else {
                 Self::OBJECT_SYMBOL.red() + format!(" {object_name}").dark_gray()
             };
-            let object_state = object.predict(state.time()).unwrap();
+            let object_state = object.predict(&state.time()).unwrap();
             ctx.print(
                 object_state.position.longitude,
                 object_state.position.latitude,
@@ -252,7 +252,7 @@ impl WorldMap<'_> {
             // Draw the trajectory
             self.draw_lines(
                 ctx,
-                calculate_trajectory(selected, state.time()),
+                calculate_trajectory(selected, &state.time()),
                 state.trajectory_color,
             );
 
@@ -260,7 +260,7 @@ impl WorldMap<'_> {
             let object_name = selected.name().unwrap_or(Self::UNKNOWN_NAME);
             let text =
                 Self::OBJECT_SYMBOL.light_green().slow_blink() + format!(" {object_name}").white();
-            let object_state = selected.predict(state.time()).unwrap();
+            let object_state = selected.predict(&state.time()).unwrap();
             ctx.print(
                 object_state.position.longitude,
                 object_state.position.latitude,
@@ -274,7 +274,7 @@ impl WorldMap<'_> {
             let text = Self::OBJECT_SYMBOL.light_red().reversed()
                 + " ".into()
                 + object_name.to_string().white().reversed();
-            let object_state = hovered.predict(state.time()).unwrap();
+            let object_state = hovered.predict(&state.time()).unwrap();
             ctx.print(
                 object_state.position.longitude,
                 object_state.position.latitude,
@@ -390,7 +390,7 @@ fn get_nearest_object_index(app: &mut App, position: Position, inner_area: Rect)
         .iter()
         .enumerate()
         .min_by_key(|(_, obj)| {
-            let state = obj.predict(app.world_map_state.time()).unwrap();
+            let state = obj.predict(&app.world_map_state.time()).unwrap();
             // Convert to area position
             let (x, y) = lon_lat_to_area(
                 wrap_longitude_deg(state.longitude() - app.world_map_state.lon_offset),
