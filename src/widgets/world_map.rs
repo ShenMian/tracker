@@ -410,9 +410,10 @@ async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
 /// Converts area coordinates to lon/lat coordinates.
 fn area_to_lon_lat(x: u16, y: u16, area: Rect) -> (f64, f64) {
     debug_assert!(x < area.width && y < area.height);
+    debug_assert!(area.width > 0 && area.height > 0);
 
-    let normalized_x = (x + 1) as f64 / area.width as f64;
-    let normalized_y = (y + 1) as f64 / area.height as f64;
+    let normalized_x = x as f64 / area.width as f64;
+    let normalized_y = y as f64 / area.height as f64;
     let lon = -180.0 + normalized_x * 360.0;
     let lat = 90.0 - normalized_y * 180.0;
     (lon, lat)
