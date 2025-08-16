@@ -11,9 +11,8 @@ Default locations of configuration files on different platforms:
 
 ```toml
 [world_map]
-follow_selected_object = true
+follow_object = true
 show_terminator = true
-show_cursor_position = false
 lon_delta_deg = 10.0
 time_delta_min = 1
 map_color = "gray"
