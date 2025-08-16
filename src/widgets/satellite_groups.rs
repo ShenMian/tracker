@@ -157,7 +157,7 @@ impl StatefulWidget for SatelliteGroups {
 }
 
 pub struct Entry {
-    pub satellite: Group,
+    satellite: Group,
     selected: bool,
 }
 
