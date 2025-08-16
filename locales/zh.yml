@@ -1,0 +1,25 @@
+_version: 1
+# World map
+wm.title: "世界地图"
+wm.follow: "跟随"
+# Satellite groups
+sg.title: "卫星组"
+# Object information
+oi.title: "目标信息"
+oi.no_object_selected: "未选择目标"
+oi.name: "名称"
+oi.norad_id: "NORAD 编号"
+oi.longitude: "经度"
+oi.latitude: "纬度"
+oi.altitude: "高度"
+oi.speed: "速度"
+oi.period: "周期"
+oi.location: "位置"
+oi.epoch: "历元"
+oi.drag_term: "阻力系数"
+oi.inclination: "倾角"
+oi.right_ascension: "升交点赤经"
+oi.eccentricity: "偏心率"
+oi.mean_anomaly: "平近点角"
+oi.mean_motion: "平运动"
+oi.rev_num: "圈数"

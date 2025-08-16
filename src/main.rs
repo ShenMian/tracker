@@ -1,4 +1,7 @@
 use anyhow::Result;
+use rust_i18n::i18n;
+
+i18n!("locales", fallback = "en");
 
 use crate::{app::App, config::Config};
 
@@ -13,6 +16,9 @@ mod widgets;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    let locale = sys_locale::get_locale().unwrap_or_else(|| String::from("en-US"));
+    rust_i18n::set_locale(&locale);
+
     let path = std::env::home_dir()
         .unwrap()
         .join(".config/tracker/config.toml");

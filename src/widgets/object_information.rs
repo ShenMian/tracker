@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use anyhow::Result;
 use arboard::Clipboard;
 use crossterm::event::{MouseButton, MouseEvent, MouseEventKind};
@@ -10,6 +12,7 @@ use ratatui::{
     },
 };
 use reverse_geocoder::ReverseGeocoder;
+use rust_i18n::t;
 use unicode_width::UnicodeWidthStr;
 
 use crate::{app::App, event::Event};
@@ -26,7 +29,7 @@ pub struct ObjectInformation<'a> {
 pub struct ObjectInformationState {
     /// Key-value pairs representing the object information to display in the
     /// table.
-    table_entries: Vec<(&'static str, String)>,
+    table_entries: Vec<(String, String)>,
     /// The current state of the table widget.
     table_state: TableState,
     /// Reverse geocoder instance used to convert coordinates to location names.
@@ -62,65 +65,13 @@ impl Default for ObjectInformationState {
 
 impl ObjectInformation<'_> {
     fn render_block(&self, area: Rect, buf: &mut Buffer, state: &mut ObjectInformationState) {
-        let block = Block::bordered().title("Object information".blue());
+        let block = Block::bordered().title(t!("oi.title").to_string().blue());
         state.inner_area = block.inner(area);
         block.render(area, buf);
     }
 
     fn render_table(&self, buf: &mut Buffer, state: &mut ObjectInformationState, index: usize) {
-        const UNKNOWN_NAME: &str = "Unknown";
-
-        let object = &self.satellite_groups_state.objects[index];
-        let object_state = object.predict(self.world_map_state.time()).unwrap();
-
-        let result = state
-            .geocoder
-            .search((object_state.latitude(), object_state.longitude()));
-        let city_name = &result.record.name;
-        let country_name = isocountry::CountryCode::for_alpha2(&result.record.cc)
-            .unwrap()
-            .name();
-
-        let elements = object.elements();
-        state.table_entries = Vec::from([
-            (
-                "Name",
-                elements
-                    .object_name
-                    .as_deref()
-                    .unwrap_or(UNKNOWN_NAME)
-                    .to_string(),
-            ),
-            (
-                "COSPAR ID",
-                elements
-                    .international_designator
-                    .as_deref()
-                    .unwrap_or(UNKNOWN_NAME)
-                    .to_string(),
-            ),
-            ("NORAD ID", elements.norad_id.to_string()),
-            ("Longitude", format!("{:9.4}°", object_state.longitude())),
-            ("Latitude", format!("{:9.4}°", object_state.latitude())),
-            ("Altitude", format!("{:.3} km", object_state.altitude())),
-            ("Speed", format!("{:.2} km/s", object_state.speed())),
-            (
-                "Period",
-                format!("{:.2} min", object.orbital_period().as_seconds_f64() / 60.0),
-            ),
-            ("Location", format!("{city_name}, {country_name}")),
-            (
-                "Epoch",
-                object.epoch().format("%Y-%m-%d %H:%M:%S").to_string(),
-            ),
-            ("Drag term", format!("{} 1/ER", elements.drag_term)),
-            ("Inc", format!("{}°", elements.inclination)),
-            ("Right asc.", format!("{}°", elements.right_ascension)),
-            ("Ecc", elements.eccentricity.to_string()),
-            ("M. anomaly", format!("{}°", elements.mean_anomaly)),
-            ("M. motion", format!("{} 1/day", elements.mean_motion)),
-            ("Rev. #", elements.revolution_number.to_string()),
-        ]);
+        self.update_table_entries(state, index);
 
         let (max_key_width, _max_value_width) = state
             .table_entries
@@ -141,24 +92,14 @@ impl ObjectInformation<'_> {
             .iter()
             .enumerate()
             .map(|(row_index, (key, value))| {
+                let value = truncate(value, right);
                 let row_color = if row_index % 2 == 0 {
                     tailwind::SLATE.c950
                 } else {
                     tailwind::SLATE.c900
                 };
-                let value = if value.width() > right {
-                    let ellipsis = "…";
-                    let end = value
-                        .char_indices()
-                        .map(|(i, _)| i)
-                        .nth(right.saturating_sub(ellipsis.width()))
-                        .unwrap();
-                    format!("{}{}", &value[..end], ellipsis)
-                } else {
-                    value.clone()
-                };
                 Row::new([
-                    Cell::from(Text::from(key.bold())),
+                    Cell::from(Text::from(key.as_str().bold())),
                     Cell::from(Text::from(value)),
                 ])
                 .style(Style::new().bg(row_color))
@@ -184,10 +125,102 @@ impl ObjectInformation<'_> {
     }
 
     fn render_no_object_selected(&self, buf: &mut Buffer, state: &mut ObjectInformationState) {
-        Paragraph::new("No object selected".dark_gray())
+        Paragraph::new(t!("oi.no_object_selected").dark_gray())
             .centered()
             .wrap(Wrap { trim: true })
             .render(state.inner_area, buf);
+    }
+
+    fn update_table_entries(&self, state: &mut ObjectInformationState, index: usize) {
+        const UNKNOWN_NAME: &str = "Unknown";
+
+        let object = &self.satellite_groups_state.objects[index];
+        let object_state = object.predict(self.world_map_state.time()).unwrap();
+
+        let result = state
+            .geocoder
+            .search((object_state.latitude(), object_state.longitude()));
+        let city_name = &result.record.name;
+        let country_name = isocountry::CountryCode::for_alpha2(&result.record.cc)
+            .unwrap()
+            .name();
+
+        let elements = object.elements();
+        state.table_entries = vec![
+            (
+                t!("oi.name").into(),
+                elements
+                    .object_name
+                    .as_deref()
+                    .unwrap_or(UNKNOWN_NAME)
+                    .into(),
+            ),
+            (
+                "COSPAR ID".into(),
+                elements
+                    .international_designator
+                    .as_deref()
+                    .unwrap_or(UNKNOWN_NAME)
+                    .into(),
+            ),
+            (t!("oi.norad_id").into(), elements.norad_id.to_string()),
+            (
+                t!("oi.longitude").into(),
+                format!("{:9.4}°", object_state.longitude()),
+            ),
+            (
+                t!("oi.latitude").into(),
+                format!("{:9.4}°", object_state.latitude()),
+            ),
+            (
+                t!("oi.altitude").into(),
+                format!("{:.3} km", object_state.altitude()),
+            ),
+            (
+                t!("oi.speed").into(),
+                format!("{:.2} km/s", object_state.speed()),
+            ),
+            (
+                t!("oi.period").into(),
+                format!("{:.2} min", object.orbital_period().as_seconds_f64() / 60.0),
+            ),
+            (
+                t!("oi.location").into(),
+                format!("{city_name}, {country_name}"),
+            ),
+            (
+                t!("oi.epoch").into(),
+                object.epoch().format("%Y-%m-%d %H:%M:%S").to_string(),
+            ),
+            (
+                t!("oi.drag_term").into(),
+                format!("{} 1/ER", elements.drag_term),
+            ),
+            (
+                t!("oi.inclination").into(),
+                format!("{}°", elements.inclination),
+            ),
+            (
+                t!("oi.right_ascension").into(),
+                format!("{}°", elements.right_ascension),
+            ),
+            (
+                t!("oi.eccentricity").into(),
+                elements.eccentricity.to_string(),
+            ),
+            (
+                t!("oi.mean_anomaly").into(),
+                format!("{}°", elements.mean_anomaly),
+            ),
+            (
+                t!("oi.mean_motion").into(),
+                format!("{} 1/day", elements.mean_motion),
+            ),
+            (
+                t!("oi.rev_num").into(),
+                elements.revolution_number.to_string(),
+            ),
+        ];
     }
 }
 
@@ -248,4 +281,18 @@ async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
     app.object_information_state.table_state.select(index);
 
     Ok(())
+}
+
+fn truncate<'a>(str: &'a str, max_width: usize) -> Cow<'a, str> {
+    if str.width() > max_width {
+        let ellipsis = "…";
+        let end = str
+            .char_indices()
+            .map(|(i, _)| i)
+            .nth(max_width.saturating_sub(ellipsis.width()))
+            .unwrap_or(str.len());
+        Cow::Owned(format!("{}{}", &str[..end], ellipsis))
+    } else {
+        Cow::Borrowed(str)
+    }
 }

@@ -23,6 +23,8 @@ chrono = "0.4"
 serde = { version = "1.0", features = ["derive"] }
 toml = "0.9"
 serde_json = "1.0"
+sys-locale = "0.3"
+rust-i18n = "3.1"
 
 # Async
 tokio = { version = "1.47", features = ["full"] }

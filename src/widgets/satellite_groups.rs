@@ -1,3 +1,4 @@
+use rust_i18n::t;
 use std::time::{Duration, Instant};
 
 use crate::{app::App, config::SatelliteGroupsConfig, event::Event, group::Group, object::Object};
@@ -107,7 +108,7 @@ impl Default for SatelliteGroupsState {
 
 impl SatelliteGroups {
     fn render_block(&self, area: Rect, buf: &mut Buffer, state: &mut SatelliteGroupsState) {
-        let block = Block::bordered().title("Satellite groups".blue());
+        let block = Block::bordered().title(t!("sg.title").to_string().blue());
         state.inner_area = block.inner(area);
         block.render(area, buf);
     }

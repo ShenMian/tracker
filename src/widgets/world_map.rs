@@ -9,6 +9,7 @@ use ratatui::{
         canvas::{self, Canvas, Context, Map, MapResolution},
     },
 };
+use rust_i18n::t;
 
 use crate::{app::App, config::WorldMapConfig, event::Event, utils::*};
 
@@ -115,24 +116,26 @@ impl WorldMap<'_> {
     const UNKNOWN_NAME: &'static str = "UNK";
 
     fn render_block(&self, area: Rect, buf: &mut Buffer, state: &mut WorldMapState) {
-        let mut block = Block::bordered().title("World map".blue()).title_bottom(
-            format!(
-                "{} ({:+} mins)",
-                state
-                    .time()
-                    .with_timezone(&Local)
-                    .format("%Y-%m-%d %H:%M:%S"),
-                state.time_offset.num_minutes()
-            )
-            .white(),
-        );
+        let mut block = Block::bordered()
+            .title(t!("wm.title").to_string().blue())
+            .title_bottom(
+                format!(
+                    "{} ({:+} mins)",
+                    state
+                        .time()
+                        .with_timezone(&Local)
+                        .format("%Y-%m-%d %H:%M:%S"),
+                    state.time_offset.num_minutes()
+                )
+                .white(),
+            );
 
         // Show cursor position with cardinal direction
         if state.show_cursor_position
             && let Some((lon, lat)) = state.cursor_position
         {
-            let ns = if lat >= 0.0 { "N" } else { "S" };
-            let ew = if lon >= 0.0 { "E" } else { "W" };
+            let ns = if lat >= 0.0 { 'N' } else { 'S' };
+            let ew = if lon >= 0.0 { 'E' } else { 'W' };
             block = block.title_bottom(
                 Line::from(format!("{:.0}°{ns},{:.0}°{ew}", lat.abs(), lon.abs())).right_aligned(),
             );
@@ -145,7 +148,9 @@ impl WorldMap<'_> {
             } else {
                 Style::default().green().slow_blink()
             };
-            block = block.title_bottom(Line::from("(Follow)".set_style(style)).right_aligned());
+            block = block.title_bottom(
+                Line::from(format!("({})", t!("wm.follow")).set_style(style)).right_aligned(),
+            );
         }
 
         state.inner_area = block.inner(area);
