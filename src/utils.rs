@@ -131,7 +131,7 @@ fn ecef_to_lla(ecef: &Ecef) -> Lla {
 }
 
 /// Returns the Epoch for the given UTC timestamp.
-pub fn epoch_from_utc(time: DateTime<Utc>) -> Epoch {
+pub fn epoch_from_utc(time: &DateTime<Utc>) -> Epoch {
     Epoch::from_gregorian_utc(
         time.year(),
         time.month() as u8,
@@ -184,7 +184,7 @@ pub fn gmst_from_jd_tt(jd: f64) -> f64 {
 /// A tuple `(longitude, latitude)` in radians, where:
 /// - `longitude`: Subsolar longitude in the range [-π, π) radians.
 /// - `latitude`: Subsolar latitude in radians.
-pub fn subsolar_point(time: DateTime<Utc>) -> (f64, f64) {
+pub fn subsolar_point(time: &DateTime<Utc>) -> (f64, f64) {
     let epoch = epoch_from_utc(time);
     let jd = epoch.to_jde_tt_days();
 
@@ -211,7 +211,7 @@ pub fn subsolar_point(time: DateTime<Utc>) -> (f64, f64) {
 ///
 /// A vector of `(longitude, latitude)` pairs in degrees, representing the
 /// terminator line.
-pub fn calculate_terminator(time: DateTime<Utc>) -> Vec<(f64, f64)> {
+pub fn calculate_terminator(time: &DateTime<Utc>) -> Vec<(f64, f64)> {
     const LON_STEP: usize = 5;
 
     let (sub_lon, decl) = subsolar_point(time);
@@ -232,12 +232,13 @@ pub fn calculate_terminator(time: DateTime<Utc>) -> Vec<(f64, f64)> {
 }
 
 /// Calculates a set of points representing the trajectory of the object.
-pub fn calculate_trajectory(object: &Object, time: DateTime<Utc>) -> Vec<(f64, f64)> {
+pub fn calculate_trajectory(object: &Object, time: &DateTime<Utc>) -> Vec<(f64, f64)> {
     // Calculate future positions along the trajectory
     let mut points = Vec::new();
     for minutes in 1..object.orbital_period().num_minutes() {
-        let time = time + Duration::minutes(minutes);
-        let state = object.predict(time).unwrap();
+        let state = object
+            .predict(&(*time + Duration::minutes(minutes)))
+            .unwrap();
         points.push((state.position.longitude, state.position.latitude));
     }
     points
