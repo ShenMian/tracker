@@ -264,7 +264,7 @@ async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
                 let value = &app.object_information_state.table_entries[index].1;
                 clipboard
                     .set_text(value)
-                    .expect("Failed to copy to clipboard");
+                    .expect("failed to copy to clipboard");
             }
         }
         MouseEventKind::ScrollUp => app.object_information_state.scroll_up(),

@@ -57,15 +57,15 @@ impl WorldMapState {
         let map_color = config
             .map_color
             .parse()
-            .expect("Invalid map color in config");
+            .expect("invalid map color in config");
         let trajectory_color = config
             .trajectory_color
             .parse()
-            .expect("Invalid trajectory color in config");
+            .expect("invalid trajectory color in config");
         let terminator_color = config
             .terminator_color
             .parse()
-            .expect("Invalid terminator color in config");
+            .expect("invalid terminator color in config");
 
         Self {
             follow_object: config.follow_object,
