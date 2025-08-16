@@ -23,18 +23,10 @@ jobs:
             artifact_name: tracker
             asset_name: tracker-linux-x86_64
             target: x86_64-unknown-linux-gnu
-          - os: ubuntu-latest
-            artifact_name: tracker
-            asset_name: tracker-linux-aarch64
-            target: aarch64-unknown-linux-gnu
           - os: windows-latest
             artifact_name: tracker.exe
             asset_name: tracker-windows-x86_64
             target: x86_64-pc-windows-msvc
-          - os: windows-latest
-            artifact_name: tracker.exe
-            asset_name: tracker-windows-aarch64
-            target: aarch64-pc-windows-msvc
           - os: macos-latest
             artifact_name: tracker
             asset_name: tracker-macos-x86_64
