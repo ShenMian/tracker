@@ -12,9 +12,10 @@ Default locations of configuration files on different platforms:
 ```toml
 [world_map]
 follow_object = true
+follow_smoothing = 0.3
 show_terminator = true
-lon_delta_deg = 10.0
 time_delta_min = 1
+lon_delta_deg = 10.0
 map_color = "gray"
 trajectory_color = "light_blue"
 terminator_color = "dark_gray"
@@ -48,6 +49,14 @@ groups = [
     { label = "CubeSats", group = "cubesat" },
 ]
 ```
+
+## World Map Configuration
+
+- `follow_object`: Whether to automatically center the map on the selected satellite.
+- `follow_smoothing`: Smoothing factor for follow mode (0.0 = no movement, 1.0 = instant snap).
+- `show_terminator`: Whether to display the day-night terminator line.
+- `lon_delta_deg`: Longitude offset in degrees when scrolling the map horizontally.
+- `time_delta_min`: Time step in minutes for time simulation controls.
 
 ## Satellite groups
 

@@ -11,6 +11,7 @@ pub struct Config {
 #[serde(default)]
 pub struct WorldMapConfig {
     pub follow_object: bool,
+    pub follow_smoothing: f64,
     pub show_terminator: bool,
 
     pub lon_delta_deg: f64,
@@ -25,9 +26,10 @@ impl Default for WorldMapConfig {
     fn default() -> Self {
         Self {
             follow_object: true,
+            follow_smoothing: 0.3,
             show_terminator: true,
-            lon_delta_deg: 10.0,
             time_delta_min: 1,
+            lon_delta_deg: 10.0,
             map_color: "gray".into(),
             trajectory_color: "light_blue".into(),
             terminator_color: "dark_gray".into(),
