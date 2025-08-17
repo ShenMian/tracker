@@ -10,24 +10,7 @@ use crate::config::GroupConfig;
 #[derive(Clone, Eq, Debug)]
 pub struct Group {
     label: String,
-    celestrak_id: CelestrakId,
-}
-
-#[derive(Clone, PartialEq, Eq, Hash, Debug)]
-pub enum CelestrakId {
-    /// COSPAR ID.
-    Id(String),
-    /// Group name.
-    Group(String),
-}
-
-impl Display for CelestrakId {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            CelestrakId::Id(id) => write!(f, "{id}"),
-            CelestrakId::Group(group) => write!(f, "{group}"),
-        }
-    }
+    identifier: Identifier,
 }
 
 impl Group {
@@ -47,7 +30,7 @@ impl Group {
     pub async fn get_elements(&self, cache_lifetime: Duration) -> Option<Vec<sgp4::Elements>> {
         let cache_path = std::env::temp_dir().join(format!(
             "tracker/{}.json",
-            self.celestrak_id.to_string().to_lowercase()
+            self.identifier.to_string().to_lowercase()
         ));
         fs::create_dir_all(cache_path.parent().unwrap())
             .await
@@ -89,9 +72,9 @@ impl Group {
         const URL: &str = "https://celestrak.com/NORAD/elements/gp.php";
 
         let mut request = reqwest::Client::new().get(URL).query(&[("FORMAT", "json")]);
-        request = match &self.celestrak_id {
-            CelestrakId::Id(id) => request.query(&[("INTDES", id)]),
-            CelestrakId::Group(group) => request.query(&[("GROUP", group)]),
+        request = match &self.identifier {
+            Identifier::Id(id) => request.query(&[("INTDES", id)]),
+            Identifier::Group(group) => request.query(&[("GROUP", group)]),
         };
 
         let response = request.send().await.ok()?;
@@ -106,7 +89,7 @@ impl Group {
 
 impl PartialEq for Group {
     fn eq(&self, other: &Self) -> bool {
-        self.celestrak_id == other.celestrak_id
+        self.identifier == other.identifier
     }
 }
 
@@ -115,13 +98,30 @@ impl From<GroupConfig> for Group {
         match (config.id, config.group) {
             (Some(id), None) => Self {
                 label: config.label,
-                celestrak_id: CelestrakId::Id(id),
+                identifier: Identifier::Id(id),
             },
             (None, Some(group)) => Self {
                 label: config.label,
-                celestrak_id: CelestrakId::Group(group),
+                identifier: Identifier::Group(group),
             },
             _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
+enum Identifier {
+    /// COSPAR ID.
+    Id(String),
+    /// Group name.
+    Group(String),
+}
+
+impl Display for Identifier {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Identifier::Id(id) => write!(f, "{id}"),
+            Identifier::Group(group) => write!(f, "{group}"),
         }
     }
 }
