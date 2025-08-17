@@ -1,5 +1,6 @@
 use serde::Deserialize;
 
+/// Configuration for the application.
 #[derive(Default, Deserialize)]
 #[serde(default)]
 pub struct Config {
@@ -7,6 +8,7 @@ pub struct Config {
     pub satellite_groups: SatelliteGroupsConfig,
 }
 
+/// Configuration for the world map widget.
 #[derive(Deserialize)]
 #[serde(default)]
 pub struct WorldMapConfig {
@@ -37,6 +39,7 @@ impl Default for WorldMapConfig {
     }
 }
 
+/// Configuration for satellite groups widget.
 #[derive(Deserialize)]
 #[serde(default)]
 pub struct SatelliteGroupsConfig {
