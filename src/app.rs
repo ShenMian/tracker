@@ -35,8 +35,8 @@ impl App {
         let tui = Tui::new(terminal, events);
         Ok(Self {
             running: true,
-            world_map_state: WorldMapState::with_config(config.world_map),
-            satellite_groups_state: SatelliteGroupsState::with_config(config.satellite_groups),
+            world_map_state: WorldMapState::with_config(config.world_map)?,
+            satellite_groups_state: SatelliteGroupsState::with_config(config.satellite_groups)?,
             object_information_state: Default::default(),
             tui,
         })

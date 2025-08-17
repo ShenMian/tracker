@@ -34,8 +34,8 @@ pub struct SatelliteGroupsState {
 
 impl SatelliteGroupsState {
     /// Creates a new `SatelliteGroupsState` with the given configuration.
-    pub fn with_config(config: SatelliteGroupsConfig) -> Self {
-        Self {
+    pub fn with_config(config: SatelliteGroupsConfig) -> Result<Self> {
+        Ok(Self {
             list_entries: config
                 .groups
                 .into_iter()
@@ -44,7 +44,7 @@ impl SatelliteGroupsState {
                 .collect(),
             cache_lifetime: Duration::from_secs(config.cache_lifetime_min * 60),
             ..Self::default()
-        }
+        })
     }
 
     /// Updates the orbital elements for selected satellite group.
