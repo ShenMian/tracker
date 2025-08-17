@@ -2,7 +2,7 @@ use serde::Deserialize;
 
 /// Configuration for the application.
 #[derive(Default, Deserialize)]
-#[serde(default)]
+#[serde(default, deny_unknown_fields)]
 pub struct Config {
     pub world_map: WorldMapConfig,
     pub satellite_groups: SatelliteGroupsConfig,
@@ -10,7 +10,7 @@ pub struct Config {
 
 /// Configuration for the world map widget.
 #[derive(Deserialize)]
-#[serde(default)]
+#[serde(default, deny_unknown_fields)]
 pub struct WorldMapConfig {
     pub follow_object: bool,
     pub follow_smoothing: f64,
@@ -41,13 +41,14 @@ impl Default for WorldMapConfig {
 
 /// Configuration for satellite groups widget.
 #[derive(Deserialize)]
-#[serde(default)]
+#[serde(default, deny_unknown_fields)]
 pub struct SatelliteGroupsConfig {
     pub cache_lifetime_min: u64,
     pub groups: Vec<GroupConfig>,
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct GroupConfig {
     pub label: String,
     pub id: Option<String>,
