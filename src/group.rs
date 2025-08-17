@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{fmt::Display, time::Duration};
 
 use tokio::fs;
 
@@ -21,6 +21,15 @@ pub enum CelestrakId {
     Group(String),
 }
 
+impl Display for CelestrakId {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            CelestrakId::Id(id) => write!(f, "{id}"),
+            CelestrakId::Group(group) => write!(f, "{group}"),
+        }
+    }
+}
+
 impl Group {
     /// Returns the label.
     pub fn label(&self) -> &str {
@@ -36,8 +45,10 @@ impl Group {
     ///
     /// * `cache_lifetime` - Duration for which the cache is considered valid.
     pub async fn get_elements(&self, cache_lifetime: Duration) -> Option<Vec<sgp4::Elements>> {
-        let cache_path =
-            std::env::temp_dir().join(format!("tracker/{}.json", self.label().to_lowercase()));
+        let cache_path = std::env::temp_dir().join(format!(
+            "tracker/{}.json",
+            self.celestrak_id.to_string().to_lowercase()
+        ));
         fs::create_dir_all(cache_path.parent().unwrap())
             .await
             .unwrap();
