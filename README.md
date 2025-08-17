@@ -9,9 +9,14 @@ A terminal-based real-time satellite tracking and orbit prediction application.
 
 ## Features
 
-- **Position and trajectory**: Displays the current positions and trajectories of objects using the SGP4 model.
-- **Detailed information**: Provides comprehensive details about the selected object.
-- **Automatic updates**: Updates orbital elements automatically via the internet.
+- **Position and trajectory**: Displays current positions and trajectories using the SGP4 model.
+- **Detailed information**: Provides comprehensive details about selected object.
+- **Time adjustment**: View satellite positions at any past or future time.
+- **Map scrolling**: Horizontal scrolling with infinite world map view.
+- **Object following**: Follows selected object on the map.
+- **Automatic updates**: Updates orbital elements automatically via internet.
+- **Custom configuration**: Customizable settings for display and behavior.
+- **Multi-language support**: Interface available in multiple languages.
 
 ## Installation
 
