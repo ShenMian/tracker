@@ -21,7 +21,13 @@ async fn main() -> Result<()> {
     let locale = sys_locale::get_locale().unwrap_or_else(|| String::from("en-US"));
     rust_i18n::set_locale(&locale);
 
-    let config = load_config().context("failed to load configuration")?;
+    let config = match load_config() {
+        Ok(config) => config,
+        Err(e) => {
+            eprintln!("Failed to load configuration: {e}");
+            Config::default()
+        }
+    };
     let mut app = App::with_config(config).context("failed to initialize application")?;
     app.run().await
 }
@@ -30,6 +36,9 @@ fn load_config() -> Result<Config> {
     let path = std::env::home_dir()
         .context("failed to get home directory")?
         .join(".config/tracker/config.toml");
+    if !path.exists() {
+        return Ok(Config::default());
+    }
     let content = std::fs::read_to_string(&path)?;
     let config: Config = toml::from_str(&content)?;
     Ok(config)
