@@ -1,4 +1,4 @@
-use anyhow::{Context as _, Result};
+use anyhow::Result;
 use chrono::{DateTime, Duration, Local, Utc};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
 use ratatui::{
@@ -55,31 +55,18 @@ pub struct WorldMapState {
 
 impl WorldMapState {
     /// Creates a new `WorldMapState` with the given configuration.
-    pub fn with_config(config: WorldMapConfig) -> Result<Self> {
-        let map_color = config
-            .map_color
-            .parse()
-            .context("invalid `world_map.map_color` configuration")?;
-        let trajectory_color = config
-            .trajectory_color
-            .parse()
-            .context("invalid `world_map.trajectory_color` configuration")?;
-        let terminator_color = config
-            .terminator_color
-            .parse()
-            .context("invalid `world_map.terminator_color` configuration")?;
-
-        Ok(Self {
+    pub fn with_config(config: WorldMapConfig) -> Self {
+        Self {
             follow_object: config.follow_object,
             follow_smoothing: config.follow_smoothing,
             show_terminator: config.show_terminator,
             time_delta: Duration::minutes(config.time_delta_min),
             lon_delta: config.lon_delta_deg,
-            map_color,
-            trajectory_color,
-            terminator_color,
+            map_color: config.map_color,
+            trajectory_color: config.trajectory_color,
+            terminator_color: config.terminator_color,
             ..Self::default()
-        })
+        }
     }
 
     /// Returns the current simulation time.

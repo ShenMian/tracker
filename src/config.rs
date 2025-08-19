@@ -1,3 +1,4 @@
+use ratatui::style::Color;
 use serde::Deserialize;
 
 /// Configuration for the application.
@@ -19,9 +20,9 @@ pub struct WorldMapConfig {
     pub lon_delta_deg: f64,
     pub time_delta_min: i64,
 
-    pub map_color: String,
-    pub trajectory_color: String,
-    pub terminator_color: String,
+    pub map_color: Color,
+    pub trajectory_color: Color,
+    pub terminator_color: Color,
 }
 
 impl Default for WorldMapConfig {
@@ -32,9 +33,9 @@ impl Default for WorldMapConfig {
             show_terminator: true,
             time_delta_min: 1,
             lon_delta_deg: 10.0,
-            map_color: "gray".into(),
-            trajectory_color: "light_blue".into(),
-            terminator_color: "dark_gray".into(),
+            map_color: Color::Gray,
+            trajectory_color: Color::LightBlue,
+            terminator_color: Color::DarkGray,
         }
     }
 }

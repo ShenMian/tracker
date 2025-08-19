@@ -13,7 +13,7 @@ arboard = "3.6"                # Access system clipboard
 hifitime = { version = "4.1" }
 
 # TUI
-ratatui = "0.29"
+ratatui = { version = "0.29", features = ["serde"] }
 crossterm = { version = "0.29", features = ["event-stream"] }
 unicode-width = "0.2"
 
