@@ -21,13 +21,11 @@ async fn main() -> Result<()> {
     let locale = sys_locale::get_locale().unwrap_or_else(|| String::from("en-US"));
     rust_i18n::set_locale(&locale);
 
-    let config = match load_config() {
-        Ok(config) => config,
-        Err(e) => {
-            eprintln!("Failed to load configuration: {e}");
-            Config::default()
-        }
-    };
+    let config = load_config().unwrap_or_else(|e| {
+        eprintln!("Failed to load configuration: {e}");
+        eprintln!("Using default configuration.");
+        Config::default()
+    });
     let mut app = App::with_config(config).context("failed to initialize application")?;
     app.run().await
 }

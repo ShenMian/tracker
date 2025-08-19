@@ -104,7 +104,7 @@ impl From<GroupConfig> for Group {
                 label: config.label,
                 identifier: Identifier::Group(group),
             },
-            _ => unreachable!(),
+            _ => panic!("invalid `satellite_groups.groups` configuration"),
         }
     }
 }
