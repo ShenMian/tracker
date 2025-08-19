@@ -239,7 +239,36 @@ pub fn calculate_trajectory(object: &Object, time: &DateTime<Utc>) -> Vec<(f64, 
         let state = object
             .predict(&(*time + Duration::minutes(minutes)))
             .unwrap();
-        points.push((state.position.longitude, state.position.latitude));
+        points.push((state.longitude(), state.latitude()));
+    }
+    points
+}
+
+/// Calculates the visibility circle for a point on the Earth's surface.
+///
+/// See <https://en.wikipedia.org/wiki/Great-circle_distance>
+pub fn calculate_visibility_circle(position: &Lla, num_points: usize) -> Vec<(f64, f64)> {
+    const AZIMUTH_STEP: usize = 10;
+
+    let lat0_rad = position.latitude.to_radians();
+    let lon0_rad = position.longitude.to_radians();
+    let earth_radius = 6371.0088_f64; // mean Earth radius in km
+    let cos_c = earth_radius / (earth_radius + position.altitude.max(0.1));
+    let central_angle_rad = cos_c.acos();
+    let mut points = Vec::with_capacity(num_points + 1);
+    for azimuth in (-180..=180)
+        .step_by(AZIMUTH_STEP)
+        .map(|azimuth| (azimuth as f64).to_radians())
+    {
+        let lat_rad = (lat0_rad.sin() * central_angle_rad.cos()
+            + lat0_rad.cos() * central_angle_rad.sin() * azimuth.cos())
+        .asin();
+        let y = azimuth.sin() * central_angle_rad.sin() * lat0_rad.cos();
+        let x = central_angle_rad.cos() - lat0_rad.sin() * lat_rad.sin();
+        let lon_rad = lon0_rad + y.atan2(x);
+        let lat_deg = lat_rad.to_degrees();
+        let lon_deg = wrap_longitude_deg(lon_rad.to_degrees());
+        points.push((lon_deg, lat_deg));
     }
     points
 }

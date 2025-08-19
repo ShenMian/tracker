@@ -198,8 +198,21 @@ impl WorldMap<'_> {
             .y_bounds([-90.0, 90.0])
             .paint(|ctx| {
                 self.draw_object_highlight(ctx, state);
+                self.draw_visibility_circle(ctx, state);
             })
             .render(state.inner_area, buf);
+    }
+
+    /// Draws the visibility circle for the selected object.
+    fn draw_visibility_circle(&self, ctx: &mut Context, state: &WorldMapState) {
+        let Some(index) = state.selected_object_index else {
+            return;
+        };
+        let object = &self.satellite_groups_state.objects[index];
+        let object_state = object.predict(&state.time()).unwrap();
+
+        let points = crate::utils::calculate_visibility_circle(&object_state.position, 32);
+        self.draw_lines(ctx, points, Color::Yellow);
     }
 
     /// Draws the day-night terminator and subsolar point.
@@ -230,11 +243,7 @@ impl WorldMap<'_> {
                 Self::OBJECT_SYMBOL.red() + format!(" {object_name}").dark_gray()
             };
             let object_state = object.predict(&state.time()).unwrap();
-            ctx.print(
-                object_state.position.longitude,
-                object_state.position.latitude,
-                text,
-            );
+            ctx.print(object_state.longitude(), object_state.latitude(), text);
         }
     }
 
@@ -255,11 +264,7 @@ impl WorldMap<'_> {
             let text =
                 Self::OBJECT_SYMBOL.light_green().slow_blink() + format!(" {object_name}").white();
             let object_state = selected.predict(&state.time()).unwrap();
-            ctx.print(
-                object_state.position.longitude,
-                object_state.position.latitude,
-                text,
-            );
+            ctx.print(object_state.longitude(), object_state.latitude(), text);
         } else if let Some(hovered_object_index) = state.hovered_object_index {
             let hovered = &self.satellite_groups_state.objects[hovered_object_index];
 
@@ -269,11 +274,7 @@ impl WorldMap<'_> {
                 + " ".into()
                 + object_name.to_string().white().reversed();
             let object_state = hovered.predict(&state.time()).unwrap();
-            ctx.print(
-                object_state.position.longitude,
-                object_state.position.latitude,
-                text,
-            );
+            ctx.print(object_state.longitude(), object_state.latitude(), text);
         }
     }
 
