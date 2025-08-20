@@ -44,10 +44,13 @@ pub struct WorldMapState {
     follow_smoothing: f64,
     /// Whether to display the day-night terminator line.
     show_terminator: bool,
+    /// Whether to display the visibility area.
+    show_visibility_area: bool,
 
     map_color: Color,
     trajectory_color: Color,
     terminator_color: Color,
+    visibility_area_color: Color,
 
     /// The inner rendering area of the widget.
     inner_area: Rect,
@@ -60,11 +63,13 @@ impl WorldMapState {
             follow_object: config.follow_object,
             follow_smoothing: config.follow_smoothing,
             show_terminator: config.show_terminator,
+            show_visibility_area: config.show_visibility_area,
             time_delta: Duration::minutes(config.time_delta_min),
             lon_delta: config.lon_delta_deg,
             map_color: config.map_color,
             trajectory_color: config.trajectory_color,
             terminator_color: config.terminator_color,
+            visibility_area_color: config.visibility_area_color,
             ..Self::default()
         }
     }
@@ -198,21 +203,11 @@ impl WorldMap<'_> {
             .y_bounds([-90.0, 90.0])
             .paint(|ctx| {
                 self.draw_object_highlight(ctx, state);
-                self.draw_visibility_circle(ctx, state);
+                if state.show_visibility_area {
+                    self.draw_visibility_area(ctx, state);
+                }
             })
             .render(state.inner_area, buf);
-    }
-
-    /// Draws the visibility circle for the selected object.
-    fn draw_visibility_circle(&self, ctx: &mut Context, state: &WorldMapState) {
-        let Some(index) = state.selected_object_index else {
-            return;
-        };
-        let object = &self.satellite_groups_state.objects[index];
-        let object_state = object.predict(&state.time()).unwrap();
-
-        let points = crate::utils::calculate_visibility_circle(&object_state.position, 32);
-        self.draw_lines(ctx, points, Color::Yellow);
     }
 
     /// Draws the day-night terminator and subsolar point.
@@ -276,6 +271,18 @@ impl WorldMap<'_> {
             let object_state = hovered.predict(&state.time()).unwrap();
             ctx.print(object_state.longitude(), object_state.latitude(), text);
         }
+    }
+
+    /// Draws the visibility area for the selected object.
+    fn draw_visibility_area(&self, ctx: &mut Context, state: &WorldMapState) {
+        let Some(index) = state.selected_object_index else {
+            return;
+        };
+        let object = &self.satellite_groups_state.objects[index];
+        let object_state = object.predict(&state.time()).unwrap();
+
+        let points = crate::utils::calculate_visibility_area(&object_state.position, 32);
+        self.draw_lines(ctx, points, state.visibility_area_color);
     }
 
     /// Draws lines between points.

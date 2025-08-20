@@ -246,7 +246,7 @@ pub fn calculate_trajectory(object: &Object, time: &DateTime<Utc>) -> Vec<(f64, 
 /// Calculates the visibility circle for a point on the Earth's surface.
 ///
 /// See <https://en.wikipedia.org/wiki/Great-circle_distance>
-pub fn calculate_visibility_circle(position: &Lla, num_points: usize) -> Vec<(f64, f64)> {
+pub fn calculate_visibility_area(position: &Lla, num_points: usize) -> Vec<(f64, f64)> {
     const AZIMUTH_STEP: usize = 10;
 
     let lat0_rad = position.lat.to_radians();

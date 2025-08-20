@@ -14,11 +14,13 @@ Default locations of configuration files on different platforms:
 follow_object = true
 follow_smoothing = 0.3
 show_terminator = true
+show_visibility_area = true
 time_delta_min = 1
 lon_delta_deg = 10.0
 map_color = "gray"
 trajectory_color = "light_blue"
 terminator_color = "dark_gray"
+visibility_area_color = "yellow"
 
 [satellite_groups]
 cache_lifetime_min = 120

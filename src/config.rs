@@ -16,6 +16,7 @@ pub struct WorldMapConfig {
     pub follow_object: bool,
     pub follow_smoothing: f64,
     pub show_terminator: bool,
+    pub show_visibility_area: bool,
 
     pub lon_delta_deg: f64,
     pub time_delta_min: i64,
@@ -23,6 +24,7 @@ pub struct WorldMapConfig {
     pub map_color: Color,
     pub trajectory_color: Color,
     pub terminator_color: Color,
+    pub visibility_area_color: Color,
 }
 
 impl Default for WorldMapConfig {
@@ -31,11 +33,13 @@ impl Default for WorldMapConfig {
             follow_object: true,
             follow_smoothing: 0.3,
             show_terminator: true,
+            show_visibility_area: true,
             time_delta_min: 1,
             lon_delta_deg: 10.0,
             map_color: Color::Gray,
             trajectory_color: Color::LightBlue,
             terminator_color: Color::DarkGray,
+            visibility_area_color: Color::Yellow,
         }
     }
 }
