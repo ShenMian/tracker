@@ -15,7 +15,7 @@ use reverse_geocoder::ReverseGeocoder;
 use rust_i18n::t;
 use unicode_width::UnicodeWidthStr;
 
-use crate::{app::App, event::Event};
+use crate::{app::App, event::Event, object::Object};
 
 use super::{satellite_groups::SatelliteGroupsState, world_map::WorldMapState};
 
@@ -70,8 +70,8 @@ impl ObjectInformation<'_> {
         block.render(area, buf);
     }
 
-    fn render_table(&self, buf: &mut Buffer, state: &mut ObjectInformationState, index: usize) {
-        self.update_table_entries(state, index);
+    fn render_table(&self, buf: &mut Buffer, state: &mut ObjectInformationState, object: &Object) {
+        self.update_table_entries(state, object);
 
         let (max_key_width, _max_value_width) = state
             .table_entries
@@ -131,10 +131,9 @@ impl ObjectInformation<'_> {
             .render(state.inner_area, buf);
     }
 
-    fn update_table_entries(&self, state: &mut ObjectInformationState, index: usize) {
+    fn update_table_entries(&self, state: &mut ObjectInformationState, object: &Object) {
         const UNKNOWN_NAME: &str = "Unknown";
 
-        let object = &self.satellite_groups_state.objects[index];
         let object_state = object.predict(&self.world_map_state.time()).unwrap();
 
         let result = state
@@ -229,8 +228,11 @@ impl StatefulWidget for ObjectInformation<'_> {
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         self.render_block(area, buf, state);
-        if let Some(index) = self.world_map_state.selected_object_index {
-            self.render_table(buf, state, index);
+        if let Some(object) = self
+            .world_map_state
+            .selected_object(self.satellite_groups_state)
+        {
+            self.render_table(buf, state, object);
             self.render_scrollbar(area, buf, state);
         } else {
             self.render_no_object_selected(buf, state);

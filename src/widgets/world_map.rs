@@ -11,7 +11,7 @@ use ratatui::{
 };
 use rust_i18n::t;
 
-use crate::{app::App, config::WorldMapConfig, event::Event, utils::*};
+use crate::{app::App, config::WorldMapConfig, event::Event, object::Object, utils::*};
 
 use super::satellite_groups::SatelliteGroupsState;
 
@@ -79,6 +79,26 @@ impl WorldMapState {
         Utc::now() + self.time_offset
     }
 
+    /// Returns a reference to the selected object.
+    pub fn selected_object<'a>(
+        &self,
+        satellite_groups_state: &'a SatelliteGroupsState,
+    ) -> Option<&'a Object> {
+        satellite_groups_state
+            .objects
+            .get(self.selected_object_index?)
+    }
+
+    /// Returns a reference to the hovered object.
+    fn hovered_object<'a>(
+        &self,
+        satellite_groups_state: &'a SatelliteGroupsState,
+    ) -> Option<&'a Object> {
+        satellite_groups_state
+            .objects
+            .get(self.hovered_object_index?)
+    }
+
     /// Scrolls the map view to the left.
     fn scroll_map_left(&mut self) {
         self.lon_offset = wrap_longitude_deg(self.lon_offset - self.lon_delta);
@@ -140,11 +160,9 @@ impl WorldMap<'_> {
     fn render_map(&self, buf: &mut Buffer, state: &mut WorldMapState) {
         // Follow the longitude of the selected object
         if state.follow_object
-            && let Some(index) = state.selected_object_index
+            && let Some(selected) = state.selected_object(self.satellite_groups_state)
         {
-            let selected = &self.satellite_groups_state.objects[index];
             let object_state = selected.predict(&state.time()).unwrap();
-            // state.lon_offset = object_state.longitude();
 
             state.lon_offset += wrap_longitude_deg(object_state.longitude() - state.lon_offset)
                 * state.follow_smoothing;
@@ -244,9 +262,7 @@ impl WorldMap<'_> {
 
     /// Draws the highlight and trajectory for the selected or hovered object.
     fn draw_object_highlight(&self, ctx: &mut Context, state: &WorldMapState) {
-        if let Some(selected_object_index) = state.selected_object_index {
-            let selected = &self.satellite_groups_state.objects[selected_object_index];
-
+        if let Some(selected) = state.selected_object(self.satellite_groups_state) {
             // Draw the trajectory
             self.draw_lines(
                 ctx,
@@ -260,9 +276,7 @@ impl WorldMap<'_> {
                 Self::OBJECT_SYMBOL.light_green().slow_blink() + format!(" {object_name}").white();
             let object_state = selected.predict(&state.time()).unwrap();
             ctx.print(object_state.longitude(), object_state.latitude(), text);
-        } else if let Some(hovered_object_index) = state.hovered_object_index {
-            let hovered = &self.satellite_groups_state.objects[hovered_object_index];
-
+        } else if let Some(hovered) = state.hovered_object(self.satellite_groups_state) {
             // Highlight the hovered object
             let object_name = hovered.name().unwrap_or(Self::UNKNOWN_NAME);
             let text = Self::OBJECT_SYMBOL.light_red().reversed()
@@ -275,10 +289,9 @@ impl WorldMap<'_> {
 
     /// Draws the visibility area for the selected object.
     fn draw_visibility_area(&self, ctx: &mut Context, state: &WorldMapState) {
-        let Some(index) = state.selected_object_index else {
+        let Some(object) = state.selected_object(self.satellite_groups_state) else {
             return;
         };
-        let object = &self.satellite_groups_state.objects[index];
         let object_state = object.predict(&state.time()).unwrap();
 
         let points = crate::utils::calculate_visibility_area(&object_state.position, 32);
