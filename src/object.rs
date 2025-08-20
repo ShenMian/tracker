@@ -77,17 +77,17 @@ pub struct State {
 impl State {
     /// Returns the latitude of the object in degrees.
     pub fn latitude(&self) -> f64 {
-        self.position.latitude
+        self.position.lat
     }
 
     /// Returns the longitude of the object in degrees.
     pub fn longitude(&self) -> f64 {
-        self.position.longitude
+        self.position.lon
     }
 
     /// Returns the altitude of the object in km.
     pub fn altitude(&self) -> f64 {
-        self.position.altitude
+        self.position.alt
     }
 
     /// Returns the speed of the object in km/s.

@@ -60,9 +60,12 @@ impl Ecef {
 /// A position in geodetic coordinates.
 #[derive(Clone, PartialEq, Debug)]
 pub struct Lla {
-    pub latitude: f64,
-    pub longitude: f64,
-    pub altitude: f64,
+    /// Latitude in degrees.
+    pub lat: f64,
+    /// Longitude in degrees.
+    pub lon: f64,
+    /// Altitude in km.
+    pub alt: f64,
 }
 
 impl Lla {
@@ -70,11 +73,7 @@ impl Lla {
         debug_assert!((-90.0..=90.0).contains(&lat));
         debug_assert!((-180.0..=180.0).contains(&lon));
         debug_assert!(alt >= 0.0);
-        Lla {
-            latitude: lat,
-            longitude: lon,
-            altitude: alt,
-        }
+        Lla { lat, lon, alt }
     }
 }
 
@@ -250,10 +249,10 @@ pub fn calculate_trajectory(object: &Object, time: &DateTime<Utc>) -> Vec<(f64, 
 pub fn calculate_visibility_circle(position: &Lla, num_points: usize) -> Vec<(f64, f64)> {
     const AZIMUTH_STEP: usize = 10;
 
-    let lat0_rad = position.latitude.to_radians();
-    let lon0_rad = position.longitude.to_radians();
+    let lat0_rad = position.lat.to_radians();
+    let lon0_rad = position.lon.to_radians();
     let earth_radius = 6371.0088_f64; // mean Earth radius in km
-    let cos_c = earth_radius / (earth_radius + position.altitude.max(0.1));
+    let cos_c = earth_radius / (earth_radius + position.alt.max(0.1));
     let central_angle_rad = cos_c.acos();
     let mut points = Vec::with_capacity(num_points + 1);
     for azimuth in (-180..=180)
