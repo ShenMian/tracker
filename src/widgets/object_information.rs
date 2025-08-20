@@ -174,7 +174,7 @@ impl ObjectInformation<'_> {
             ),
             (
                 t!("oi.altitude").into(),
-                format!("{:.3} km", object_state.altitude()),
+                format!("{:8.3} km", object_state.altitude()),
             ),
             (
                 t!("oi.speed").into(),
