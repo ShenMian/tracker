@@ -163,20 +163,21 @@ pub async fn handle_event(event: Event, app: &mut App) -> Result<()> {
 
 /// Handle update events.
 async fn handle_update_event(app: &mut App) {
-    // Refresh satellite data every 2 minutes.
-    const OBJECT_UPDATE_INTERVAL: Duration = Duration::from_secs(2 * 60);
+    let state = &mut app.satellite_groups_state;
+
     let now = Instant::now();
-    if now.duration_since(app.satellite_groups_state.last_update_instant) >= OBJECT_UPDATE_INTERVAL
-    {
-        app.satellite_groups_state.refresh_objects().await;
-        app.satellite_groups_state.last_update_instant = now;
+    if now.duration_since(state.last_update_instant) >= state.cache_lifetime {
+        state.refresh_objects().await;
+        state.last_update_instant = now;
     }
 }
 
 async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
-    let inner_area = app.satellite_groups_state.inner_area;
+    let state = &mut app.satellite_groups_state;
+
+    let inner_area = state.inner_area;
     if !inner_area.contains(Position::new(event.column, event.row)) {
-        *app.satellite_groups_state.list_state.selected_mut() = None;
+        *state.list_state.selected_mut() = None;
         return Ok(());
     }
 
@@ -186,26 +187,25 @@ async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
     match event.kind {
         MouseEventKind::Down(MouseButton::Left) => {
             // Select the clicked entry.
-            if let Some(index) = app.satellite_groups_state.list_state.selected() {
-                app.satellite_groups_state.list_entries[index].selected =
-                    !app.satellite_groups_state.list_entries[index].selected;
+            if let Some(index) = state.list_state.selected() {
+                state.list_entries[index].selected = !state.list_entries[index].selected;
                 app.world_map_state.selected_object_index = None;
-                app.satellite_groups_state.refresh_objects().await;
+                state.refresh_objects().await;
             }
         }
-        MouseEventKind::ScrollUp => app.satellite_groups_state.scroll_up(),
-        MouseEventKind::ScrollDown => app.satellite_groups_state.scroll_down(),
+        MouseEventKind::ScrollUp => state.scroll_up(),
+        MouseEventKind::ScrollDown => state.scroll_down(),
         _ => {}
     }
 
     // Highlight the hovered entry.
-    let row = mouse.y as usize + app.satellite_groups_state.list_state.offset();
-    let index = if row < app.satellite_groups_state.list_entries.len() {
+    let row = mouse.y as usize + state.list_state.offset();
+    let index = if row < state.list_entries.len() {
         Some(row)
     } else {
         None
     };
-    app.satellite_groups_state.list_state.select(index);
+    state.list_state.select(index);
 
     Ok(())
 }

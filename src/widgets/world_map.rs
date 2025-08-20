@@ -379,7 +379,7 @@ async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
 }
 
 /// Get the index of the nearest object to the given area position
-fn get_nearest_object_index(app: &mut App, position: Position, inner_area: Rect) -> Option<usize> {
+fn get_nearest_object_index(app: &App, position: Position, inner_area: Rect) -> Option<usize> {
     app.satellite_groups_state
         .objects
         .iter()

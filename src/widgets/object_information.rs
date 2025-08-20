@@ -246,9 +246,11 @@ pub async fn handle_event(event: Event, app: &mut App) -> Result<()> {
 }
 
 async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
-    let inner_area = app.object_information_state.inner_area;
+    let state = &mut app.object_information_state;
+
+    let inner_area = state.inner_area;
     if !inner_area.contains(Position::new(event.column, event.row)) {
-        *app.object_information_state.table_state.selected_mut() = None;
+        *state.table_state.selected_mut() = None;
         return Ok(());
     }
 
@@ -258,27 +260,27 @@ async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
     match event.kind {
         MouseEventKind::Down(MouseButton::Left) => {
             // Copy the clicked value to the clipboard.
-            if let Some(index) = app.object_information_state.table_state.selected()
+            if let Some(index) = state.table_state.selected()
                 && let Ok(mut clipboard) = Clipboard::new()
             {
-                let value = &app.object_information_state.table_entries[index].1;
+                let value = &state.table_entries[index].1;
                 clipboard
                     .set_text(value)
                     .expect("failed to copy to clipboard");
             }
         }
-        MouseEventKind::ScrollUp => app.object_information_state.scroll_up(),
-        MouseEventKind::ScrollDown => app.object_information_state.scroll_down(),
+        MouseEventKind::ScrollUp => state.scroll_up(),
+        MouseEventKind::ScrollDown => state.scroll_down(),
         _ => {}
     }
     // Highlight the hovered row.
-    let row = mouse.y as usize + app.object_information_state.table_state.offset();
-    let index = if row < app.object_information_state.table_entries.len() {
+    let row = mouse.y as usize + state.table_state.offset();
+    let index = if row < state.table_entries.len() {
         Some(row)
     } else {
         None
     };
-    app.object_information_state.table_state.select(index);
+    state.table_state.select(index);
 
     Ok(())
 }
