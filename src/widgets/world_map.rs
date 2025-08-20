@@ -266,7 +266,7 @@ impl WorldMap<'_> {
             // Draw the trajectory
             self.draw_lines(
                 ctx,
-                calculate_trajectory(selected, &state.time()),
+                calculate_ground_track(selected, &state.time()),
                 state.trajectory_color,
             );
 

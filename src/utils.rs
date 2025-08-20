@@ -75,6 +75,48 @@ impl Lla {
         debug_assert!(alt >= 0.0);
         Lla { lat, lon, alt }
     }
+
+    /// Computes the azimuth (Az) and elevation (El) from the observer's
+    /// position to the satellite.
+    pub fn az_el(&self, observer: &Lla) -> (f64, f64) {
+        // Observer and target in ECEF
+        let obs_ecef = lla_to_ecef(observer);
+        let tgt_ecef = lla_to_ecef(self);
+
+        // Vector from observer to target in ECEF
+        let dx = tgt_ecef.x - obs_ecef.x;
+        let dy = tgt_ecef.y - obs_ecef.y;
+        let dz = tgt_ecef.z - obs_ecef.z;
+
+        // Convert delta vector to local ENU coordinates at observer
+        let lat0 = observer.lat.to_radians();
+        let lon0 = observer.lon.to_radians();
+        let sin_lat0 = lat0.sin();
+        let cos_lat0 = lat0.cos();
+        let sin_lon0 = lon0.sin();
+        let cos_lon0 = lon0.cos();
+
+        let east = -sin_lon0 * dx + cos_lon0 * dy;
+        let north = -sin_lat0 * cos_lon0 * dx - sin_lat0 * sin_lon0 * dy + cos_lat0 * dz;
+        let up = cos_lat0 * cos_lon0 * dx + cos_lat0 * sin_lon0 * dy + sin_lat0 * dz;
+
+        // Azimuth: angle from north towards east, range [0, 360)
+        let az_rad = east.atan2(north);
+        let mut az_deg = az_rad.to_degrees().rem_euclid(360.0);
+
+        // Elevation: angle between local horizontal plane and line-of-sight
+        let horizontal_dist = (east.powi(2) + north.powi(2)).sqrt();
+        let el_rad = up.atan2(horizontal_dist);
+        let el_deg = el_rad.to_degrees();
+
+        // If target is exactly at observer position, define az=0, el=-90
+        if horizontal_dist == 0.0 && up == 0.0 {
+            az_deg = 0.0;
+            return (az_deg, -90.0);
+        }
+
+        (az_deg, el_deg)
+    }
 }
 
 /// Converts a position vector from True Equator Mean Equinox (TEME) frame to
@@ -127,6 +169,30 @@ fn ecef_to_lla(ecef: &Ecef) -> Lla {
     let altitude = p / latitude.cos() - n;
 
     Lla::new(latitude.to_degrees(), longitude.to_degrees(), altitude)
+}
+
+fn lla_to_ecef(lla: &Lla) -> Ecef {
+    // WGS84 constants (same as used in `ecef_to_lla`)
+    const A: f64 = 6378.137; // km
+    const F: f64 = 1.0 / 298.257223563;
+    const B: f64 = A * (1.0 - F);
+    const E2: f64 = 1.0 - (B * B) / (A * A);
+
+    let lat = lla.lat.to_radians();
+    let lon = lla.lon.to_radians();
+    let alt = lla.alt;
+
+    let sin_lat = lat.sin();
+    let cos_lat = lat.cos();
+    let cos_lon = lon.cos();
+    let sin_lon = lon.sin();
+
+    let n = A / (1.0 - E2 * sin_lat.powi(2)).sqrt();
+    let x = (n + alt) * cos_lat * cos_lon;
+    let y = (n + alt) * cos_lat * sin_lon;
+    let z = (n * (1.0 - E2) + alt) * sin_lat;
+
+    Ecef::new(x, y, z)
 }
 
 /// Returns the Epoch for the given UTC timestamp.
@@ -230,10 +296,9 @@ pub fn calculate_terminator(time: &DateTime<Utc>) -> Vec<(f64, f64)> {
     points
 }
 
-/// Calculates a set of points representing the trajectory of the object.
-pub fn calculate_trajectory(object: &Object, time: &DateTime<Utc>) -> Vec<(f64, f64)> {
-    // Calculate future positions along the trajectory
-    let mut points = Vec::new();
+/// Calculates ground track points of the object.
+pub fn calculate_ground_track(object: &Object, time: &DateTime<Utc>) -> Vec<(f64, f64)> {
+    let mut points = Vec::with_capacity(object.orbital_period().num_minutes() as usize);
     for minutes in 1..object.orbital_period().num_minutes() {
         let state = object
             .predict(&(*time + Duration::minutes(minutes)))
@@ -268,6 +333,33 @@ pub fn calculate_visibility_area(position: &Lla, num_points: usize) -> Vec<(f64,
         let lat_deg = lat_rad.to_degrees();
         let lon_deg = wrap_longitude_deg(lon_rad.to_degrees());
         points.push((lon_deg, lat_deg));
+    }
+    points
+}
+
+/// Calculates sky track points (in polar canvas coordinates) for the object as
+/// seen from a ground station.
+pub fn calculate_sky_track(
+    object: &Object,
+    ground_station: &Lla,
+    time: &DateTime<Utc>,
+) -> Vec<(f64, f64)> {
+    const WINDOW_MINUTES: i32 = 30;
+    const STEP_MIN: usize = 1;
+
+    let mut points = Vec::with_capacity(2 * WINDOW_MINUTES as usize / STEP_MIN);
+    for minutes in (-WINDOW_MINUTES..=WINDOW_MINUTES).step_by(STEP_MIN) {
+        let state = object
+            .predict(&(*time + Duration::minutes(minutes as i64)))
+            .unwrap();
+        let (az_deg, el_deg) = state.position.az_el(ground_station);
+        if el_deg >= 0.0 {
+            let r = (1.0 - (el_deg / 90.0)).clamp(0.0, 1.0);
+            let az_rad = az_deg.to_radians();
+            let x = r * az_rad.sin();
+            let y = r * az_rad.cos();
+            points.push((x, y));
+        }
     }
     points
 }
