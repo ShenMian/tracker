@@ -76,6 +76,7 @@ impl App {
 
             let world_map = WorldMap {
                 satellite_groups_state: &self.satellite_groups_state,
+                sky_state: &self.sky_state,
             };
             frame.render_stateful_widget(world_map, left_area, &mut self.world_map_state);
 

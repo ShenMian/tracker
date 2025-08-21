@@ -11,13 +11,17 @@ use ratatui::{
 };
 use rust_i18n::t;
 
-use crate::{app::App, config::WorldMapConfig, event::Event, object::Object, utils::*};
+use crate::{
+    app::App, config::WorldMapConfig, event::Event, object::Object, utils::*,
+    widgets::sky::SkyState,
+};
 
 use super::satellite_groups::SatelliteGroupsState;
 
 /// A widget that displays a world map with objects.
 pub struct WorldMap<'a> {
     pub satellite_groups_state: &'a SatelliteGroupsState,
+    pub sky_state: &'a SkyState,
 }
 
 /// State of a [`WorldMap`] widget.
@@ -224,6 +228,7 @@ impl WorldMap<'_> {
                 if state.show_visibility_area {
                     self.draw_visibility_area(ctx, state);
                 }
+                self.draw_ground_station(ctx);
             })
             .render(state.inner_area, buf);
     }
@@ -296,6 +301,17 @@ impl WorldMap<'_> {
 
         let points = crate::utils::calculate_visibility_area(&object_state.position, 32);
         self.draw_lines(ctx, points, state.visibility_area_color);
+    }
+
+    fn draw_ground_station(&self, ctx: &mut Context) {
+        let Some(ground_station) = &self.sky_state.ground_station else {
+            return;
+        };
+        ctx.print(
+            ground_station.position.lon,
+            ground_station.position.lat,
+            "*".light_cyan().bold() + format!(" {}", ground_station.name).light_cyan(),
+        );
     }
 
     /// Draws lines between points.

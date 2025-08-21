@@ -114,5 +114,12 @@ impl Default for SatelliteGroupsConfig {
 #[derive(Default, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct SkyConfig {
-    pub ground_station: Option<Lla>,
+    pub ground_station: Option<StationConfig>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct StationConfig {
+    pub name: Option<String>,
+    pub position: Lla,
 }

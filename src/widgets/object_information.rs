@@ -11,7 +11,6 @@ use ratatui::{
         Wrap,
     },
 };
-use reverse_geocoder::ReverseGeocoder;
 use rust_i18n::t;
 use unicode_width::UnicodeWidthStr;
 
@@ -26,14 +25,13 @@ pub struct ObjectInformation<'a> {
 }
 
 /// State of a [`ObjectInformation`] widget.
+#[derive(Default)]
 pub struct ObjectInformationState {
     /// Key-value pairs representing the object information to display in the
     /// table.
     table_entries: Vec<(String, String)>,
     /// The current state of the table widget.
     table_state: TableState,
-    /// Reverse geocoder instance used to convert coordinates to location names.
-    geocoder: ReverseGeocoder,
     /// The inner rendering area of the widget.
     inner_area: Rect,
 }
@@ -49,17 +47,6 @@ impl ObjectInformationState {
             .len()
             .saturating_sub(self.inner_area.height as usize);
         *self.table_state.offset_mut() = (self.table_state.offset() + 1).min(max_offset);
-    }
-}
-
-impl Default for ObjectInformationState {
-    fn default() -> Self {
-        Self {
-            table_entries: Default::default(),
-            table_state: Default::default(),
-            geocoder: ReverseGeocoder::new(),
-            inner_area: Default::default(),
-        }
     }
 }
 
@@ -141,13 +128,7 @@ impl ObjectInformation<'_> {
 
         let object_state = object.predict(&self.world_map_state.time()).unwrap();
 
-        let result = state
-            .geocoder
-            .search((object_state.latitude(), object_state.longitude()));
-        let city_name = &result.record.name;
-        let country_name = isocountry::CountryCode::for_alpha2(&result.record.cc)
-            .unwrap()
-            .name();
+        let (country, city) = object_state.position.country_city().unwrap();
 
         let elements = object.elements();
         state.table_entries = vec![
@@ -188,10 +169,7 @@ impl ObjectInformation<'_> {
                 t!("oi.period").into(),
                 format!("{:.2} min", object.orbital_period().as_seconds_f64() / 60.0),
             ),
-            (
-                t!("oi.location").into(),
-                format!("{city_name}, {country_name}"),
-            ),
+            (t!("oi.location").into(), format!("{city}, {country}")),
             (
                 t!("oi.epoch").into(),
                 object.epoch().format("%Y-%m-%d %H:%M:%S").to_string(),

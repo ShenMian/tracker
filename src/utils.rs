@@ -1,6 +1,10 @@
+use anyhow::Result;
 use chrono::{DateTime, Datelike, Duration, Timelike, Utc};
 use hifitime::Epoch;
+use reverse_geocoder::ReverseGeocoder;
 use serde::Deserialize;
+
+use std::sync::LazyLock;
 
 use crate::object::Object;
 
@@ -69,6 +73,9 @@ pub struct Lla {
     pub alt: f64,
 }
 
+/// Reverse geocoder instance used to convert coordinates to location names.
+static GEOCODER: LazyLock<ReverseGeocoder> = LazyLock::new(ReverseGeocoder::new);
+
 impl Lla {
     pub fn new(lat: f64, lon: f64, alt: f64) -> Self {
         debug_assert!((-90.0..=90.0).contains(&lat));
@@ -117,6 +124,14 @@ impl Lla {
         }
 
         (az_deg, el_deg)
+    }
+
+    /// Returns the city and country name.
+    pub fn country_city(&self) -> Result<(String, String)> {
+        let record = GEOCODER.search((self.lat, self.lon)).record;
+        let city = &record.name;
+        let country = isocountry::CountryCode::for_alpha2(&record.cc)?.name();
+        Ok((country.to_owned(), city.to_owned()))
     }
 }
 

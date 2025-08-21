@@ -19,16 +19,27 @@ pub struct Sky<'a> {
 
 /// State of a [`Sky`] widget.
 pub struct SkyState {
-    pub ground_station: Option<Lla>,
+    pub ground_station: Option<Station>,
 
     /// The inner rendering area of the widget.
     pub inner_area: Rect,
 }
 
+pub struct Station {
+    pub name: String,
+    pub position: Lla,
+}
+
 impl SkyState {
     pub fn with_config(config: SkyConfig) -> Self {
+        let ground_station = config.ground_station.map(|config| Station {
+            name: config
+                .name
+                .unwrap_or_else(|| config.position.country_city().unwrap().1),
+            position: config.position,
+        });
         Self {
-            ground_station: config.ground_station,
+            ground_station,
             inner_area: Default::default(),
         }
     }
@@ -64,7 +75,7 @@ impl Sky<'_> {
             .paint(|ctx| {
                 self.draw_grid(ctx);
                 ctx.layer();
-                self.draw_sky_track(ctx, state.ground_station.as_ref().unwrap());
+                self.draw_sky_track(ctx, &state.ground_station.as_ref().unwrap().position);
             })
             .render(area, buf);
     }
@@ -114,7 +125,7 @@ impl Sky<'_> {
     ///
     /// - azimuth -> angle
     /// - elevation -> radius
-    fn draw_sky_track(&self, ctx: &mut Context, ground_station: &Lla) {
+    fn draw_sky_track(&self, ctx: &mut Context, station_position: &Lla) {
         const UNKNOWN_NAME: &str = "UNK";
 
         let Some(object) = self
@@ -125,12 +136,12 @@ impl Sky<'_> {
         };
         let time = self.world_map_state.time();
 
-        let points = calculate_sky_track(object, ground_station, &time);
+        let points = calculate_sky_track(object, station_position, &time);
         self.draw_lines(ctx, points, Color::LightBlue);
 
         // Draw current satellite position if visible
         let object_state = object.predict(&time).unwrap();
-        let (az_deg, el_deg) = object_state.position.az_el(ground_station);
+        let (az_deg, el_deg) = object_state.position.az_el(station_position);
         if el_deg >= 0.0 {
             let r = (1.0 - (el_deg / 90.0)).clamp(0.0, 1.0);
             let az_rad = az_deg.to_radians();
