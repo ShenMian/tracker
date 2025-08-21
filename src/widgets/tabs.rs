@@ -102,11 +102,11 @@ impl StatefulWidget for Tabs<'_> {
     type State = TabsState;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
-        let block = Self::block(state);
-        let inner_area = block.inner(area);
-        block.render(area, buf);
+        let vertical = Layout::vertical([Constraint::Length(1), Constraint::Fill(1)]);
+        let [top_area, bottom_area] = vertical.areas(area);
 
-        self.render_tab(inner_area, buf, state);
+        Self::block(state).render(top_area, buf);
+        self.render_tab(bottom_area, buf, state);
     }
 }
 

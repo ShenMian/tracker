@@ -1,7 +1,7 @@
 use ratatui::{
     prelude::*,
     widgets::{
-        Paragraph, Wrap,
+        Block, Borders, Paragraph, Wrap,
         canvas::{Canvas, Circle, Context, Line},
     },
 };
@@ -48,6 +48,10 @@ impl SkyState {
 }
 
 impl Sky<'_> {
+    fn block() -> Block<'static> {
+        Block::new().borders(Borders::LEFT | Borders::RIGHT | Borders::BOTTOM)
+    }
+
     fn render_graph(&self, buf: &mut Buffer, state: &mut SkyState) {
         Canvas::default()
             .x_bounds([-1.0, 1.0])
@@ -167,7 +171,9 @@ impl StatefulWidget for Sky<'_> {
     type State = SkyState;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
-        state.inner_area = area;
+        let block = Self::block();
+        state.inner_area = block.inner(area);
+        block.render(area, buf);
         state.canvas_area = centered_square(state.inner_area);
 
         if state.canvas_area.width.min(state.canvas_area.height) < 5 {

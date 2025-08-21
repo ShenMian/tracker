@@ -7,7 +7,8 @@ use ratatui::{
     prelude::*,
     style::palette::tailwind,
     widgets::{
-        Cell, Paragraph, Row, Scrollbar, ScrollbarState, StatefulWidget, Table, TableState, Wrap,
+        Block, Borders, Cell, Paragraph, Row, Scrollbar, ScrollbarState, StatefulWidget, Table,
+        TableState, Wrap,
     },
 };
 use rust_i18n::t;
@@ -50,6 +51,10 @@ impl InformationState {
 }
 
 impl Information<'_> {
+    fn block() -> Block<'static> {
+        Block::new().borders(Borders::LEFT | Borders::RIGHT | Borders::BOTTOM)
+    }
+
     fn render_table(&self, buf: &mut Buffer, state: &mut InformationState, object: &Object) {
         self.update_table_entries(state, object);
 
@@ -203,7 +208,9 @@ impl StatefulWidget for Information<'_> {
     type State = InformationState;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
-        state.inner_area = area;
+        let block = Self::block();
+        state.inner_area = block.inner(area);
+        block.render(area, buf);
 
         if let Some(object) = self
             .world_map_state
