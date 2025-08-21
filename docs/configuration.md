@@ -52,7 +52,7 @@ groups = [
 ]
 
 [sky]
-ground_station = { lat = <LAT>, lon = <LON>, alt = <ALT> }
+ground_station = { name = <NAME>, position = {lat = <LAT>, lon = <LON>, alt = <ALT>} }
 ```
 
 ## World Map Configuration
@@ -69,6 +69,10 @@ Satellite TLE (Two-Line Element) data is retrieved from [CelesTrak](https://cele
 
 - **Individual satellites**: Use the [Search Satellite Catalog](https://celestrak.org/satcat/search.php) to locate specific satellites. The `id` field should match the satellite's International Designator as listed in the catalog.
 - **Function-based groups**: Complete list of available satellite categories can be found at [Current GP Element Sets](https://celestrak.org/NORAD/elements/). The `group` field in the configuration corresponds to these category identifiers.
+
+## Sky
+
+The `ground_station.name` option is optional. If not provided, the city corresponding to the specified coordinates will be used.
 
 ## Color options
 
