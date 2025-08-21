@@ -4,9 +4,11 @@ wm.title: "World map"
 wm.follow: "Follow"
 # Satellite groups
 sg.title: "Satellite groups"
+# Tabs
+tabs.info: "ⓘ Info"
+tabs.polar: "◎ Polar"
 # Object information
 oi.title: "Object information"
-oi.no_object_selected: "No object selected"
 oi.name: "Name"
 oi.norad_id: "NORAD ID"
 oi.longitude: "Longitude"
@@ -23,3 +25,8 @@ oi.eccentricity: "Ecc"
 oi.mean_anomaly: "M. anomaly"
 oi.mean_motion: "M. motion"
 oi.rev_num: "Rev. #"
+# Polar
+polar.title: "Polar"
+polar.no_ground_station: "No ground station"
+
+no_object_selected: "No object selected"

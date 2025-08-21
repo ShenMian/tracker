@@ -1,12 +1,15 @@
 use ratatui::style::Color;
 use serde::Deserialize;
 
+use crate::utils::Lla;
+
 /// Configuration for the application.
 #[derive(Default, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Config {
     pub world_map: WorldMapConfig,
     pub satellite_groups: SatelliteGroupsConfig,
+    pub polar: PolarConfig,
 }
 
 /// Configuration for the world map widget.
@@ -105,4 +108,11 @@ impl Default for SatelliteGroupsConfig {
             ],
         }
     }
+}
+
+/// Configuration for the polar widget.
+#[derive(Default, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct PolarConfig {
+    pub ground_station: Option<Lla>,
 }

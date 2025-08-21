@@ -124,8 +124,13 @@ impl ObjectInformation<'_> {
         Scrollbar::default().render(inner_area, buf, &mut scrollbar_state);
     }
 
-    fn render_no_object_selected(&self, buf: &mut Buffer, state: &mut ObjectInformationState) {
-        Paragraph::new(t!("oi.no_object_selected").dark_gray())
+    fn render_paragraph<'a>(
+        &self,
+        text: impl Into<Text<'a>>,
+        buf: &mut Buffer,
+        state: &mut ObjectInformationState,
+    ) {
+        Paragraph::new(text)
             .centered()
             .wrap(Wrap { trim: true })
             .render(state.inner_area, buf);
@@ -235,7 +240,7 @@ impl StatefulWidget for ObjectInformation<'_> {
             self.render_table(buf, state, object);
             self.render_scrollbar(area, buf, state);
         } else {
-            self.render_no_object_selected(buf, state);
+            self.render_paragraph(t!("no_object_selected").dark_gray(), buf, state);
         }
     }
 }

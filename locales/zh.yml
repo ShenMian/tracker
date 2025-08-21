@@ -4,9 +4,11 @@ wm.title: "世界地图"
 wm.follow: "跟随"
 # Satellite groups
 sg.title: "卫星组"
+# Tabs
+tabs.info: "ⓘ 信息"
+tabs.polar: "◎ 极坐标"
 # Object information
 oi.title: "目标信息"
-oi.no_object_selected: "未选择目标"
 oi.name: "名称"
 oi.norad_id: "NORAD 编号"
 oi.longitude: "经度"
@@ -23,3 +25,8 @@ oi.eccentricity: "偏心率"
 oi.mean_anomaly: "平近点角"
 oi.mean_motion: "平运动"
 oi.rev_num: "圈数"
+# Polar
+polar.title: "极坐标"
+polar.no_ground_station: "无地面站"
+
+no_object_selected: "未选择目标"

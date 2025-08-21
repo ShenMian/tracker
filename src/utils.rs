@@ -1,5 +1,6 @@
 use chrono::{DateTime, Datelike, Duration, Timelike, Utc};
 use hifitime::Epoch;
+use serde::Deserialize;
 
 use crate::object::Object;
 
@@ -58,7 +59,7 @@ impl Ecef {
 }
 
 /// A position in geodetic coordinates.
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Deserialize)]
 pub struct Lla {
     /// Latitude in degrees.
     pub lat: f64,

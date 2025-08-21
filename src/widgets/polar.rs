@@ -1,4 +1,3 @@
-use chrono::{DateTime, Utc};
 use ratatui::{
     prelude::*,
     widgets::{
@@ -8,7 +7,7 @@ use ratatui::{
 };
 use rust_i18n::t;
 
-use crate::{object::Object, utils::*, widgets::world_map::WorldMapState};
+use crate::{config::PolarConfig, utils::*, widgets::world_map::WorldMapState};
 
 use super::satellite_groups::SatelliteGroupsState;
 
@@ -20,15 +19,24 @@ pub struct Polar<'a> {
 
 /// State of a [`Polar`] widget.
 pub struct PolarState {
-    pub ground_station: Lla,
+    pub ground_station: Option<Lla>,
 
     /// The inner rendering area of the widget.
     pub inner_area: Rect,
 }
 
+impl PolarState {
+    pub fn with_config(config: PolarConfig) -> Self {
+        Self {
+            ground_station: config.ground_station,
+            inner_area: Default::default(),
+        }
+    }
+}
+
 impl Polar<'_> {
     fn render_block(&self, area: Rect, buf: &mut Buffer, state: &mut PolarState) {
-        let block = Block::bordered().title("Polar".blue());
+        let block = Block::bordered().title(t!("polar.title").to_string().blue());
         state.inner_area = block.inner(area);
         block.render(area, buf);
     }
@@ -56,20 +64,18 @@ impl Polar<'_> {
             .paint(|ctx| {
                 self.draw_grid(ctx);
                 ctx.layer();
-
-                if let Some(object) = self
-                    .world_map_state
-                    .selected_object(self.satellite_groups_state)
-                {
-                    let now = self.world_map_state.time();
-                    self.draw_sky_track(ctx, object, &state.ground_station, &now);
-                }
+                self.draw_sky_track(ctx, state.ground_station.as_ref().unwrap());
             })
             .render(area, buf);
     }
 
-    fn render_no_object_selected(&self, buf: &mut Buffer, state: &mut PolarState) {
-        Paragraph::new(t!("oi.no_object_selected").dark_gray())
+    fn render_paragraph<'a>(
+        &self,
+        text: impl Into<Text<'a>>,
+        buf: &mut Buffer,
+        state: &mut PolarState,
+    ) {
+        Paragraph::new(text)
             .centered()
             .wrap(Wrap { trim: true })
             .render(state.inner_area, buf);
@@ -81,7 +87,7 @@ impl Polar<'_> {
                 x: 0.0,
                 y: 0.0,
                 radius,
-                color: Color::Gray,
+                color: Color::DarkGray,
             });
         }
         ctx.draw(&Line {
@@ -89,14 +95,14 @@ impl Polar<'_> {
             y1: 0.0,
             x2: 1.0,
             y2: 0.0,
-            color: Color::Gray,
+            color: Color::DarkGray,
         });
         ctx.draw(&Line {
             x1: 0.0,
             y1: -1.0,
             x2: 0.0,
             y2: 1.0,
-            color: Color::Gray,
+            color: Color::DarkGray,
         });
         ctx.print(0.0, 1.0, "N".green());
         ctx.print(1.0, 0.0, "E".green());
@@ -104,15 +110,39 @@ impl Polar<'_> {
         ctx.print(-1.0, 0.0, "W".green());
     }
 
-    fn draw_sky_track(
-        &self,
-        ctx: &mut Context,
-        object: &Object,
-        ground_station: &Lla,
-        time: &DateTime<Utc>,
-    ) {
-        let points = calculate_sky_track(object, ground_station, time);
+    fn draw_sky_track(&self, ctx: &mut Context, ground_station: &Lla) {
+        const UNKNOWN_NAME: &str = "UNK";
 
+        let Some(object) = self
+            .world_map_state
+            .selected_object(self.satellite_groups_state)
+        else {
+            return;
+        };
+        let time = self.world_map_state.time();
+
+        let points = calculate_sky_track(object, ground_station, &time);
+        self.draw_lines(ctx, points, Color::LightBlue);
+
+        // Draw current satellite position if visible
+        let object_state = object.predict(&time).unwrap();
+        let (az_deg, el_deg) = object_state.position.az_el(ground_station);
+        if el_deg >= 0.0 {
+            let r = (1.0 - (el_deg / 90.0)).clamp(0.0, 1.0);
+            let az_rad = az_deg.to_radians();
+            let x = r * az_rad.sin();
+            let y = r * az_rad.cos();
+            let object_name = object.name().unwrap_or(UNKNOWN_NAME);
+            ctx.print(
+                x,
+                y,
+                "+".light_red().slow_blink() + format!(" {object_name}").white(),
+            );
+        }
+    }
+
+    /// Draws lines between points.
+    fn draw_lines(&self, ctx: &mut Context, points: Vec<(f64, f64)>, color: Color) {
         for window in points.windows(2) {
             let (x1, y1) = window[0];
             let (x2, y2) = window[1];
@@ -121,23 +151,8 @@ impl Polar<'_> {
                 y1,
                 x2,
                 y2,
-                color: Color::LightBlue,
+                color,
             });
-        }
-
-        // Draw current satellite position if visible
-        let object_state = object.predict(time).unwrap();
-        let (az_deg, el_deg) = object_state.position.az_el(ground_station);
-        if el_deg >= 0.0 {
-            let r = (1.0 - (el_deg / 90.0)).clamp(0.0, 1.0);
-            let az_rad = az_deg.to_radians();
-            let x = r * az_rad.sin();
-            let y = r * az_rad.cos();
-            ctx.print(
-                x,
-                y,
-                "+".light_red().slow_blink() + format!(" {}", object.name().unwrap()).into(),
-            );
         }
     }
 }
@@ -147,6 +162,10 @@ impl StatefulWidget for Polar<'_> {
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         self.render_block(area, buf, state);
+        if state.ground_station.is_none() {
+            self.render_paragraph(t!("polar.no_ground_station").dark_gray(), buf, state);
+            return;
+        }
         if self
             .world_map_state
             .selected_object(self.satellite_groups_state)
@@ -154,7 +173,7 @@ impl StatefulWidget for Polar<'_> {
         {
             self.render_graph(buf, state);
         } else {
-            self.render_no_object_selected(buf, state);
+            self.render_paragraph(t!("no_object_selected").dark_gray(), buf, state);
         }
     }
 }
