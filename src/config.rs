@@ -1,12 +1,15 @@
 use ratatui::style::Color;
 use serde::Deserialize;
 
+use crate::utils::Lla;
+
 /// Configuration for the application.
 #[derive(Default, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Config {
     pub world_map: WorldMapConfig,
     pub satellite_groups: SatelliteGroupsConfig,
+    pub sky: SkyConfig,
 }
 
 /// Configuration for the world map widget.
@@ -105,4 +108,18 @@ impl Default for SatelliteGroupsConfig {
             ],
         }
     }
+}
+
+/// Configuration for the sky widget.
+#[derive(Default, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct SkyConfig {
+    pub ground_station: Option<StationConfig>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct StationConfig {
+    pub name: Option<String>,
+    pub position: Lla,
 }

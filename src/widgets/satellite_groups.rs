@@ -9,7 +9,7 @@ use ratatui::{
     widgets::{Block, List, ListItem, ListState, Scrollbar, ScrollbarState},
 };
 
-/// A widget to display a list of satellite groups.
+/// A widget that displays a list of satellite groups.
 #[derive(Default)]
 pub struct SatelliteGroups;
 
@@ -87,13 +87,11 @@ impl Default for SatelliteGroupsState {
 }
 
 impl SatelliteGroups {
-    fn render_block(&self, area: Rect, buf: &mut Buffer, state: &mut SatelliteGroupsState) {
-        let block = Block::bordered().title(t!("sg.title").to_string().blue());
-        state.inner_area = block.inner(area);
-        block.render(area, buf);
+    fn block() -> Block<'static> {
+        Block::bordered().title(t!("sg.title").to_string().blue())
     }
 
-    fn render_list(&self, buf: &mut Buffer, state: &mut SatelliteGroupsState) {
+    fn render_list(buf: &mut Buffer, state: &mut SatelliteGroupsState) {
         let items = state.list_entries.iter().map(|entry| {
             let style = if entry.selected {
                 Style::default().fg(Color::White)
@@ -113,7 +111,7 @@ impl SatelliteGroups {
         StatefulWidget::render(list, state.inner_area, buf, &mut state.list_state);
     }
 
-    fn render_scrollbar(&self, area: Rect, buf: &mut Buffer, state: &mut SatelliteGroupsState) {
+    fn render_scrollbar(area: Rect, buf: &mut Buffer, state: &mut SatelliteGroupsState) {
         let inner_area = area.inner(Margin::new(0, 1));
         let mut scrollbar_state = ScrollbarState::new(
             state
@@ -130,9 +128,12 @@ impl StatefulWidget for SatelliteGroups {
     type State = SatelliteGroupsState;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
-        self.render_block(area, buf, state);
-        self.render_list(buf, state);
-        self.render_scrollbar(area, buf, state);
+        let block = Self::block();
+        state.inner_area = block.inner(area);
+        block.render(area, buf);
+
+        Self::render_list(buf, state);
+        Self::render_scrollbar(area, buf, state);
     }
 }
 

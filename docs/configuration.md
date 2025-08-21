@@ -50,6 +50,9 @@ groups = [
     { label = "Radar calibration", group = "radar" },
     { label = "CubeSats", group = "cubesat" },
 ]
+
+[sky]
+ground_station = { lat = <LAT>, lon = <LON>, alt = <ALT> }
 ```
 
 ## World Map Configuration

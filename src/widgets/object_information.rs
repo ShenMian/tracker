@@ -7,11 +7,9 @@ use ratatui::{
     prelude::*,
     style::palette::tailwind,
     widgets::{
-        Block, Cell, Paragraph, Row, Scrollbar, ScrollbarState, StatefulWidget, Table, TableState,
-        Wrap,
+        Cell, Paragraph, Row, Scrollbar, ScrollbarState, StatefulWidget, Table, TableState, Wrap,
     },
 };
-use reverse_geocoder::ReverseGeocoder;
 use rust_i18n::t;
 use unicode_width::UnicodeWidthStr;
 
@@ -19,21 +17,20 @@ use crate::{app::App, event::Event, object::Object};
 
 use super::{satellite_groups::SatelliteGroupsState, world_map::WorldMapState};
 
-/// A widget to display information about a selected object.
+/// A widget that displays information about a selected object.
 pub struct ObjectInformation<'a> {
     pub satellite_groups_state: &'a SatelliteGroupsState,
     pub world_map_state: &'a WorldMapState,
 }
 
 /// State of a [`ObjectInformation`] widget.
+#[derive(Default)]
 pub struct ObjectInformationState {
     /// Key-value pairs representing the object information to display in the
     /// table.
     table_entries: Vec<(String, String)>,
     /// The current state of the table widget.
     table_state: TableState,
-    /// Reverse geocoder instance used to convert coordinates to location names.
-    geocoder: ReverseGeocoder,
     /// The inner rendering area of the widget.
     inner_area: Rect,
 }
@@ -52,24 +49,7 @@ impl ObjectInformationState {
     }
 }
 
-impl Default for ObjectInformationState {
-    fn default() -> Self {
-        Self {
-            table_entries: Default::default(),
-            table_state: Default::default(),
-            geocoder: ReverseGeocoder::new(),
-            inner_area: Default::default(),
-        }
-    }
-}
-
 impl ObjectInformation<'_> {
-    fn render_block(&self, area: Rect, buf: &mut Buffer, state: &mut ObjectInformationState) {
-        let block = Block::bordered().title(t!("oi.title").to_string().blue());
-        state.inner_area = block.inner(area);
-        block.render(area, buf);
-    }
-
     fn render_table(&self, buf: &mut Buffer, state: &mut ObjectInformationState, object: &Object) {
         self.update_table_entries(state, object);
 
@@ -124,8 +104,13 @@ impl ObjectInformation<'_> {
         Scrollbar::default().render(inner_area, buf, &mut scrollbar_state);
     }
 
-    fn render_no_object_selected(&self, buf: &mut Buffer, state: &mut ObjectInformationState) {
-        Paragraph::new(t!("oi.no_object_selected").dark_gray())
+    fn render_paragraph<'a>(
+        &self,
+        text: impl Into<Text<'a>>,
+        buf: &mut Buffer,
+        state: &mut ObjectInformationState,
+    ) {
+        Paragraph::new(text)
             .centered()
             .wrap(Wrap { trim: true })
             .render(state.inner_area, buf);
@@ -136,13 +121,7 @@ impl ObjectInformation<'_> {
 
         let object_state = object.predict(&self.world_map_state.time()).unwrap();
 
-        let result = state
-            .geocoder
-            .search((object_state.latitude(), object_state.longitude()));
-        let city_name = &result.record.name;
-        let country_name = isocountry::CountryCode::for_alpha2(&result.record.cc)
-            .unwrap()
-            .name();
+        let (country, city) = object_state.position.country_city().unwrap();
 
         let elements = object.elements();
         state.table_entries = vec![
@@ -183,10 +162,7 @@ impl ObjectInformation<'_> {
                 t!("oi.period").into(),
                 format!("{:.2} min", object.orbital_period().as_seconds_f64() / 60.0),
             ),
-            (
-                t!("oi.location").into(),
-                format!("{city_name}, {country_name}"),
-            ),
+            (t!("oi.location").into(), format!("{city}, {country}")),
             (
                 t!("oi.epoch").into(),
                 object.epoch().format("%Y-%m-%d %H:%M:%S").to_string(),
@@ -227,7 +203,8 @@ impl StatefulWidget for ObjectInformation<'_> {
     type State = ObjectInformationState;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
-        self.render_block(area, buf, state);
+        state.inner_area = area;
+
         if let Some(object) = self
             .world_map_state
             .selected_object(self.satellite_groups_state)
@@ -235,7 +212,7 @@ impl StatefulWidget for ObjectInformation<'_> {
             self.render_table(buf, state, object);
             self.render_scrollbar(area, buf, state);
         } else {
-            self.render_no_object_selected(buf, state);
+            self.render_paragraph(t!("no_object_selected").dark_gray(), buf, state);
         }
     }
 }

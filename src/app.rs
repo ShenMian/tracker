@@ -7,8 +7,10 @@ use crate::{
     event::{Event, EventHandler},
     tui::Tui,
     widgets::{
-        object_information::{self, ObjectInformation, ObjectInformationState},
+        object_information::{self, ObjectInformationState},
         satellite_groups::{self, SatelliteGroups, SatelliteGroupsState},
+        sky::SkyState,
+        tabs::{self, Tabs, TabsState},
         world_map::{self, WorldMap, WorldMapState},
     },
 };
@@ -21,7 +23,9 @@ pub struct App {
 
     pub world_map_state: WorldMapState,
     pub satellite_groups_state: SatelliteGroupsState,
+    pub tab_state: TabsState,
     pub object_information_state: ObjectInformationState,
+    pub sky_state: SkyState,
 
     tui: Tui<CrosstermBackend<std::io::Stdout>>,
 }
@@ -37,7 +41,9 @@ impl App {
             running: true,
             world_map_state: WorldMapState::with_config(config.world_map),
             satellite_groups_state: SatelliteGroupsState::with_config(config.satellite_groups),
+            tab_state: Default::default(),
             object_information_state: Default::default(),
+            sky_state: SkyState::with_config(config.sky),
             tui,
         })
     }
@@ -66,22 +72,21 @@ impl App {
             let horizontal = Layout::horizontal([Constraint::Percentage(80), Constraint::Min(25)]);
             let [left_area, right_area] = horizontal.areas(frame.area());
             let vertical = Layout::vertical([Constraint::Percentage(60), Constraint::Fill(1)]);
-            let [top_right_area, right_bottom_area] = vertical.areas(right_area);
+            let [right_top_area, right_bottom_area] = vertical.areas(right_area);
 
             let world_map = WorldMap {
                 satellite_groups_state: &self.satellite_groups_state,
+                sky_state: &self.sky_state,
             };
             frame.render_stateful_widget(world_map, left_area, &mut self.world_map_state);
 
-            let object_information = ObjectInformation {
-                satellite_groups_state: &self.satellite_groups_state,
+            let tabs = Tabs {
                 world_map_state: &self.world_map_state,
+                satellite_groups_state: &self.satellite_groups_state,
+                sky_state: &mut self.sky_state,
+                object_information_state: &mut self.object_information_state,
             };
-            frame.render_stateful_widget(
-                object_information,
-                top_right_area,
-                &mut self.object_information_state,
-            );
+            frame.render_stateful_widget(tabs, right_top_area, &mut self.tab_state);
 
             frame.render_stateful_widget(
                 SatelliteGroups,
@@ -100,8 +105,9 @@ impl App {
         }
 
         world_map::handle_event(event, self).await?;
-        object_information::handle_event(event, self).await?;
-        satellite_groups::handle_event(event, self).await
+        satellite_groups::handle_event(event, self).await?;
+        tabs::handle_event(event, self).await?;
+        object_information::handle_event(event, self).await
     }
 
     fn handle_key_events(&mut self, event: KeyEvent) {
