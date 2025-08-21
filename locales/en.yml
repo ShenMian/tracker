@@ -27,3 +27,4 @@ sky.title: "Sky"
 sky.no_ground_station: "No ground station"
 
 no_object_selected: "No object selected"
+no_enough_space: "Not enough space"

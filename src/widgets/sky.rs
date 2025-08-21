@@ -20,9 +20,10 @@ pub struct Sky<'a> {
 /// State of a [`Sky`] widget.
 pub struct SkyState {
     pub ground_station: Option<Station>,
+    canvas_area: Rect,
 
     /// The inner rendering area of the widget.
-    pub inner_area: Rect,
+    inner_area: Rect,
 }
 
 pub struct Station {
@@ -40,6 +41,7 @@ impl SkyState {
         });
         Self {
             ground_station,
+            canvas_area: Default::default(),
             inner_area: Default::default(),
         }
     }
@@ -47,31 +49,15 @@ impl SkyState {
 
 impl Sky<'_> {
     fn render_graph(&self, buf: &mut Buffer, state: &mut SkyState) {
-        let Rect {
-            x,
-            y,
-            width,
-            height,
-        } = state.inner_area;
-
-        let canvas_width = width.min(height * 2);
-        let canvas_height = canvas_width / 2;
-        let area = Rect {
-            x: x + (width - canvas_width) / 2,
-            y: y + (height - canvas_height) / 2,
-            width: canvas_width,
-            height: canvas_height,
-        };
-
         Canvas::default()
             .x_bounds([-1.0, 1.0])
             .y_bounds([-1.0, 1.0])
             .paint(|ctx| {
-                self.draw_grid(ctx);
+                Self::draw_grid(ctx);
                 ctx.layer();
                 self.draw_sky_track(ctx, &state.ground_station.as_ref().unwrap().position);
             })
-            .render(area, buf);
+            .render(state.canvas_area, buf);
     }
 
     fn render_paragraph<'a>(
@@ -86,7 +72,7 @@ impl Sky<'_> {
             .render(state.inner_area, buf);
     }
 
-    fn draw_grid(&self, ctx: &mut Context) {
+    fn draw_grid(ctx: &mut Context) {
         for radius in [0.9, 0.6, 0.3] {
             ctx.draw(&Circle {
                 x: 0.0,
@@ -131,7 +117,7 @@ impl Sky<'_> {
         let time = self.world_map_state.time();
 
         let points = calculate_sky_track(object, station_position, &time);
-        self.draw_lines(ctx, points, Color::LightBlue);
+        Self::draw_lines(ctx, points, Color::LightBlue);
 
         // Draw current satellite position if visible
         let object_state = object.predict(&time).unwrap();
@@ -151,7 +137,7 @@ impl Sky<'_> {
     }
 
     /// Draws lines between points.
-    fn draw_lines(&self, ctx: &mut Context, points: Vec<(f64, f64)>, color: Color) {
+    fn draw_lines(ctx: &mut Context, points: Vec<(f64, f64)>, color: Color) {
         for window in points.windows(2) {
             let (x1, y1) = window[0];
             let (x2, y2) = window[1];
@@ -166,24 +152,39 @@ impl Sky<'_> {
     }
 }
 
+fn centered_square(area: Rect) -> Rect {
+    let width = area.width.min(area.height * 2);
+    let height = width / 2;
+    Rect {
+        x: area.x + (area.width - width) / 2,
+        y: area.y + (area.height - height) / 2,
+        width,
+        height,
+    }
+}
+
 impl StatefulWidget for Sky<'_> {
     type State = SkyState;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         state.inner_area = area;
+        state.canvas_area = centered_square(state.inner_area);
+
+        if state.canvas_area.width.min(state.canvas_area.height) < 5 {
+            self.render_paragraph(t!("no_enough_space").dark_gray(), buf, state);
+            return;
+        }
 
         if state.ground_station.is_none() {
             self.render_paragraph(t!("sky.no_ground_station").dark_gray(), buf, state);
             return;
         }
-        if self
-            .world_map_state
-            .selected_object(self.satellite_groups_state)
-            .is_some()
-        {
-            self.render_graph(buf, state);
-        } else {
+
+        if self.world_map_state.selected_object_index.is_none() {
             self.render_paragraph(t!("no_object_selected").dark_gray(), buf, state);
+            return;
         }
+
+        self.render_graph(buf, state);
     }
 }

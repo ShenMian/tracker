@@ -27,3 +27,4 @@ sky.title: "天空"
 sky.no_ground_station: "无地面站"
 
 no_object_selected: "未选择目标"
+no_enough_space: "空间不足"
