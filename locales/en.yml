@@ -4,7 +4,7 @@ wm.title: "World map"
 wm.follow: "Follow"
 # Satellite groups
 sg.title: "Satellite groups"
-# Object information
+# Information
 oi.title: "Info"
 oi.name: "Name"
 oi.norad_id: "NORAD ID"

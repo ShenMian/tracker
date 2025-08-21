@@ -18,14 +18,14 @@ use crate::{app::App, event::Event, object::Object};
 use super::{satellite_groups::SatelliteGroupsState, world_map::WorldMapState};
 
 /// A widget that displays information about a selected object.
-pub struct ObjectInformation<'a> {
+pub struct Information<'a> {
     pub satellite_groups_state: &'a SatelliteGroupsState,
     pub world_map_state: &'a WorldMapState,
 }
 
-/// State of a [`ObjectInformation`] widget.
+/// State of a [`Information`] widget.
 #[derive(Default)]
-pub struct ObjectInformationState {
+pub struct InformationState {
     /// Key-value pairs representing the object information to display in the
     /// table.
     table_entries: Vec<(String, String)>,
@@ -35,7 +35,7 @@ pub struct ObjectInformationState {
     inner_area: Rect,
 }
 
-impl ObjectInformationState {
+impl InformationState {
     fn scroll_up(&mut self) {
         *self.table_state.offset_mut() = self.table_state.offset().saturating_sub(1);
     }
@@ -49,8 +49,8 @@ impl ObjectInformationState {
     }
 }
 
-impl ObjectInformation<'_> {
-    fn render_table(&self, buf: &mut Buffer, state: &mut ObjectInformationState, object: &Object) {
+impl Information<'_> {
+    fn render_table(&self, buf: &mut Buffer, state: &mut InformationState, object: &Object) {
         self.update_table_entries(state, object);
 
         let (max_key_width, _max_value_width) = state
@@ -92,7 +92,7 @@ impl ObjectInformation<'_> {
         StatefulWidget::render(table, state.inner_area, buf, &mut state.table_state);
     }
 
-    fn render_scrollbar(&self, area: Rect, buf: &mut Buffer, state: &mut ObjectInformationState) {
+    fn render_scrollbar(&self, area: Rect, buf: &mut Buffer, state: &mut InformationState) {
         let inner_area = area.inner(Margin::new(0, 1));
         let mut scrollbar_state = ScrollbarState::new(
             state
@@ -108,7 +108,7 @@ impl ObjectInformation<'_> {
         &self,
         text: impl Into<Text<'a>>,
         buf: &mut Buffer,
-        state: &mut ObjectInformationState,
+        state: &mut InformationState,
     ) {
         Paragraph::new(text)
             .centered()
@@ -116,7 +116,7 @@ impl ObjectInformation<'_> {
             .render(state.inner_area, buf);
     }
 
-    fn update_table_entries(&self, state: &mut ObjectInformationState, object: &Object) {
+    fn update_table_entries(&self, state: &mut InformationState, object: &Object) {
         const UNKNOWN_NAME: &str = "Unknown";
 
         let object_state = object.predict(&self.world_map_state.time()).unwrap();
@@ -199,8 +199,8 @@ impl ObjectInformation<'_> {
     }
 }
 
-impl StatefulWidget for ObjectInformation<'_> {
-    type State = ObjectInformationState;
+impl StatefulWidget for Information<'_> {
+    type State = InformationState;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         state.inner_area = area;
@@ -225,7 +225,7 @@ pub async fn handle_event(event: Event, app: &mut App) -> Result<()> {
 }
 
 async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
-    let state = &mut app.object_information_state;
+    let state = &mut app.information_state;
 
     let inner_area = state.inner_area;
     if !inner_area.contains(Position::new(event.column, event.row)) {

@@ -1,4 +1,4 @@
-pub mod object_information;
+pub mod information;
 pub mod satellite_groups;
 pub mod sky;
 pub mod tabs;

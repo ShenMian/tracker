@@ -209,7 +209,7 @@ impl WorldMap<'_> {
                 });
                 ctx.layer();
                 if state.show_terminator {
-                    self.draw_terminator(ctx, state);
+                    Self::draw_terminator(ctx, state);
                 }
                 self.draw_objects(ctx, state);
             })
@@ -233,7 +233,7 @@ impl WorldMap<'_> {
     }
 
     /// Draws the day-night terminator and subsolar point.
-    fn draw_terminator(&self, ctx: &mut Context, state: &WorldMapState) {
+    fn draw_terminator(ctx: &mut Context, state: &WorldMapState) {
         // Draw the terminator line
         Self::draw_lines(
             ctx,
@@ -423,7 +423,7 @@ fn get_nearest_object_index(app: &App, position: Position, inner_area: Rect) -> 
                 state.latitude(),
                 inner_area,
             );
-            (x as i32 - position.x as i32).abs() + (y as i32 - position.y as i32).abs()
+            (x as i32 - position.x as i32).abs() + (y as i32 - position.y as i32).abs() * 2
         })
         .map(|(index, _)| index)
 }

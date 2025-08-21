@@ -7,7 +7,7 @@ use crate::{
     event::{Event, EventHandler},
     tui::Tui,
     widgets::{
-        object_information::{self, ObjectInformationState},
+        information::{self, InformationState},
         satellite_groups::{self, SatelliteGroups, SatelliteGroupsState},
         sky::SkyState,
         tabs::{self, Tabs, TabsState},
@@ -24,7 +24,7 @@ pub struct App {
     pub world_map_state: WorldMapState,
     pub satellite_groups_state: SatelliteGroupsState,
     pub tab_state: TabsState,
-    pub object_information_state: ObjectInformationState,
+    pub information_state: InformationState,
     pub sky_state: SkyState,
 
     tui: Tui<CrosstermBackend<std::io::Stdout>>,
@@ -42,7 +42,7 @@ impl App {
             world_map_state: WorldMapState::with_config(config.world_map),
             satellite_groups_state: SatelliteGroupsState::with_config(config.satellite_groups),
             tab_state: Default::default(),
-            object_information_state: Default::default(),
+            information_state: Default::default(),
             sky_state: SkyState::with_config(config.sky),
             tui,
         })
@@ -84,7 +84,7 @@ impl App {
                 world_map_state: &self.world_map_state,
                 satellite_groups_state: &self.satellite_groups_state,
                 sky_state: &mut self.sky_state,
-                object_information_state: &mut self.object_information_state,
+                information_state: &mut self.information_state,
             };
             frame.render_stateful_widget(tabs, right_top_area, &mut self.tab_state);
 
@@ -107,7 +107,7 @@ impl App {
         world_map::handle_event(event, self).await?;
         satellite_groups::handle_event(event, self).await?;
         tabs::handle_event(event, self).await?;
-        object_information::handle_event(event, self).await
+        information::handle_event(event, self).await
     }
 
     fn handle_key_events(&mut self, event: KeyEvent) {

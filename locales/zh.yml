@@ -4,7 +4,7 @@ wm.title: "世界地图"
 wm.follow: "跟随"
 # Satellite groups
 sg.title: "卫星组"
-# Object information
+# Information
 oi.title: "信息"
 oi.name: "名称"
 oi.norad_id: "NORAD 编号"
