@@ -129,7 +129,7 @@ impl WorldMap<'_> {
     const SUBSOLAR_SYMBOL: &'static str = "*";
     const UNKNOWN_NAME: &'static str = "UNK";
 
-    fn render_block(&self, area: Rect, buf: &mut Buffer, state: &mut WorldMapState) {
+    fn block(state: &mut WorldMapState) -> Block<'static> {
         let mut block = Block::bordered()
             .title(t!("wm.title").to_string().blue())
             .title_bottom(
@@ -156,8 +156,7 @@ impl WorldMap<'_> {
             );
         }
 
-        state.inner_area = block.inner(area);
-        block.render(area, buf);
+        block
     }
 
     /// Renders the world map.
@@ -236,7 +235,7 @@ impl WorldMap<'_> {
     /// Draws the day-night terminator and subsolar point.
     fn draw_terminator(&self, ctx: &mut Context, state: &WorldMapState) {
         // Draw the terminator line
-        self.draw_lines(
+        Self::draw_lines(
             ctx,
             calculate_terminator(&state.time()),
             state.terminator_color,
@@ -269,7 +268,7 @@ impl WorldMap<'_> {
     fn draw_object_highlight(&self, ctx: &mut Context, state: &WorldMapState) {
         if let Some(selected) = state.selected_object(self.satellite_groups_state) {
             // Draw the trajectory
-            self.draw_lines(
+            Self::draw_lines(
                 ctx,
                 calculate_ground_track(selected, &state.time()),
                 state.trajectory_color,
@@ -298,9 +297,8 @@ impl WorldMap<'_> {
             return;
         };
         let object_state = object.predict(&state.time()).unwrap();
-
-        let points = crate::utils::calculate_visibility_area(&object_state.position, 32);
-        self.draw_lines(ctx, points, state.visibility_area_color);
+        let points = calculate_visibility_area(&object_state.position, 32);
+        Self::draw_lines(ctx, points, state.visibility_area_color);
     }
 
     fn draw_ground_station(&self, ctx: &mut Context) {
@@ -315,20 +313,14 @@ impl WorldMap<'_> {
     }
 
     /// Draws lines between points.
-    fn draw_lines(&self, ctx: &mut Context, points: Vec<(f64, f64)>, color: Color) {
+    fn draw_lines(ctx: &mut Context, points: Vec<(f64, f64)>, color: Color) {
         for window in points.windows(2) {
-            self.draw_line(ctx, window[0], window[1], color);
+            Self::draw_line(ctx, window[0], window[1], color);
         }
     }
 
     /// Draws a line between two points.
-    fn draw_line(
-        &self,
-        ctx: &mut Context,
-        (x1, y1): (f64, f64),
-        (x2, y2): (f64, f64),
-        color: Color,
-    ) {
+    fn draw_line(ctx: &mut Context, (x1, y1): (f64, f64), (x2, y2): (f64, f64), color: Color) {
         // Handle trajectory crossing the international date line
         if (x1 - x2).abs() >= 180.0 {
             let x_edge = if x1 > 0.0 { 180.0 } else { -180.0 };
@@ -345,7 +337,10 @@ impl StatefulWidget for WorldMap<'_> {
     type State = WorldMapState;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
-        self.render_block(area, buf, state);
+        let block = Self::block(state);
+        state.inner_area = block.inner(area);
+        block.render(area, buf);
+
         self.render_map(buf, state);
     }
 }

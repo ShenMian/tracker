@@ -1,12 +1,8 @@
+use std::fmt::{Display, Formatter};
+
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use ratatui::{
-    layout::{Constraint, Layout},
-    prelude::*,
-    style::Modifier,
-    text::Line,
-    widgets::{self, Widget},
-};
+use ratatui::{prelude::*, widgets::Block};
 use rust_i18n::t;
 
 use crate::{
@@ -29,12 +25,9 @@ pub enum Tab {
 }
 
 impl Tab {
-    /// Returns the index of the tab.
-    fn index(&self) -> usize {
-        match self {
-            Tab::Info => 0,
-            Tab::Sky => 1,
-        }
+    /// Returns an iterator over all tabs.
+    pub fn iter() -> impl Iterator<Item = Self> {
+        [Self::Info, Self::Sky].into_iter()
     }
 
     /// Returns the next tab.
@@ -51,6 +44,15 @@ impl Tab {
     }
 }
 
+impl Display for Tab {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Tab::Info => write!(f, "{}", t!("oi.title")),
+            Tab::Sky => write!(f, "{}", t!("sky.title")),
+        }
+    }
+}
+
 pub struct Tabs<'a> {
     pub world_map_state: &'a WorldMapState,
     pub satellite_groups_state: &'a SatelliteGroupsState,
@@ -64,6 +66,18 @@ pub struct TabsState {
 }
 
 impl Tabs<'_> {
+    fn block(state: &TabsState) -> Block<'static> {
+        let mut block = Block::bordered();
+        for tab in Tab::iter() {
+            if tab == state.selected {
+                block = block.title(tab.to_string().blue());
+            } else {
+                block = block.title(tab.to_string());
+            }
+        }
+        block
+    }
+
     fn render_tab(self, area: Rect, buf: &mut Buffer, state: &TabsState) {
         match state.selected {
             Tab::Sky => {
@@ -88,18 +102,9 @@ impl StatefulWidget for Tabs<'_> {
     type State = TabsState;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
-        let vertical = Layout::vertical([Constraint::Length(1), Constraint::Min(0)]);
-        let [tabs_area, inner_area] = vertical.areas(area);
-
-        let titles = [t!("tabs.info"), t!("tabs.sky")]
-            .into_iter()
-            .map(Line::from);
-        let selected_idx = state.selected.index();
-        widgets::Tabs::new(titles)
-            .select(selected_idx)
-            .style(Color::DarkGray)
-            .highlight_style(Style::new().fg(Color::White).add_modifier(Modifier::BOLD))
-            .render(tabs_area, buf);
+        let block = Self::block(state);
+        let inner_area = block.inner(area);
+        block.render(area, buf);
 
         self.render_tab(inner_area, buf, state);
     }

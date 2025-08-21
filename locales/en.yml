@@ -4,11 +4,8 @@ wm.title: "World map"
 wm.follow: "Follow"
 # Satellite groups
 sg.title: "Satellite groups"
-# Tabs
-tabs.info: "ⓘ Info"
-tabs.sky: "◎ Sky"
 # Object information
-oi.title: "Object information"
+oi.title: "Info"
 oi.name: "Name"
 oi.norad_id: "NORAD ID"
 oi.longitude: "Longitude"
