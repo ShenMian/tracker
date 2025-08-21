@@ -72,7 +72,7 @@ impl Tabs<'_> {
             if tab == state.selected {
                 block = block.title(tab.to_string().blue());
             } else {
-                block = block.title(tab.to_string());
+                block = block.title(tab.to_string().gray());
             }
         }
         block

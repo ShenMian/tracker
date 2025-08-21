@@ -3,7 +3,7 @@
 A terminal-based real-time satellite tracking and orbit prediction application.
 
 <p align="center">
-    <img src="docs/screenshot.png" width="80%" alt="Screenshot"><br/>
+    <img src="docs/screenshot_1.png" width="80%" alt="Screenshot"><br/>
     <small><i>The font used in the screenshot is <a href="https://github.com/microsoft/cascadia-code">Cascadia Code NF</a>.</i></small>
 </p>
 
