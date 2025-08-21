@@ -8,6 +8,8 @@
 | Mouse wheel up/down              | Time backward/forward               |
 | `Shift` + Mouse wheel Up / `[`   | Move the world map left             |
 | `Shift` + Mouse wheel Down / `]` | Move the world map right            |
+| `Tab`                            | Switch to next tab                  |
+| `Shift` + `Tab`                  | Switch to previous tab              |
 | `F`                              | Toggle satellite tracking (follow)  |
 | `R`                              | Reset time offset                   |
 | `T`                              | Toggle day-night terminator         |
