@@ -9,7 +9,7 @@ use ratatui::{
     widgets::{Block, List, ListItem, ListState, Scrollbar, ScrollbarState},
 };
 
-/// A widget to display a list of satellite groups.
+/// A widget that displays a list of satellite groups.
 #[derive(Default)]
 pub struct SatelliteGroups;
 

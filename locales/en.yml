@@ -6,7 +6,7 @@ wm.follow: "Follow"
 sg.title: "Satellite groups"
 # Tabs
 tabs.info: "ⓘ Info"
-tabs.polar: "◎ Polar"
+tabs.sky: "◎ Sky"
 # Object information
 oi.title: "Object information"
 oi.name: "Name"
@@ -25,8 +25,8 @@ oi.eccentricity: "Ecc"
 oi.mean_anomaly: "M. anomaly"
 oi.mean_motion: "M. motion"
 oi.rev_num: "Rev. #"
-# Polar
-polar.title: "Polar"
-polar.no_ground_station: "No ground station"
+# Sky
+sky.title: "Sky"
+sky.no_ground_station: "No ground station"
 
 no_object_selected: "No object selected"

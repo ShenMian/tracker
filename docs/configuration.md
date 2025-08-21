@@ -51,7 +51,7 @@ groups = [
     { label = "CubeSats", group = "cubesat" },
 ]
 
-[polar]
+[sky]
 ground_station = { lat = <LAT>, lon = <LON>, alt = <ALT> }
 ```
 

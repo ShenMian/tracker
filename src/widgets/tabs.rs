@@ -14,8 +14,8 @@ use crate::{
     event::Event,
     widgets::{
         object_information::{ObjectInformation, ObjectInformationState},
-        polar::{Polar, PolarState},
         satellite_groups::SatelliteGroupsState,
+        sky::{Sky, SkyState},
         world_map::WorldMapState,
     },
 };
@@ -25,7 +25,7 @@ use crate::{
 pub enum Tab {
     #[default]
     Info,
-    Polar,
+    Sky,
 }
 
 impl Tab {
@@ -33,15 +33,15 @@ impl Tab {
     fn index(&self) -> usize {
         match self {
             Tab::Info => 0,
-            Tab::Polar => 1,
+            Tab::Sky => 1,
         }
     }
 
     /// Returns the next tab.
     fn next(&self) -> Self {
         match self {
-            Tab::Polar => Tab::Info,
-            Tab::Info => Tab::Polar,
+            Tab::Sky => Tab::Info,
+            Tab::Info => Tab::Sky,
         }
     }
 
@@ -54,7 +54,7 @@ impl Tab {
 pub struct Tabs<'a> {
     pub world_map_state: &'a WorldMapState,
     pub satellite_groups_state: &'a SatelliteGroupsState,
-    pub polar_state: &'a mut PolarState,
+    pub sky_state: &'a mut SkyState,
     pub object_information_state: &'a mut ObjectInformationState,
 }
 
@@ -66,12 +66,12 @@ pub struct TabsState {
 impl Tabs<'_> {
     fn render_tab(self, area: Rect, buf: &mut Buffer, state: &TabsState) {
         match state.selected {
-            Tab::Polar => {
-                let polar = Polar {
+            Tab::Sky => {
+                let sky = Sky {
                     world_map_state: self.world_map_state,
                     satellite_groups_state: self.satellite_groups_state,
                 };
-                polar.render(area, buf, self.polar_state);
+                sky.render(area, buf, self.sky_state);
             }
             Tab::Info => {
                 let object_information = ObjectInformation {
@@ -91,7 +91,7 @@ impl StatefulWidget for Tabs<'_> {
         let vertical = Layout::vertical([Constraint::Length(1), Constraint::Min(0)]);
         let [tabs_area, inner_area] = vertical.areas(area);
 
-        let titles = [t!("tabs.info"), t!("tabs.polar")]
+        let titles = [t!("tabs.info"), t!("tabs.sky")]
             .into_iter()
             .map(Line::from);
         let selected_idx = state.selected.index();

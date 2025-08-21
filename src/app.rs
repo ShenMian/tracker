@@ -8,8 +8,8 @@ use crate::{
     tui::Tui,
     widgets::{
         object_information::{self, ObjectInformationState},
-        polar::PolarState,
         satellite_groups::{self, SatelliteGroups, SatelliteGroupsState},
+        sky::SkyState,
         tabs::{self, Tabs, TabsState},
         world_map::{self, WorldMap, WorldMapState},
     },
@@ -25,7 +25,7 @@ pub struct App {
     pub satellite_groups_state: SatelliteGroupsState,
     pub tab_state: TabsState,
     pub object_information_state: ObjectInformationState,
-    pub polar_state: PolarState,
+    pub sky_state: SkyState,
 
     tui: Tui<CrosstermBackend<std::io::Stdout>>,
 }
@@ -43,7 +43,7 @@ impl App {
             satellite_groups_state: SatelliteGroupsState::with_config(config.satellite_groups),
             tab_state: Default::default(),
             object_information_state: Default::default(),
-            polar_state: PolarState::with_config(config.polar),
+            sky_state: SkyState::with_config(config.sky),
             tui,
         })
     }
@@ -82,7 +82,7 @@ impl App {
             let tabs = Tabs {
                 world_map_state: &self.world_map_state,
                 satellite_groups_state: &self.satellite_groups_state,
-                polar_state: &mut self.polar_state,
+                sky_state: &mut self.sky_state,
                 object_information_state: &mut self.object_information_state,
             };
             frame.render_stateful_widget(tabs, right_top_area, &mut self.tab_state);

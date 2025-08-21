@@ -6,7 +6,7 @@ wm.follow: "跟随"
 sg.title: "卫星组"
 # Tabs
 tabs.info: "ⓘ 信息"
-tabs.polar: "◎ 极坐标"
+tabs.sky: "◎ 天空"
 # Object information
 oi.title: "目标信息"
 oi.name: "名称"
@@ -25,8 +25,8 @@ oi.eccentricity: "偏心率"
 oi.mean_anomaly: "平近点角"
 oi.mean_motion: "平运动"
 oi.rev_num: "圈数"
-# Polar
-polar.title: "极坐标"
-polar.no_ground_station: "无地面站"
+# Sky
+sky.title: "天空"
+sky.no_ground_station: "无地面站"
 
 no_object_selected: "未选择目标"

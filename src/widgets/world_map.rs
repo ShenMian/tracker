@@ -15,7 +15,7 @@ use crate::{app::App, config::WorldMapConfig, event::Event, object::Object, util
 
 use super::satellite_groups::SatelliteGroupsState;
 
-/// A widget to display a world map with objects.
+/// A widget that displays a world map with objects.
 pub struct WorldMap<'a> {
     pub satellite_groups_state: &'a SatelliteGroupsState,
 }

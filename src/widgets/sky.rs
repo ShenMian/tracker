@@ -7,26 +7,26 @@ use ratatui::{
 };
 use rust_i18n::t;
 
-use crate::{config::PolarConfig, utils::*, widgets::world_map::WorldMapState};
+use crate::{config::SkyConfig, utils::*, widgets::world_map::WorldMapState};
 
 use super::satellite_groups::SatelliteGroupsState;
 
-/// A widget to display the sky track.
-pub struct Polar<'a> {
+/// A widget that displays the sky track on a polar plot.
+pub struct Sky<'a> {
     pub world_map_state: &'a WorldMapState,
     pub satellite_groups_state: &'a SatelliteGroupsState,
 }
 
-/// State of a [`Polar`] widget.
-pub struct PolarState {
+/// State of a [`Sky`] widget.
+pub struct SkyState {
     pub ground_station: Option<Lla>,
 
     /// The inner rendering area of the widget.
     pub inner_area: Rect,
 }
 
-impl PolarState {
-    pub fn with_config(config: PolarConfig) -> Self {
+impl SkyState {
+    pub fn with_config(config: SkyConfig) -> Self {
         Self {
             ground_station: config.ground_station,
             inner_area: Default::default(),
@@ -34,14 +34,14 @@ impl PolarState {
     }
 }
 
-impl Polar<'_> {
-    fn render_block(&self, area: Rect, buf: &mut Buffer, state: &mut PolarState) {
-        let block = Block::bordered().title(t!("polar.title").to_string().blue());
+impl Sky<'_> {
+    fn render_block(&self, area: Rect, buf: &mut Buffer, state: &mut SkyState) {
+        let block = Block::bordered().title(t!("sky.title").to_string().blue());
         state.inner_area = block.inner(area);
         block.render(area, buf);
     }
 
-    fn render_graph(&self, buf: &mut Buffer, state: &mut PolarState) {
+    fn render_graph(&self, buf: &mut Buffer, state: &mut SkyState) {
         let Rect {
             x,
             y,
@@ -73,7 +73,7 @@ impl Polar<'_> {
         &self,
         text: impl Into<Text<'a>>,
         buf: &mut Buffer,
-        state: &mut PolarState,
+        state: &mut SkyState,
     ) {
         Paragraph::new(text)
             .centered()
@@ -110,6 +110,10 @@ impl Polar<'_> {
         ctx.print(-1.0, 0.0, "W".green());
     }
 
+    /// Draw the sky track on the polar plot.
+    ///
+    /// - azimuth -> angle
+    /// - elevation -> radius
     fn draw_sky_track(&self, ctx: &mut Context, ground_station: &Lla) {
         const UNKNOWN_NAME: &str = "UNK";
 
@@ -157,13 +161,13 @@ impl Polar<'_> {
     }
 }
 
-impl StatefulWidget for Polar<'_> {
-    type State = PolarState;
+impl StatefulWidget for Sky<'_> {
+    type State = SkyState;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         self.render_block(area, buf, state);
         if state.ground_station.is_none() {
-            self.render_paragraph(t!("polar.no_ground_station").dark_gray(), buf, state);
+            self.render_paragraph(t!("sky.no_ground_station").dark_gray(), buf, state);
             return;
         }
         if self

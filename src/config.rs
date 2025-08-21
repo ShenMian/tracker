@@ -9,7 +9,7 @@ use crate::utils::Lla;
 pub struct Config {
     pub world_map: WorldMapConfig,
     pub satellite_groups: SatelliteGroupsConfig,
-    pub polar: PolarConfig,
+    pub sky: SkyConfig,
 }
 
 /// Configuration for the world map widget.
@@ -110,9 +110,9 @@ impl Default for SatelliteGroupsConfig {
     }
 }
 
-/// Configuration for the polar widget.
+/// Configuration for the sky widget.
 #[derive(Default, Deserialize)]
 #[serde(default, deny_unknown_fields)]
-pub struct PolarConfig {
+pub struct SkyConfig {
     pub ground_station: Option<Lla>,
 }

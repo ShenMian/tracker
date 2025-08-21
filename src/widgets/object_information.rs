@@ -19,7 +19,7 @@ use crate::{app::App, event::Event, object::Object};
 
 use super::{satellite_groups::SatelliteGroupsState, world_map::WorldMapState};
 
-/// A widget to display information about a selected object.
+/// A widget that displays information about a selected object.
 pub struct ObjectInformation<'a> {
     pub satellite_groups_state: &'a SatelliteGroupsState,
     pub world_map_state: &'a WorldMapState,
