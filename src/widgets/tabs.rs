@@ -47,7 +47,7 @@ impl Tab {
 impl Display for Tab {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Tab::Info => write!(f, "{}", t!("oi.title")),
+            Tab::Info => write!(f, "{}", t!("info.title")),
             Tab::Sky => write!(f, "{}", t!("sky.title")),
         }
     }

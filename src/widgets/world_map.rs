@@ -131,7 +131,7 @@ impl WorldMap<'_> {
 
     fn block(state: &mut WorldMapState) -> Block<'static> {
         let mut block = Block::bordered()
-            .title(t!("wm.title").to_string().blue())
+            .title(t!("map.title").to_string().blue())
             .title_bottom(
                 format!(
                     "{} ({:+} mins)",
@@ -152,7 +152,7 @@ impl WorldMap<'_> {
                 Style::default().green().slow_blink()
             };
             block = block.title_bottom(
-                Line::from(format!("({})", t!("wm.follow")).set_style(style)).right_aligned(),
+                Line::from(format!("({})", t!("map.follow")).set_style(style)).right_aligned(),
             );
         }
 

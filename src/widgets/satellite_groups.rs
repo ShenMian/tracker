@@ -88,7 +88,7 @@ impl Default for SatelliteGroupsState {
 
 impl SatelliteGroups {
     fn block() -> Block<'static> {
-        Block::bordered().title(t!("sg.title").to_string().blue())
+        Block::bordered().title(t!("group.title").to_string().blue())
     }
 
     fn render_list(buf: &mut Buffer, state: &mut SatelliteGroupsState) {

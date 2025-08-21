@@ -126,7 +126,7 @@ impl Information<'_> {
         let elements = object.elements();
         state.table_entries = vec![
             (
-                t!("oi.name").into(),
+                t!("info.name").into(),
                 elements
                     .object_name
                     .as_deref()
@@ -141,58 +141,58 @@ impl Information<'_> {
                     .unwrap_or(UNKNOWN_NAME)
                     .into(),
             ),
-            (t!("oi.norad_id").into(), elements.norad_id.to_string()),
+            (t!("info.norad_id").into(), elements.norad_id.to_string()),
             (
-                t!("oi.longitude").into(),
+                t!("info.longitude").into(),
                 format!("{:9.4}°", object_state.longitude()),
             ),
             (
-                t!("oi.latitude").into(),
+                t!("info.latitude").into(),
                 format!("{:9.4}°", object_state.latitude()),
             ),
             (
-                t!("oi.altitude").into(),
+                t!("info.altitude").into(),
                 format!("{:8.3} km", object_state.altitude()),
             ),
             (
-                t!("oi.speed").into(),
+                t!("info.speed").into(),
                 format!("{:.2} km/s", object_state.speed()),
             ),
             (
-                t!("oi.period").into(),
+                t!("info.period").into(),
                 format!("{:.2} min", object.orbital_period().as_seconds_f64() / 60.0),
             ),
-            (t!("oi.location").into(), format!("{city}, {country}")),
+            (t!("info.location").into(), format!("{city}, {country}")),
             (
-                t!("oi.epoch").into(),
+                t!("info.epoch").into(),
                 object.epoch().format("%Y-%m-%d %H:%M:%S").to_string(),
             ),
             (
-                t!("oi.drag_term").into(),
+                t!("info.drag_term").into(),
                 format!("{} 1/ER", elements.drag_term),
             ),
             (
-                t!("oi.inclination").into(),
+                t!("info.inclination").into(),
                 format!("{}°", elements.inclination),
             ),
             (
-                t!("oi.right_ascension").into(),
+                t!("info.right_ascension").into(),
                 format!("{}°", elements.right_ascension),
             ),
             (
-                t!("oi.eccentricity").into(),
+                t!("info.eccentricity").into(),
                 elements.eccentricity.to_string(),
             ),
             (
-                t!("oi.mean_anomaly").into(),
+                t!("info.mean_anomaly").into(),
                 format!("{}°", elements.mean_anomaly),
             ),
             (
-                t!("oi.mean_motion").into(),
+                t!("info.mean_motion").into(),
                 format!("{} 1/day", elements.mean_motion),
             ),
             (
-                t!("oi.rev_num").into(),
+                t!("info.rev_num").into(),
                 elements.revolution_number.to_string(),
             ),
         ];
