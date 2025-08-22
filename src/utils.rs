@@ -1,4 +1,3 @@
-use anyhow::Result;
 use chrono::{DateTime, Datelike, Duration, Timelike, Utc};
 use hifitime::Epoch;
 use reverse_geocoder::ReverseGeocoder;
@@ -127,11 +126,13 @@ impl Lla {
     }
 
     /// Returns the city and country name.
-    pub fn country_city(&self) -> Result<(String, String)> {
+    pub fn country_city(&self) -> (String, String) {
         let record = GEOCODER.search((self.lat, self.lon)).record;
         let city = &record.name;
-        let country = isocountry::CountryCode::for_alpha2(&record.cc)?.name();
-        Ok((country.to_owned(), city.to_owned()))
+        let country = isocountry::CountryCode::for_alpha2(&record.cc)
+            .unwrap()
+            .name();
+        (country.to_owned(), city.to_owned())
     }
 }
 

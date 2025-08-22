@@ -36,7 +36,7 @@ impl SkyState {
         let ground_station = config.ground_station.map(|config| Station {
             name: config
                 .name
-                .unwrap_or_else(|| config.position.country_city().unwrap().1),
+                .unwrap_or_else(|| config.position.country_city().1),
             position: config.position,
         });
         Self {
@@ -62,18 +62,6 @@ impl Sky<'_> {
                 self.draw_sky_track(ctx, &state.ground_station.as_ref().unwrap().position);
             })
             .render(state.canvas_area, buf);
-    }
-
-    fn render_paragraph<'a>(
-        &self,
-        text: impl Into<Text<'a>>,
-        buf: &mut Buffer,
-        state: &mut SkyState,
-    ) {
-        Paragraph::new(text)
-            .centered()
-            .wrap(Wrap { trim: true })
-            .render(state.inner_area, buf);
     }
 
     fn draw_grid(ctx: &mut Context) {
@@ -154,6 +142,10 @@ impl Sky<'_> {
             });
         }
     }
+
+    fn centered_paragraph<'a>(text: impl Into<Text<'a>>) -> Paragraph<'a> {
+        Paragraph::new(text).centered().wrap(Wrap { trim: true })
+    }
 }
 
 fn centered_square(area: Rect) -> Rect {
@@ -177,17 +169,20 @@ impl StatefulWidget for Sky<'_> {
         state.canvas_area = centered_square(state.inner_area);
 
         if state.canvas_area.width.min(state.canvas_area.height) < 5 {
-            self.render_paragraph(t!("no_enough_space").dark_gray(), buf, state);
+            Self::centered_paragraph(t!("no_enough_space").dark_gray())
+                .render(state.inner_area, buf);
             return;
         }
 
         if state.ground_station.is_none() {
-            self.render_paragraph(t!("sky.no_ground_station").dark_gray(), buf, state);
+            Self::centered_paragraph(t!("sky.no_ground_station").dark_gray())
+                .render(state.inner_area, buf);
             return;
         }
 
         if self.world_map_state.selected_object_index.is_none() {
-            self.render_paragraph(t!("no_object_selected").dark_gray(), buf, state);
+            Self::centered_paragraph(t!("no_object_selected").dark_gray())
+                .render(state.inner_area, buf);
             return;
         }
 

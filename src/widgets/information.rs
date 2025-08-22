@@ -55,7 +55,7 @@ impl Information<'_> {
         Block::new().borders(Borders::LEFT | Borders::RIGHT | Borders::BOTTOM)
     }
 
-    fn render_table(&self, buf: &mut Buffer, state: &mut InformationState, object: &Object) {
+    fn table(&self, object: &Object, state: &mut InformationState) -> Table<'static> {
         self.update_table_entries(state, object);
 
         let (max_key_width, _max_value_width) = state
@@ -84,17 +84,24 @@ impl Information<'_> {
                     tailwind::SLATE.c900
                 };
                 Row::new([
-                    Cell::from(Text::from(key.as_str().bold())),
-                    Cell::from(Text::from(value)),
+                    Cell::from(Text::from(key.to_owned().bold())),
+                    Cell::from(Text::from(value.to_string())),
                 ])
                 .style(Style::new().bg(row_color))
                 .height(1)
             });
 
-        let table = Table::new(rows, widths)
-            .row_highlight_style(Style::default().add_modifier(Modifier::REVERSED));
+        Table::new(rows, widths)
+            .row_highlight_style(Style::default().add_modifier(Modifier::REVERSED))
+    }
 
-        StatefulWidget::render(table, state.inner_area, buf, &mut state.table_state);
+    fn render_table(&self, buf: &mut Buffer, state: &mut InformationState, object: &Object) {
+        StatefulWidget::render(
+            self.table(object, state),
+            state.inner_area,
+            buf,
+            &mut state.table_state,
+        );
     }
 
     fn render_scrollbar(&self, area: Rect, buf: &mut Buffer, state: &mut InformationState) {
@@ -109,24 +116,12 @@ impl Information<'_> {
         Scrollbar::default().render(inner_area, buf, &mut scrollbar_state);
     }
 
-    fn render_paragraph<'a>(
-        &self,
-        text: impl Into<Text<'a>>,
-        buf: &mut Buffer,
-        state: &mut InformationState,
-    ) {
-        Paragraph::new(text)
-            .centered()
-            .wrap(Wrap { trim: true })
-            .render(state.inner_area, buf);
-    }
-
     fn update_table_entries(&self, state: &mut InformationState, object: &Object) {
         const UNKNOWN_NAME: &str = "Unknown";
 
         let object_state = object.predict(&self.world_map_state.time()).unwrap();
 
-        let (country, city) = object_state.position.country_city().unwrap();
+        let (country, city) = object_state.position.country_city();
 
         let elements = object.elements();
         state.table_entries = vec![
@@ -202,6 +197,10 @@ impl Information<'_> {
             ),
         ];
     }
+
+    fn centered_paragraph<'a>(text: impl Into<Text<'a>>) -> Paragraph<'a> {
+        Paragraph::new(text).centered().wrap(Wrap { trim: true })
+    }
 }
 
 impl StatefulWidget for Information<'_> {
@@ -219,7 +218,8 @@ impl StatefulWidget for Information<'_> {
             self.render_table(buf, state, object);
             self.render_scrollbar(area, buf, state);
         } else {
-            self.render_paragraph(t!("no_object_selected").dark_gray(), buf, state);
+            Self::centered_paragraph(t!("no_object_selected").dark_gray())
+                .render(state.inner_area, buf);
         }
     }
 }

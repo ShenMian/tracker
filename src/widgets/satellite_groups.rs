@@ -91,7 +91,7 @@ impl SatelliteGroups {
         Block::bordered().title(t!("group.title").to_string().blue())
     }
 
-    fn render_list(buf: &mut Buffer, state: &mut SatelliteGroupsState) {
+    fn list(state: &mut SatelliteGroupsState) -> List<'static> {
         let items = state.list_entries.iter().map(|entry| {
             let style = if entry.selected {
                 Style::default().fg(Color::White)
@@ -104,11 +104,16 @@ impl SatelliteGroups {
                 style,
             ))
         });
+        List::new(items).highlight_style(Style::default().add_modifier(Modifier::REVERSED))
+    }
 
-        let list =
-            List::new(items).highlight_style(Style::default().add_modifier(Modifier::REVERSED));
-
-        StatefulWidget::render(list, state.inner_area, buf, &mut state.list_state);
+    fn render_list(buf: &mut Buffer, state: &mut SatelliteGroupsState) {
+        StatefulWidget::render(
+            Self::list(state),
+            state.inner_area,
+            buf,
+            &mut state.list_state,
+        );
     }
 
     fn render_scrollbar(area: Rect, buf: &mut Buffer, state: &mut SatelliteGroupsState) {
