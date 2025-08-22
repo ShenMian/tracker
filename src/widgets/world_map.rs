@@ -134,7 +134,7 @@ impl WorldMap<'_> {
             .title(t!("map.title").to_string().blue())
             .title_bottom(
                 format!(
-                    "{} ({:+} mins)",
+                    "{} ({:+}m)",
                     state
                         .time()
                         .with_timezone(&Local)
