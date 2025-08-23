@@ -172,7 +172,7 @@ fn ecef_to_lla(ecef: &Ecef) -> Lla {
 
     // Calculate latitude
     let p = (ecef.x.powi(2) + ecef.y.powi(2)).sqrt();
-    let theta = (ecef.z * A) / (p * B);
+    let theta = (ecef.z * A).atan2(p * B);
     let (sin_theta, cos_theta) = theta.sin_cos();
     let latitude =
         ((ecef.z + E2 * B * sin_theta.powi(3)) / (p - E2 * A * cos_theta.powi(3))).atan();
