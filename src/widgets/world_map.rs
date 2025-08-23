@@ -297,7 +297,7 @@ impl WorldMap<'_> {
             return;
         };
         let object_state = object.predict(&state.time()).unwrap();
-        let points = calculate_visibility_area(&object_state.position, 32);
+        let points = calculate_visibility_area(&object_state.position);
         Self::draw_lines(ctx, points, state.visibility_area_color);
     }
 

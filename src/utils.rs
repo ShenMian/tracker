@@ -318,7 +318,7 @@ pub fn calculate_ground_track(object: &Object, time: &DateTime<Utc>) -> Vec<(f64
 /// Calculates the visibility circle for a point on the Earth's surface.
 ///
 /// See <https://en.wikipedia.org/wiki/Great-circle_distance>
-pub fn calculate_visibility_area(position: &Lla, num_points: usize) -> Vec<(f64, f64)> {
+pub fn calculate_visibility_area(position: &Lla) -> Vec<(f64, f64)> {
     const AZIMUTH_STEP: usize = 10;
 
     let lat0_rad = position.lat.to_radians();
@@ -326,7 +326,7 @@ pub fn calculate_visibility_area(position: &Lla, num_points: usize) -> Vec<(f64,
     let earth_radius = 6371.0088_f64; // mean Earth radius in km
     let cos_c = earth_radius / (earth_radius + position.alt.max(0.1));
     let central_angle_rad = cos_c.acos();
-    let mut points = Vec::with_capacity(num_points + 1);
+    let mut points = Vec::with_capacity(360 / AZIMUTH_STEP);
     for az in (-180..=180)
         .step_by(AZIMUTH_STEP)
         .map(|az| (az as f64).to_radians())
