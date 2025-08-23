@@ -10,7 +10,7 @@ use std::{
 
 use crate::object::Object;
 
-/// A position in True Equator Mean Equinox (TEME) frame.
+/// A position in TEME frame.
 #[derive(Clone, PartialEq, Debug)]
 pub struct Teme {
     pub x: f64,
@@ -29,10 +29,6 @@ impl Teme {
     /// # Arguments
     ///
     /// * `gmst` - Greenwich Mean Sidereal Time in radians
-    ///
-    /// # Returns
-    ///
-    /// A position in the ECEF frame (same units as input)
     pub fn to_ecef(&self, gmst: f64) -> Ecef {
         teme_to_ecef(self, gmst)
     }
@@ -44,7 +40,7 @@ impl From<[f64; 3]> for Teme {
     }
 }
 
-/// A position in Earth-Centered Earth-Fixed (ECEF) frame.
+/// A position in ECEF frame.
 #[derive(Clone, PartialEq, Debug)]
 pub struct Ecef {
     pub x: f64,
@@ -86,12 +82,17 @@ impl Lla {
         Lla { lat, lon, alt }
     }
 
-    /// Computes the azimuth (Az) and elevation (El) from the observer's
-    /// position to the satellite.
+    /// Converts the position to a ECEF position.
+    pub fn to_ecef(&self) -> Ecef {
+        lla_to_ecef(self)
+    }
+
+    /// Computes the azimuth and elevation from the observer's position to this
+    /// point.
     pub fn az_el(&self, observer: &Lla) -> (f64, f64) {
         // Observer and target in ECEF
-        let obs_ecef = lla_to_ecef(observer);
-        let tgt_ecef = lla_to_ecef(self);
+        let obs_ecef = observer.to_ecef();
+        let tgt_ecef = self.to_ecef();
 
         // Vector from observer to target in ECEF
         let dx = tgt_ecef.x - obs_ecef.x;
@@ -112,17 +113,16 @@ impl Lla {
 
         // Azimuth: angle from north towards east, range [0, 360)
         let az_rad = east.atan2(north);
-        let mut az_deg = az_rad.to_degrees().rem_euclid(360.0);
+        let az_deg = az_rad.to_degrees().rem_euclid(360.0);
 
         // Elevation: angle between local horizontal plane and line-of-sight
         let horizontal_dist = (east.powi(2) + north.powi(2)).sqrt();
         let el_rad = up.atan2(horizontal_dist);
         let el_deg = el_rad.to_degrees();
 
-        // If target is exactly at observer position, define az=0, el=-90
+        // If target is exactly at observer position
         if horizontal_dist == 0.0 && up == 0.0 {
-            az_deg = 0.0;
-            return (az_deg, -90.0);
+            return (f64::NAN, f64::NAN);
         }
 
         (az_deg, el_deg)
@@ -139,17 +139,16 @@ impl Lla {
     }
 }
 
-/// Converts a position vector from True Equator Mean Equinox (TEME) frame to
-/// Earth-Centered Earth-Fixed (ECEF) frame
+/// Converts a position vector from TEME frame to ECEF frame.
 ///
 /// # Arguments
 ///
-/// * `position` - A position in the TEME frame (in km)
-/// * `gmst` - Greenwich Mean Sidereal Time in radians
+/// * `teme` - A position in the TEME frame (in km)
+/// * `gmst_rad` - Greenwich Mean Sidereal Time in radians
 ///
 /// # Returns
 ///
-/// A position in the ECEF frame (same units as input)
+/// A position in the ECEF frame (same units as input).
 fn teme_to_ecef(teme: &Teme, gmst_rad: f64) -> Ecef {
     let (sin_theta, cos_theta) = gmst_rad.sin_cos();
     let x = cos_theta * teme.x + sin_theta * teme.y;
@@ -157,22 +156,16 @@ fn teme_to_ecef(teme: &Teme, gmst_rad: f64) -> Ecef {
     Ecef::new(x, y, teme.z)
 }
 
-/// Converts a position vector from Earth-Centered Earth-Fixed (ECEF) frame to
-/// geodetic coordinates (LLA)
-///
-/// # Arguments
-///
-/// * `position` - A position in the ECEF frame (in km)
-///
-/// # Returns
-///
-/// A position in geodetic coordinates
+mod wgs84 {
+    pub const A: f64 = 6378.137; // Earth semi-major axis (km)
+    pub const F: f64 = 1.0 / 298.257223563; // Flattening
+    pub const B: f64 = A * (1.0 - F); // Semi-minor axis (km)
+    pub const E2: f64 = 1.0 - (B * B) / (A * A); // Square of first eccentricity
+}
+
+/// Converts a ECEF position to geodetic position.
 fn ecef_to_lla(ecef: &Ecef) -> Lla {
-    // Constants for WGS84 ellipsoid
-    const A: f64 = 6378.137; // Earth semi-major axis (km)
-    const F: f64 = 1.0 / 298.257223563; // Flattening
-    const B: f64 = A * (1.0 - F); // Semi-minor axis (km)
-    const E2: f64 = 1.0 - (B * B) / (A * A); // Square of first eccentricity
+    use wgs84::*;
 
     // Calculate longitude
     let longitude = ecef.y.atan2(ecef.x);
@@ -191,12 +184,9 @@ fn ecef_to_lla(ecef: &Ecef) -> Lla {
     Lla::new(latitude.to_degrees(), longitude.to_degrees(), altitude)
 }
 
+/// Converts a geodetic position to ECEF position.
 fn lla_to_ecef(lla: &Lla) -> Ecef {
-    // WGS84 constants (same as used in `ecef_to_lla`)
-    const A: f64 = 6378.137; // km
-    const F: f64 = 1.0 / 298.257223563;
-    const B: f64 = A * (1.0 - F);
-    const E2: f64 = 1.0 - (B * B) / (A * A);
+    use wgs84::*;
 
     let lat = lla.lat.to_radians();
     let lon = lla.lon.to_radians();
@@ -236,7 +226,7 @@ pub fn epoch_from_utc(time: &DateTime<Utc>) -> Epoch {
 ///
 /// # Returns
 ///
-/// The GMST in radians, normalized to [0, 2π]
+/// The GMST in radians, normalized to [0, 2π].
 pub fn gmst_from_jd_tt(jd: f64) -> f64 {
     const J2000_EPOCH: f64 = 2451545.0; // Julian Date for J2000.0 epoch
     const JULIAN_CENTURY: f64 = 36525.0; // Days in a Julian century
@@ -266,9 +256,7 @@ pub fn gmst_from_jd_tt(jd: f64) -> f64 {
 ///
 /// # Returns
 ///
-/// A tuple `(longitude, latitude)` in radians, where:
-/// - `longitude`: Subsolar longitude in the range [-π, π) radians.
-/// - `latitude`: Subsolar latitude in radians.
+/// A tuple `(longitude, latitude)` in radians.
 pub fn subsolar_point(time: &DateTime<Utc>) -> (f64, f64) {
     let epoch = epoch_from_utc(time);
     let jd = epoch.to_jde_tt_days();
@@ -305,7 +293,6 @@ pub fn calculate_terminator(time: &DateTime<Utc>) -> Vec<(f64, f64)> {
         .step_by(LON_STEP)
         .map(|lon| (lon as f64).to_radians())
     {
-        // lat = atan(-cos(lon - sub_lon) / tan(decl))
         let lat = (-(lon - sub_lon).cos() / decl.tan()).atan();
         // Skip if latitude is infinite (can happen at equinoxes when decl == 0)
         if lat.is_infinite() {
@@ -340,14 +327,14 @@ pub fn calculate_visibility_area(position: &Lla, num_points: usize) -> Vec<(f64,
     let cos_c = earth_radius / (earth_radius + position.alt.max(0.1));
     let central_angle_rad = cos_c.acos();
     let mut points = Vec::with_capacity(num_points + 1);
-    for azimuth in (-180..=180)
+    for az in (-180..=180)
         .step_by(AZIMUTH_STEP)
-        .map(|azimuth| (azimuth as f64).to_radians())
+        .map(|az| (az as f64).to_radians())
     {
         let lat_rad = (lat0_rad.sin() * central_angle_rad.cos()
-            + lat0_rad.cos() * central_angle_rad.sin() * azimuth.cos())
+            + lat0_rad.cos() * central_angle_rad.sin() * az.cos())
         .asin();
-        let y = azimuth.sin() * central_angle_rad.sin() * lat0_rad.cos();
+        let y = az.sin() * central_angle_rad.sin() * lat0_rad.cos();
         let x = central_angle_rad.cos() - lat0_rad.sin() * lat_rad.sin();
         let lon_rad = lon0_rad + y.atan2(x);
         let lat_deg = lat_rad.to_degrees();
