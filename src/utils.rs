@@ -3,7 +3,10 @@ use hifitime::Epoch;
 use reverse_geocoder::ReverseGeocoder;
 use serde::Deserialize;
 
-use std::sync::LazyLock;
+use std::{
+    f64::consts::{PI, TAU},
+    sync::LazyLock,
+};
 
 use crate::object::Object;
 
@@ -354,39 +357,56 @@ pub fn calculate_visibility_area(position: &Lla, num_points: usize) -> Vec<(f64,
     points
 }
 
-/// Calculates sky track points (in polar canvas coordinates) for the object as
-/// seen from a ground station.
+/// Calculates sky track points for the object as seen from a ground station.
 pub fn calculate_sky_track(
     object: &Object,
     ground_station: &Lla,
     time: &DateTime<Utc>,
 ) -> Vec<(f64, f64)> {
-    const WINDOW_MINUTES: i32 = 30;
+    const WINDOW_MINUTES: i64 = 30;
     const STEP_MIN: usize = 1;
 
     let mut points = Vec::with_capacity(2 * WINDOW_MINUTES as usize / STEP_MIN);
     for minutes in (-WINDOW_MINUTES..=WINDOW_MINUTES).step_by(STEP_MIN) {
         let state = object
-            .predict(&(*time + Duration::minutes(minutes as i64)))
+            .predict(&(*time + Duration::minutes(minutes)))
             .unwrap();
-        let (az_deg, el_deg) = state.position.az_el(ground_station);
-        if el_deg >= 0.0 {
-            let r = (1.0 - (el_deg / 90.0)).clamp(0.0, 1.0);
-            let az_rad = az_deg.to_radians();
-            let x = r * az_rad.sin();
-            let y = r * az_rad.cos();
-            points.push((x, y));
+        let (az, el) = state.position.az_el(ground_station);
+        if el < 0.0 {
+            continue;
         }
+        points.push(az_el_to_canvas(az, el));
     }
     points
 }
 
-/// Wraps a longitude value in degrees to the range [-180, 180].
+/// Converts azimuth (degrees) and elevation (degrees) to canvas coordinates.
+pub fn az_el_to_canvas(az: f64, el: f64) -> (f64, f64) {
+    debug_assert!((0.0..=90.0).contains(&el));
+    let r = 1.0 - (el / 90.0);
+    let (x, y) = polar_to_cartesian(r, az.to_radians());
+    (y, x)
+}
+
+/// Converts polar coordinates to Cartesian coordinates.
+fn polar_to_cartesian(r: f64, theta: f64) -> (f64, f64) {
+    (r * theta.cos(), r * theta.sin())
+}
+
+/// Converts Cartesian coordinates to polar coordinates.
+#[expect(dead_code)]
+fn cartesian_to_polar(x: f64, y: f64) -> (f64, f64) {
+    let r = (x.powi(2) + y.powi(2)).sqrt();
+    let theta = y.atan2(x);
+    (r, theta)
+}
+
+/// Wraps a value to the range [-180, 180].
 pub fn wrap_longitude_deg(lon: f64) -> f64 {
     (lon + 180.0).rem_euclid(360.0) - 180.0
 }
 
-/// Wraps a longitude value in radians to the range [-π, π].
+/// Wraps a value to the range [-π, π].
 pub fn wrap_longitude_rad(lon: f64) -> f64 {
-    (lon + std::f64::consts::PI).rem_euclid(2.0 * std::f64::consts::PI) - std::f64::consts::PI
+    (lon + PI).rem_euclid(TAU) - PI
 }

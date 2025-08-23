@@ -65,7 +65,7 @@ impl Sky<'_> {
     }
 
     fn draw_grid(ctx: &mut Context) {
-        for radius in [0.9, 0.6, 0.3] {
+        for radius in [1.0, 0.67, 0.33] {
             ctx.draw(&Circle {
                 x: 0.0,
                 y: 0.0,
@@ -94,9 +94,6 @@ impl Sky<'_> {
     }
 
     /// Draw the sky track on the polar plot.
-    ///
-    /// - azimuth -> angle
-    /// - elevation -> radius
     fn draw_sky_track(&self, ctx: &mut Context, station_position: &Lla) {
         const UNKNOWN_NAME: &str = "UNK";
 
@@ -113,12 +110,9 @@ impl Sky<'_> {
 
         // Draw current satellite position if visible
         let object_state = object.predict(&time).unwrap();
-        let (az_deg, el_deg) = object_state.position.az_el(station_position);
-        if el_deg >= 0.0 {
-            let r = (1.0 - (el_deg / 90.0)).clamp(0.0, 1.0);
-            let az_rad = az_deg.to_radians();
-            let x = r * az_rad.sin();
-            let y = r * az_rad.cos();
+        let (az, el) = object_state.position.az_el(station_position);
+        if el >= 0.0 {
+            let (x, y) = az_el_to_canvas(az, el);
             let object_name = object.name().unwrap_or(UNKNOWN_NAME);
             ctx.print(
                 x,
