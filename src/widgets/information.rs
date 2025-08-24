@@ -117,7 +117,7 @@ impl Information<'_> {
     }
 
     fn update_table_entries(&self, state: &mut InformationState, object: &Object) {
-        const UNKNOWN_NAME: &str = "Unknown";
+        const UNKNOWN: &str = "(Unknown)";
 
         let object_state = object.predict(&self.world_map_state.time()).unwrap();
 
@@ -127,18 +127,14 @@ impl Information<'_> {
         state.table_entries = vec![
             (
                 t!("info.name").into(),
-                elements
-                    .object_name
-                    .as_deref()
-                    .unwrap_or(UNKNOWN_NAME)
-                    .into(),
+                object.name().unwrap_or(UNKNOWN).into(),
             ),
             (
                 "COSPAR ID".into(),
                 elements
                     .international_designator
                     .as_deref()
-                    .unwrap_or(UNKNOWN_NAME)
+                    .unwrap_or(UNKNOWN)
                     .into(),
             ),
             (t!("info.norad_id").into(), elements.norad_id.to_string()),
