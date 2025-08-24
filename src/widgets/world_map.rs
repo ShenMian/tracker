@@ -371,16 +371,17 @@ async fn handle_key_event(event: KeyEvent, app: &mut App) -> Result<()> {
 }
 
 async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
+    let global_mouse = Position::new(event.column, event.row);
     let inner_area = app.world_map_state.inner_area;
-    if !inner_area.contains(Position::new(event.column, event.row)) {
+    if !inner_area.contains(global_mouse) {
         app.world_map_state.hovered_object_index = None;
         return Ok(());
     }
 
     // Convert window coordinates to area coordinates
-    let mouse = Position::new(event.column - inner_area.x, event.row - inner_area.y);
+    let local_mouse = Position::new(global_mouse.x - inner_area.x, global_mouse.y - inner_area.y);
 
-    let nearest_object_index = get_nearest_object_index(app, mouse, inner_area);
+    let nearest_object_index = get_nearest_object_index(app, local_mouse, inner_area);
     match event.kind {
         MouseEventKind::Down(MouseButton::Left) => {
             app.world_map_state.selected_object_index = nearest_object_index

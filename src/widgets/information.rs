@@ -234,14 +234,15 @@ pub async fn handle_event(event: Event, app: &mut App) -> Result<()> {
 async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
     let state = &mut app.information_state;
 
+    let global_mouse = Position::new(event.column, event.row);
     let inner_area = state.inner_area;
-    if !inner_area.contains(Position::new(event.column, event.row)) {
+    if !inner_area.contains(global_mouse) {
         *state.table_state.selected_mut() = None;
         return Ok(());
     }
 
     // Convert window coordinates to area coordinates
-    let mouse = Position::new(event.column - inner_area.x, event.row - inner_area.y);
+    let local_mouse = Position::new(global_mouse.x - inner_area.x, global_mouse.y - inner_area.y);
 
     match event.kind {
         MouseEventKind::Down(MouseButton::Left) => {
@@ -260,7 +261,7 @@ async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
         _ => {}
     }
     // Highlight the hovered row.
-    let row = mouse.y as usize + state.table_state.offset();
+    let row = local_mouse.y as usize + state.table_state.offset();
     let index = if row < state.table_entries.len() {
         Some(row)
     } else {

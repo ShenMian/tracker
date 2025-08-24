@@ -367,7 +367,7 @@ pub fn calculate_sky_track(
     points
 }
 
-/// Converts azimuth (degrees) and elevation (degrees) to canvas coordinates.
+/// Converts azimuth and elevation to canvas coordinates.
 ///
 /// Canvas is a unit circle using a Cartesian coordinate system.
 pub fn az_el_to_canvas(az: f64, el: f64) -> (f64, f64) {
@@ -377,13 +377,20 @@ pub fn az_el_to_canvas(az: f64, el: f64) -> (f64, f64) {
     (x, y)
 }
 
+/// Converts canvas coordinates to azimuth and elevation.
+pub fn canvas_to_az_el(x: f64, y: f64) -> (f64, f64) {
+    let (r, theta) = cartesian_to_polar(x, y);
+    let el = (1.0 - r) * 90.0;
+    let az = (90.0 - theta.to_degrees()).rem_euclid(360.0);
+    (az, el)
+}
+
 /// Converts polar coordinates to Cartesian coordinates.
 fn polar_to_cartesian(r: f64, theta: f64) -> (f64, f64) {
     (r * theta.cos(), r * theta.sin())
 }
 
 /// Converts Cartesian coordinates to polar coordinates.
-#[expect(dead_code)]
 fn cartesian_to_polar(x: f64, y: f64) -> (f64, f64) {
     let r = (x.powi(2) + y.powi(2)).sqrt();
     let theta = y.atan2(x);

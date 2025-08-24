@@ -1,13 +1,17 @@
+use anyhow::Result;
+use crossterm::event::MouseEvent;
 use ratatui::{
     prelude::*,
     widgets::{
         Block, Borders, Paragraph, Wrap,
-        canvas::{Canvas, Circle, Context, Line},
+        canvas::{self, Canvas, Circle, Context},
     },
 };
 use rust_i18n::t;
 
-use crate::{config::SkyConfig, utils::*, widgets::world_map::WorldMapState};
+use crate::{
+    app::App, config::SkyConfig, event::Event, utils::*, widgets::world_map::WorldMapState,
+};
 
 use super::satellite_groups::SatelliteGroupsState;
 
@@ -21,6 +25,8 @@ pub struct Sky<'a> {
 pub struct SkyState {
     pub ground_station: Option<Station>,
     canvas_area: Rect,
+
+    mouse_position: Option<(f64, f64)>,
 
     /// The inner rendering area of the widget.
     inner_area: Rect,
@@ -42,14 +48,21 @@ impl SkyState {
         Self {
             ground_station,
             canvas_area: Default::default(),
+            mouse_position: None,
             inner_area: Default::default(),
         }
     }
 }
 
 impl Sky<'_> {
-    fn block() -> Block<'static> {
-        Block::new().borders(Borders::LEFT | Borders::RIGHT | Borders::BOTTOM)
+    fn block(state: &mut SkyState) -> Block<'static> {
+        let mut block = Block::new().borders(Borders::LEFT | Borders::RIGHT | Borders::BOTTOM);
+        if let Some((x, y)) = state.mouse_position {
+            let (az, el) = canvas_to_az_el(x, y);
+            block = block
+                .title_bottom(Line::from(format!("Az {:.1}°, El {:.1}°", az, el)).right_aligned());
+        }
+        block
     }
 
     fn render_graph(&self, buf: &mut Buffer, state: &mut SkyState) {
@@ -73,14 +86,14 @@ impl Sky<'_> {
                 color: Color::DarkGray,
             });
         }
-        ctx.draw(&Line {
+        ctx.draw(&canvas::Line {
             x1: -1.0,
             y1: 0.0,
             x2: 1.0,
             y2: 0.0,
             color: Color::DarkGray,
         });
-        ctx.draw(&Line {
+        ctx.draw(&canvas::Line {
             x1: 0.0,
             y1: -1.0,
             x2: 0.0,
@@ -127,7 +140,7 @@ impl Sky<'_> {
         for window in points.windows(2) {
             let (x1, y1) = window[0];
             let (x2, y2) = window[1];
-            ctx.draw(&Line {
+            ctx.draw(&canvas::Line {
                 x1,
                 y1,
                 x2,
@@ -157,7 +170,7 @@ impl StatefulWidget for Sky<'_> {
     type State = SkyState;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
-        let block = Self::block();
+        let block = Self::block(state);
         state.inner_area = block.inner(area);
         block.render(area, buf);
         state.canvas_area = centered_square(state.inner_area);
@@ -182,4 +195,39 @@ impl StatefulWidget for Sky<'_> {
 
         self.render_graph(buf, state);
     }
+}
+
+pub async fn handle_event(event: Event, app: &mut App) -> Result<()> {
+    match event {
+        Event::Mouse(event) => handle_mouse_event(event, app).await,
+        _ => Ok(()),
+    }
+}
+
+async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
+    let global_mouse = Position::new(event.column, event.row);
+    let canvas_area = app.sky_state.canvas_area;
+    if !canvas_area.contains(global_mouse) {
+        app.sky_state.mouse_position = None;
+        return Ok(());
+    }
+
+    // Convert window coordinates to area coordinates
+    let local_mouse = Position::new(
+        global_mouse.x - canvas_area.x,
+        global_mouse.y - canvas_area.y,
+    );
+
+    // Convert window coordinates to canvas coordinates in [-1.0, 1.0].
+    let local_x = (local_mouse.x as f64 + 0.5) / (canvas_area.width) as f64;
+    let local_y = (local_mouse.y as f64 + 0.5) / (canvas_area.height) as f64;
+    let canvas_x = local_x * 2.0 - 1.0;
+    let canvas_y = 1.0 - (local_y * 2.0);
+    if (canvas_x.powi(2) + canvas_y.powi(2)).sqrt() > 1.0 {
+        app.sky_state.mouse_position = None;
+        return Ok(());
+    }
+    app.sky_state.mouse_position = Some((canvas_x, canvas_y));
+
+    Ok(())
 }

@@ -181,14 +181,15 @@ async fn handle_update_event(app: &mut App) {
 async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
     let state = &mut app.satellite_groups_state;
 
+    let global_mouse = Position::new(event.column, event.row);
     let inner_area = state.inner_area;
-    if !inner_area.contains(Position::new(event.column, event.row)) {
+    if !inner_area.contains(global_mouse) {
         *state.list_state.selected_mut() = None;
         return Ok(());
     }
 
     // Convert window coordinates to area coordinates
-    let mouse = Position::new(event.column - inner_area.x, event.row - inner_area.y);
+    let local_mouse = Position::new(global_mouse.x - inner_area.x, global_mouse.y - inner_area.y);
 
     match event.kind {
         MouseEventKind::Down(MouseButton::Left) => {
@@ -205,7 +206,7 @@ async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
     }
 
     // Highlight the hovered entry.
-    let row = mouse.y as usize + state.list_state.offset();
+    let row = local_mouse.y as usize + state.list_state.offset();
     let index = if row < state.list_entries.len() {
         Some(row)
     } else {

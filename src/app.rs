@@ -9,7 +9,7 @@ use crate::{
     widgets::{
         information::{self, InformationState},
         satellite_groups::{self, SatelliteGroups, SatelliteGroupsState},
-        sky::SkyState,
+        sky::{self, SkyState},
         tabs::{self, Tabs, TabsState},
         world_map::{self, WorldMap, WorldMapState},
     },
@@ -107,7 +107,8 @@ impl App {
         world_map::handle_event(event, self).await?;
         satellite_groups::handle_event(event, self).await?;
         tabs::handle_event(event, self).await?;
-        information::handle_event(event, self).await
+        information::handle_event(event, self).await?;
+        sky::handle_event(event, self).await
     }
 
     fn handle_key_events(&mut self, event: KeyEvent) {
