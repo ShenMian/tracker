@@ -368,11 +368,13 @@ pub fn calculate_sky_track(
 }
 
 /// Converts azimuth (degrees) and elevation (degrees) to canvas coordinates.
+///
+/// Canvas is a unit circle using a Cartesian coordinate system.
 pub fn az_el_to_canvas(az: f64, el: f64) -> (f64, f64) {
-    debug_assert!((0.0..=90.0).contains(&el));
     let r = 1.0 - (el / 90.0);
-    let (x, y) = polar_to_cartesian(r, az.to_radians());
-    (y, x)
+    debug_assert!((0.0..=1.0).contains(&r));
+    let (x, y) = polar_to_cartesian(r, (-az + 90.0).to_radians());
+    (x, y)
 }
 
 /// Converts polar coordinates to Cartesian coordinates.
