@@ -10,7 +10,11 @@ use ratatui::{
 use rust_i18n::t;
 
 use crate::{
-    app::App, config::SkyConfig, event::Event, utils::*, widgets::world_map::WorldMapState,
+    app::App,
+    config::SkyConfig,
+    event::Event,
+    utils::*,
+    widgets::{window_to_area, world_map::WorldMapState},
 };
 
 use super::satellite_groups::SatelliteGroupsState;
@@ -207,16 +211,10 @@ pub async fn handle_event(event: Event, app: &mut App) -> Result<()> {
 async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
     let global_mouse = Position::new(event.column, event.row);
     let canvas_area = app.sky_state.canvas_area;
-    if !canvas_area.contains(global_mouse) {
+    let Some(local_mouse) = window_to_area(global_mouse, canvas_area) else {
         app.sky_state.mouse_position = None;
         return Ok(());
-    }
-
-    // Convert window coordinates to area coordinates
-    let local_mouse = Position::new(
-        global_mouse.x - canvas_area.x,
-        global_mouse.y - canvas_area.y,
-    );
+    };
 
     // Convert window coordinates to canvas coordinates in [-1.0, 1.0].
     let local_x = (local_mouse.x as f64 + 0.5) / (canvas_area.width) as f64;

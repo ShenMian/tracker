@@ -1,7 +1,10 @@
 use rust_i18n::t;
 use std::time::{Duration, Instant};
 
-use crate::{app::App, config::SatelliteGroupsConfig, event::Event, group::Group, object::Object};
+use crate::{
+    app::App, config::SatelliteGroupsConfig, event::Event, group::Group, object::Object,
+    widgets::window_to_area,
+};
 use anyhow::Result;
 use crossterm::event::{MouseButton, MouseEvent, MouseEventKind};
 use ratatui::{
@@ -183,13 +186,10 @@ async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
 
     let global_mouse = Position::new(event.column, event.row);
     let inner_area = state.inner_area;
-    if !inner_area.contains(global_mouse) {
+    let Some(local_mouse) = window_to_area(global_mouse, inner_area) else {
         *state.list_state.selected_mut() = None;
         return Ok(());
-    }
-
-    // Convert window coordinates to area coordinates
-    let local_mouse = Position::new(global_mouse.x - inner_area.x, global_mouse.y - inner_area.y);
+    };
 
     match event.kind {
         MouseEventKind::Down(MouseButton::Left) => {

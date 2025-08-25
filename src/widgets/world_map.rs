@@ -12,8 +12,12 @@ use ratatui::{
 use rust_i18n::t;
 
 use crate::{
-    app::App, config::WorldMapConfig, event::Event, object::Object, utils::*,
-    widgets::sky::SkyState,
+    app::App,
+    config::WorldMapConfig,
+    event::Event,
+    object::Object,
+    utils::*,
+    widgets::{sky::SkyState, window_to_area},
 };
 
 use super::satellite_groups::SatelliteGroupsState;
@@ -373,13 +377,10 @@ async fn handle_key_event(event: KeyEvent, app: &mut App) -> Result<()> {
 async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
     let global_mouse = Position::new(event.column, event.row);
     let inner_area = app.world_map_state.inner_area;
-    if !inner_area.contains(global_mouse) {
+    let Some(local_mouse) = window_to_area(global_mouse, inner_area) else {
         app.world_map_state.hovered_object_index = None;
         return Ok(());
-    }
-
-    // Convert window coordinates to area coordinates
-    let local_mouse = Position::new(global_mouse.x - inner_area.x, global_mouse.y - inner_area.y);
+    };
 
     let nearest_object_index = get_nearest_object_index(app, local_mouse, inner_area);
     match event.kind {

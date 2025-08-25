@@ -14,7 +14,7 @@ use ratatui::{
 use rust_i18n::t;
 use unicode_width::UnicodeWidthStr;
 
-use crate::{app::App, event::Event, object::Object};
+use crate::{app::App, event::Event, object::Object, widgets::window_to_area};
 
 use super::{satellite_groups::SatelliteGroupsState, world_map::WorldMapState};
 
@@ -232,13 +232,10 @@ async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
 
     let global_mouse = Position::new(event.column, event.row);
     let inner_area = state.inner_area;
-    if !inner_area.contains(global_mouse) {
+    let Some(local_mouse) = window_to_area(global_mouse, inner_area) else {
         *state.table_state.selected_mut() = None;
         return Ok(());
-    }
-
-    // Convert window coordinates to area coordinates
-    let local_mouse = Position::new(global_mouse.x - inner_area.x, global_mouse.y - inner_area.y);
+    };
 
     match event.kind {
         MouseEventKind::Down(MouseButton::Left) => {
