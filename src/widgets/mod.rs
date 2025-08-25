@@ -4,6 +4,7 @@ pub mod information;
 pub mod satellite_groups;
 pub mod sky;
 pub mod tabs;
+pub mod timeline;
 pub mod world_map;
 
 /// Converts window coordinates to area coordinates.

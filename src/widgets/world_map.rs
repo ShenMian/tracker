@@ -87,6 +87,11 @@ impl WorldMapState {
         Utc::now() + self.time_offset
     }
 
+    /// Sets the current simulation time.
+    pub fn set_time(&mut self, time: DateTime<Utc>) {
+        self.time_offset = time - Utc::now();
+    }
+
     /// Returns a reference to the selected object.
     pub fn selected_object<'a>(
         &self,

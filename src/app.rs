@@ -11,6 +11,7 @@ use crate::{
         satellite_groups::{self, SatelliteGroups, SatelliteGroupsState},
         sky::{self, SkyState},
         tabs::{self, Tabs, TabsState},
+        timeline::{self, Timeline, TimelineState},
         world_map::{self, WorldMap, WorldMapState},
     },
 };
@@ -26,6 +27,7 @@ pub struct App {
     pub tab_state: TabsState,
     pub information_state: InformationState,
     pub sky_state: SkyState,
+    pub timeline_state: TimelineState,
 
     tui: Tui<CrosstermBackend<std::io::Stdout>>,
 }
@@ -44,6 +46,7 @@ impl App {
             tab_state: Default::default(),
             information_state: Default::default(),
             sky_state: SkyState::with_config(config.sky),
+            timeline_state: Default::default(),
             tui,
         })
     }
@@ -71,14 +74,23 @@ impl App {
         self.tui.terminal.draw(|frame| {
             let horizontal = Layout::horizontal([Constraint::Percentage(80), Constraint::Min(25)]);
             let [left_area, right_area] = horizontal.areas(frame.area());
-            let vertical = Layout::vertical([Constraint::Percentage(60), Constraint::Fill(1)]);
-            let [right_top_area, right_bottom_area] = vertical.areas(right_area);
+
+            let left_vertical = Layout::vertical([Constraint::Min(0), Constraint::Length(3)]);
+            let [left_top_area, left_bottom_area] = left_vertical.areas(left_area);
 
             let world_map = WorldMap {
                 satellite_groups_state: &self.satellite_groups_state,
                 sky_state: &self.sky_state,
             };
-            frame.render_stateful_widget(world_map, left_area, &mut self.world_map_state);
+            frame.render_stateful_widget(world_map, left_top_area, &mut self.world_map_state);
+
+            let timeline = Timeline {
+                world_map_state: &self.world_map_state,
+            };
+            frame.render_stateful_widget(timeline, left_bottom_area, &mut self.timeline_state);
+
+            let vertical = Layout::vertical([Constraint::Percentage(60), Constraint::Fill(1)]);
+            let [right_top_area, right_bottom_area] = vertical.areas(right_area);
 
             let tabs = Tabs {
                 world_map_state: &self.world_map_state,
@@ -108,7 +120,8 @@ impl App {
         satellite_groups::handle_event(event, self).await?;
         tabs::handle_event(event, self).await?;
         information::handle_event(event, self).await?;
-        sky::handle_event(event, self).await
+        sky::handle_event(event, self).await?;
+        timeline::handle_event(event, self).await
     }
 
     fn handle_key_events(&mut self, event: KeyEvent) {
