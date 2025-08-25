@@ -9,11 +9,24 @@ use ratatui::{
     },
 };
 
-use crate::event::Event;
-use crate::widgets::window_to_area;
-use crate::{app::App, config::TimelineConfig};
+use crate::{
+    app::App,
+    config::TimelineConfig,
+    event::Event,
+    utils::calculate_pass_times,
+    widgets::{
+        satellite_groups::SatelliteGroupsState, sky::SkyState, window_to_area,
+        world_map::WorldMapState,
+    },
+};
 
-pub struct Timeline;
+const SECS_PER_HOUR: f64 = 3600.0;
+
+pub struct Timeline<'a> {
+    pub world_map_state: &'a WorldMapState,
+    pub satellite_groups_state: &'a SatelliteGroupsState,
+    pub sky_state: &'a SkyState,
+}
 
 #[derive(Default)]
 pub struct TimelineState {
@@ -56,7 +69,7 @@ impl TimelineState {
     }
 }
 
-impl Timeline {
+impl Timeline<'_> {
     const HOURS_WINDOW: i64 = 8;
 
     fn block(&self, state: &TimelineState) -> Block<'static> {
@@ -121,12 +134,52 @@ impl Timeline {
         });
     }
 
+    fn draw_pass_times(&self, ctx: &mut Context, state: &TimelineState) {
+        let Some(selected_object) = self
+            .world_map_state
+            .selected_object(self.satellite_groups_state)
+        else {
+            return;
+        };
+        let Some(ground_station) = &self.sky_state.ground_station else {
+            return;
+        };
+
+        let current_time = state.time();
+        let pass_segments = calculate_pass_times(
+            selected_object,
+            &ground_station.position,
+            &(current_time - Duration::hours(Self::HOURS_WINDOW) / 2),
+            &(current_time + Duration::hours(Self::HOURS_WINDOW) / 2),
+        );
+
+        for (start_time, end_time) in pass_segments {
+            let start_offset_hours = (start_time - current_time).as_seconds_f64() / SECS_PER_HOUR;
+            let end_offset_hours = (end_time - current_time).as_seconds_f64() / SECS_PER_HOUR;
+
+            // Convert to canvas coordinates
+            let x1 = (Self::HOURS_WINDOW as f64 / 2.0) + start_offset_hours;
+            let x2 = (Self::HOURS_WINDOW as f64 / 2.0) + end_offset_hours;
+
+            debug_assert!(x2 >= 0.0 && x1 <= Self::HOURS_WINDOW as f64);
+            ctx.draw(&canvas::Line {
+                x1: x1.max(0.0),
+                y1: 0.5,
+                x2: x2.min(Self::HOURS_WINDOW as f64),
+                y2: 0.5,
+                color: Color::LightYellow,
+            });
+        }
+    }
+
     fn render_canvas(&self, buf: &mut Buffer, state: &mut TimelineState) {
         Canvas::default()
             .x_bounds([0.0, Self::HOURS_WINDOW as f64])
             .y_bounds([0.0, 1.0])
             .paint(|ctx| {
                 Self::draw_axis(ctx);
+                ctx.layer();
+                self.draw_pass_times(ctx, state);
                 ctx.layer();
                 Self::draw_hour_marks(ctx, state.time());
                 ctx.layer();
@@ -137,12 +190,12 @@ impl Timeline {
 
     fn mouse_time(&self, state: &TimelineState) -> Option<Duration> {
         let mouse = state.mouse_position?;
-        let duration = canvas_offset_to_duration(area_to_canvas_offset(state.inner_area, mouse));
+        let duration = canvas_x_to_duration(area_to_canvas_x(state.inner_area, mouse));
         Some(duration)
     }
 }
 
-impl StatefulWidget for Timeline {
+impl<'a> StatefulWidget for Timeline<'a> {
     type State = TimelineState;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
@@ -179,7 +232,7 @@ async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
     };
     app.timeline_state.mouse_position = Some(local_mouse);
 
-    let duration = canvas_offset_to_duration(area_to_canvas_offset(inner_area, local_mouse));
+    let duration = canvas_x_to_duration(area_to_canvas_x(inner_area, local_mouse));
     let time = app.timeline_state.time() + duration;
 
     match event.kind {
@@ -198,12 +251,11 @@ async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
     Ok(())
 }
 
-fn area_to_canvas_offset(area: Rect, position: Position) -> f64 {
+fn area_to_canvas_x(area: Rect, position: Position) -> f64 {
     (position.x as f64 + 0.5) / area.width as f64 * Timeline::HOURS_WINDOW as f64
 }
 
-fn canvas_offset_to_duration(offset: f64) -> Duration {
-    const SECS_PER_HOUR: f64 = 3600.0;
+fn canvas_x_to_duration(offset: f64) -> Duration {
     let hours_offset = offset - Timeline::HOURS_WINDOW as f64 / 2.0;
     Duration::seconds((hours_offset * SECS_PER_HOUR).round() as i64)
 }

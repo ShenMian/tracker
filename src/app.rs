@@ -85,7 +85,12 @@ impl App {
             };
             frame.render_stateful_widget(world_map, left_top_area, &mut self.world_map_state);
 
-            frame.render_stateful_widget(Timeline, left_bottom_area, &mut self.timeline_state);
+            let timeline = Timeline {
+                world_map_state: &self.world_map_state,
+                satellite_groups_state: &self.satellite_groups_state,
+                sky_state: &self.sky_state,
+            };
+            frame.render_stateful_widget(timeline, left_bottom_area, &mut self.timeline_state);
 
             let vertical = Layout::vertical([Constraint::Percentage(60), Constraint::Fill(1)]);
             let [right_top_area, right_bottom_area] = vertical.areas(right_area);

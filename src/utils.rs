@@ -306,10 +306,8 @@ pub fn calculate_terminator(time: &DateTime<Utc>) -> Vec<(f64, f64)> {
 /// Calculates ground track points of the object.
 pub fn calculate_ground_track(object: &Object, time: &DateTime<Utc>) -> Vec<(f64, f64)> {
     let mut points = Vec::with_capacity(object.orbital_period().num_minutes() as usize);
-    for minutes in 1..object.orbital_period().num_minutes() {
-        let state = object
-            .predict(&(*time + Duration::minutes(minutes)))
-            .unwrap();
+    for duration in (1..object.orbital_period().num_minutes()).map(Duration::minutes) {
+        let state = object.predict(&(*time + duration)).unwrap();
         points.push((state.longitude(), state.latitude()));
     }
     points
@@ -354,10 +352,11 @@ pub fn calculate_sky_track(
     const STEP_MIN: usize = 1;
 
     let mut points = Vec::with_capacity(2 * WINDOW_MINUTES as usize / STEP_MIN);
-    for minutes in (-WINDOW_MINUTES..=WINDOW_MINUTES).step_by(STEP_MIN) {
-        let state = object
-            .predict(&(*time + Duration::minutes(minutes)))
-            .unwrap();
+    for duration in (-WINDOW_MINUTES..=WINDOW_MINUTES)
+        .step_by(STEP_MIN)
+        .map(Duration::minutes)
+    {
+        let state = object.predict(&(*time + duration)).unwrap();
         let (az, el) = state.position.az_el(ground_station);
         if el < 0.0 {
             continue;
@@ -365,6 +364,49 @@ pub fn calculate_sky_track(
         points.push(az_el_to_canvas(az, el));
     }
     points
+}
+
+/// Calculates satellite pass time segments within a given time window.
+pub fn calculate_pass_times(
+    object: &Object,
+    observer: &Lla,
+    start_time: &DateTime<Utc>,
+    end_time: &DateTime<Utc>,
+) -> Vec<(DateTime<Utc>, DateTime<Utc>)> {
+    debug_assert!(start_time <= end_time);
+
+    const TIME_STEP: Duration = Duration::minutes(1);
+
+    let mut pass_segments = Vec::new();
+    let mut current_pass_start: Option<DateTime<Utc>> = None;
+
+    let mut time = *start_time;
+    while time <= *end_time {
+        let state = object.predict(&time).unwrap();
+        let (_, el) = state.position.az_el(observer);
+        let is_visible = el >= 0.0;
+
+        match (current_pass_start, is_visible) {
+            (None, true) => {
+                // Start of a new pass
+                current_pass_start = Some(time);
+            }
+            (Some(start), false) => {
+                // End of current pass
+                pass_segments.push((start, time - TIME_STEP));
+                current_pass_start = None;
+            }
+            _ => {}
+        }
+
+        time += TIME_STEP;
+    }
+
+    if let Some(start) = current_pass_start {
+        pass_segments.push((start, *end_time));
+    }
+
+    pass_segments
 }
 
 /// Converts azimuth and elevation to canvas coordinates.
