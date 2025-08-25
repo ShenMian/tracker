@@ -10,6 +10,7 @@ pub struct Config {
     pub world_map: WorldMapConfig,
     pub satellite_groups: SatelliteGroupsConfig,
     pub sky: SkyConfig,
+    pub timeline: TimelineConfig,
 }
 
 /// Configuration for the world map widget.
@@ -22,7 +23,6 @@ pub struct WorldMapConfig {
     pub show_visibility_area: bool,
 
     pub lon_delta_deg: f64,
-    pub time_delta_min: i64,
 
     pub map_color: Color,
     pub trajectory_color: Color,
@@ -37,7 +37,6 @@ impl Default for WorldMapConfig {
             follow_smoothing: 0.3,
             show_terminator: true,
             show_visibility_area: true,
-            time_delta_min: 1,
             lon_delta_deg: 10.0,
             map_color: Color::Gray,
             trajectory_color: Color::LightBlue,
@@ -122,4 +121,17 @@ pub struct SkyConfig {
 pub struct StationConfig {
     pub name: Option<String>,
     pub position: Lla,
+}
+
+/// Configuration for the timeline widget.
+#[derive(Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct TimelineConfig {
+    pub time_delta_min: i64,
+}
+
+impl Default for TimelineConfig {
+    fn default() -> Self {
+        Self { time_delta_min: 1 }
+    }
 }

@@ -14,7 +14,12 @@ use ratatui::{
 use rust_i18n::t;
 use unicode_width::UnicodeWidthStr;
 
-use crate::{app::App, event::Event, object::Object, widgets::window_to_area};
+use crate::{
+    app::App,
+    event::Event,
+    object::Object,
+    widgets::{timeline::TimelineState, window_to_area},
+};
 
 use super::{satellite_groups::SatelliteGroupsState, world_map::WorldMapState};
 
@@ -22,6 +27,7 @@ use super::{satellite_groups::SatelliteGroupsState, world_map::WorldMapState};
 pub struct Information<'a> {
     pub satellite_groups_state: &'a SatelliteGroupsState,
     pub world_map_state: &'a WorldMapState,
+    pub timeline_state: &'a TimelineState,
 }
 
 /// State of a [`Information`] widget.
@@ -119,7 +125,7 @@ impl Information<'_> {
     fn update_table_entries(&self, state: &mut InformationState, object: &Object) {
         const UNKNOWN: &str = "(Unknown)";
 
-        let object_state = object.predict(&self.world_map_state.time()).unwrap();
+        let object_state = object.predict(&self.timeline_state.time()).unwrap();
 
         let (country, city) = object_state.position.country_city();
 

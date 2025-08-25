@@ -46,7 +46,7 @@ impl App {
             tab_state: Default::default(),
             information_state: Default::default(),
             sky_state: SkyState::with_config(config.sky),
-            timeline_state: Default::default(),
+            timeline_state: TimelineState::with_config(config.timeline),
             tui,
         })
     }
@@ -81,13 +81,11 @@ impl App {
             let world_map = WorldMap {
                 satellite_groups_state: &self.satellite_groups_state,
                 sky_state: &self.sky_state,
+                timeline_state: &self.timeline_state,
             };
             frame.render_stateful_widget(world_map, left_top_area, &mut self.world_map_state);
 
-            let timeline = Timeline {
-                world_map_state: &self.world_map_state,
-            };
-            frame.render_stateful_widget(timeline, left_bottom_area, &mut self.timeline_state);
+            frame.render_stateful_widget(Timeline, left_bottom_area, &mut self.timeline_state);
 
             let vertical = Layout::vertical([Constraint::Percentage(60), Constraint::Fill(1)]);
             let [right_top_area, right_bottom_area] = vertical.areas(right_area);
@@ -97,6 +95,7 @@ impl App {
                 satellite_groups_state: &self.satellite_groups_state,
                 sky_state: &mut self.sky_state,
                 information_state: &mut self.information_state,
+                timeline_state: &self.timeline_state,
             };
             frame.render_stateful_widget(tabs, right_top_area, &mut self.tab_state);
 

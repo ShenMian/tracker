@@ -1,6 +1,6 @@
 use anyhow::Result;
 use chrono::{DateTime, Duration, Local, Timelike, Utc};
-use crossterm::event::{MouseButton, MouseEvent, MouseEventKind};
+use crossterm::event::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use ratatui::{
     prelude::*,
     widgets::{
@@ -9,31 +9,77 @@ use ratatui::{
     },
 };
 
-use crate::app::App;
 use crate::event::Event;
 use crate::widgets::window_to_area;
-use crate::widgets::world_map::WorldMapState;
+use crate::{app::App, config::TimelineConfig};
 
-pub struct Timeline<'a> {
-    pub world_map_state: &'a WorldMapState,
-}
+pub struct Timeline;
 
 #[derive(Default)]
 pub struct TimelineState {
-    inner_area: Rect,
     mouse_position: Option<Position>,
+    /// Time offset from the current UTC time for time simulation.
+    time_offset: Duration,
+    /// The time step to advance or rewind when scrolling time.
+    time_delta: Duration,
+    /// The inner rendering area of the widget.
+    inner_area: Rect,
 }
 
-impl Timeline<'_> {
+impl TimelineState {
+    /// Creates a new `TimelineState` with the given configuration.
+    pub fn with_config(config: TimelineConfig) -> Self {
+        Self {
+            time_delta: Duration::minutes(config.time_delta_min),
+            ..Default::default()
+        }
+    }
+
+    /// Returns the current simulation time.
+    pub fn time(&self) -> DateTime<Utc> {
+        Utc::now() + self.time_offset
+    }
+
+    /// Sets the current simulation time.
+    pub fn set_time(&mut self, time: DateTime<Utc>) {
+        self.time_offset = time - Utc::now();
+    }
+
+    /// Advances the simulation time.
+    fn advance_time(&mut self) {
+        self.time_offset += self.time_delta;
+    }
+
+    /// Rewinds the simulation time.
+    fn rewind_time(&mut self) {
+        self.time_offset -= self.time_delta;
+    }
+}
+
+impl Timeline {
     const HOURS_WINDOW: i64 = 8;
 
     fn block(&self, state: &TimelineState) -> Block<'static> {
-        let mut block = Block::new().borders(Borders::LEFT | Borders::RIGHT | Borders::BOTTOM);
+        let mut block = Block::new()
+            .borders(Borders::LEFT | Borders::RIGHT | Borders::BOTTOM)
+            .title_bottom(
+                format!(
+                    "{} ({:+}m)",
+                    state
+                        .time()
+                        .with_timezone(&Local)
+                        .format("%Y-%m-%d %H:%M:%S"),
+                    state.time_offset.num_minutes()
+                )
+                .white(),
+            );
+
         if let Some(duration) = self.mouse_time(state) {
-            let time = self.world_map_state.time().with_timezone(&Local) + duration;
+            let time = state.time().with_timezone(&Local) + duration;
             let label = time.format("%Y-%m-%d %H:%M:%S").to_string();
             block = block.title_bottom(Line::from(label).right_aligned());
         }
+
         block
     }
 
@@ -82,7 +128,7 @@ impl Timeline<'_> {
             .paint(|ctx| {
                 Self::draw_axis(ctx);
                 ctx.layer();
-                Self::draw_hour_marks(ctx, self.world_map_state.time());
+                Self::draw_hour_marks(ctx, state.time());
                 ctx.layer();
                 Self::draw_current_time_marker(ctx);
             })
@@ -96,7 +142,7 @@ impl Timeline<'_> {
     }
 }
 
-impl StatefulWidget for Timeline<'_> {
+impl StatefulWidget for Timeline {
     type State = TimelineState;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
@@ -110,9 +156,18 @@ impl StatefulWidget for Timeline<'_> {
 
 pub async fn handle_event(event: Event, app: &mut App) -> Result<()> {
     match event {
+        Event::Key(event) => handle_key_event(event, app).await,
         Event::Mouse(event) => handle_mouse_event(event, app).await,
         _ => Ok(()),
     }
+}
+
+async fn handle_key_event(event: KeyEvent, app: &mut App) -> Result<()> {
+    if let KeyCode::Char('r') = event.code {
+        app.timeline_state.time_offset = chrono::Duration::zero()
+    }
+
+    Ok(())
 }
 
 async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
@@ -125,10 +180,19 @@ async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
     app.timeline_state.mouse_position = Some(local_mouse);
 
     let duration = canvas_offset_to_duration(area_to_canvas_offset(inner_area, local_mouse));
-    let time = app.world_map_state.time() + duration;
+    let time = app.timeline_state.time() + duration;
 
-    if let MouseEventKind::Down(MouseButton::Left) = event.kind {
-        app.world_map_state.set_time(time);
+    match event.kind {
+        MouseEventKind::Down(MouseButton::Left) => {
+            app.timeline_state.set_time(time);
+        }
+        MouseEventKind::ScrollUp => {
+            app.timeline_state.rewind_time();
+        }
+        MouseEventKind::ScrollDown => {
+            app.timeline_state.advance_time();
+        }
+        _ => {}
     }
 
     Ok(())

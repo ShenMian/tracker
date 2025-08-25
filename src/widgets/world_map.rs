@@ -1,6 +1,5 @@
 use anyhow::Result;
-use chrono::{DateTime, Duration, Local, Utc};
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
+use crossterm::event::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use ratatui::{
     prelude::*,
     style::Styled,
@@ -17,7 +16,7 @@ use crate::{
     event::Event,
     object::Object,
     utils::*,
-    widgets::{sky::SkyState, window_to_area},
+    widgets::{sky::SkyState, timeline::TimelineState, window_to_area},
 };
 
 use super::satellite_groups::SatelliteGroupsState;
@@ -26,6 +25,7 @@ use super::satellite_groups::SatelliteGroupsState;
 pub struct WorldMap<'a> {
     pub satellite_groups_state: &'a SatelliteGroupsState,
     pub sky_state: &'a SkyState,
+    pub timeline_state: &'a TimelineState,
 }
 
 /// State of a [`WorldMap`] widget.
@@ -36,12 +36,8 @@ pub struct WorldMapState {
     /// Index of the hovered object.
     hovered_object_index: Option<usize>,
 
-    /// Time offset from the current UTC time for time simulation.
-    time_offset: Duration,
     /// Center longitude offset for horizontal map scrolling in degrees.
     lon_offset: f64,
-    /// The time step to advance or rewind when scrolling time.
-    time_delta: Duration,
     /// The amount of longitude (in degrees) to move the map when scrolling left
     /// or right.
     lon_delta: f64,
@@ -72,7 +68,6 @@ impl WorldMapState {
             follow_smoothing: config.follow_smoothing,
             show_terminator: config.show_terminator,
             show_visibility_area: config.show_visibility_area,
-            time_delta: Duration::minutes(config.time_delta_min),
             lon_delta: config.lon_delta_deg,
             map_color: config.map_color,
             trajectory_color: config.trajectory_color,
@@ -80,16 +75,6 @@ impl WorldMapState {
             visibility_area_color: config.visibility_area_color,
             ..Self::default()
         }
-    }
-
-    /// Returns the current simulation time.
-    pub fn time(&self) -> DateTime<Utc> {
-        Utc::now() + self.time_offset
-    }
-
-    /// Sets the current simulation time.
-    pub fn set_time(&mut self, time: DateTime<Utc>) {
-        self.time_offset = time - Utc::now();
     }
 
     /// Returns a reference to the selected object.
@@ -121,16 +106,6 @@ impl WorldMapState {
     fn scroll_map_right(&mut self) {
         self.lon_offset = wrap_longitude_deg(self.lon_offset + self.lon_delta);
     }
-
-    /// Advances the simulation time.
-    fn advance_time(&mut self) {
-        self.time_offset += self.time_delta;
-    }
-
-    /// Rewinds the simulation time.
-    fn rewind_time(&mut self) {
-        self.time_offset -= self.time_delta;
-    }
 }
 
 impl WorldMap<'_> {
@@ -139,19 +114,7 @@ impl WorldMap<'_> {
     const UNKNOWN_NAME: &'static str = "UNK";
 
     fn block(state: &mut WorldMapState) -> Block<'static> {
-        let mut block = Block::bordered()
-            .title(t!("map.title").to_string().blue())
-            .title_bottom(
-                format!(
-                    "{} ({:+}m)",
-                    state
-                        .time()
-                        .with_timezone(&Local)
-                        .format("%Y-%m-%d %H:%M:%S"),
-                    state.time_offset.num_minutes()
-                )
-                .white(),
-            );
+        let mut block = Block::bordered().title(t!("map.title").to_string().blue());
 
         // Show follow mode indicator if enabled
         if state.follow_object {
@@ -174,7 +137,7 @@ impl WorldMap<'_> {
         if state.follow_object
             && let Some(selected) = state.selected_object(self.satellite_groups_state)
         {
-            let object_state = selected.predict(&state.time()).unwrap();
+            let object_state = selected.predict(&self.timeline_state.time()).unwrap();
 
             state.lon_offset += wrap_longitude_deg(object_state.longitude() - state.lon_offset)
                 * state.follow_smoothing;
@@ -218,7 +181,7 @@ impl WorldMap<'_> {
                 });
                 ctx.layer();
                 if state.show_terminator {
-                    Self::draw_terminator(ctx, state);
+                    self.draw_terminator(ctx, state);
                 }
                 self.draw_objects(ctx, state);
             })
@@ -242,16 +205,16 @@ impl WorldMap<'_> {
     }
 
     /// Draws the day-night terminator and subsolar point.
-    fn draw_terminator(ctx: &mut Context, state: &WorldMapState) {
+    fn draw_terminator(&self, ctx: &mut Context, state: &WorldMapState) {
         // Draw the terminator line
         Self::draw_lines(
             ctx,
-            calculate_terminator(&state.time()),
+            calculate_terminator(&self.timeline_state.time()),
             state.terminator_color,
         );
 
         // Mark the subsolar point
-        let (sub_lon, sub_lat) = subsolar_point(&state.time());
+        let (sub_lon, sub_lat) = subsolar_point(&self.timeline_state.time());
         ctx.print(
             sub_lon.to_degrees(),
             sub_lat.to_degrees(),
@@ -268,7 +231,7 @@ impl WorldMap<'_> {
             } else {
                 Self::OBJECT_SYMBOL.red() + format!(" {object_name}").dark_gray()
             };
-            let object_state = object.predict(&state.time()).unwrap();
+            let object_state = object.predict(&self.timeline_state.time()).unwrap();
             ctx.print(object_state.longitude(), object_state.latitude(), text);
         }
     }
@@ -279,7 +242,7 @@ impl WorldMap<'_> {
             // Draw the trajectory
             Self::draw_lines(
                 ctx,
-                calculate_ground_track(selected, &state.time()),
+                calculate_ground_track(selected, &self.timeline_state.time()),
                 state.trajectory_color,
             );
 
@@ -287,7 +250,7 @@ impl WorldMap<'_> {
             let object_name = selected.name().unwrap_or(Self::UNKNOWN_NAME);
             let text =
                 Self::OBJECT_SYMBOL.light_green().slow_blink() + format!(" {object_name}").white();
-            let object_state = selected.predict(&state.time()).unwrap();
+            let object_state = selected.predict(&self.timeline_state.time()).unwrap();
             ctx.print(object_state.longitude(), object_state.latitude(), text);
         } else if let Some(hovered) = state.hovered_object(self.satellite_groups_state) {
             // Highlight the hovered object
@@ -295,7 +258,7 @@ impl WorldMap<'_> {
             let text = Self::OBJECT_SYMBOL.light_red().reversed()
                 + " ".into()
                 + object_name.to_string().white().reversed();
-            let object_state = hovered.predict(&state.time()).unwrap();
+            let object_state = hovered.predict(&self.timeline_state.time()).unwrap();
             ctx.print(object_state.longitude(), object_state.latitude(), text);
         }
     }
@@ -305,7 +268,7 @@ impl WorldMap<'_> {
         let Some(object) = state.selected_object(self.satellite_groups_state) else {
             return;
         };
-        let object_state = object.predict(&state.time()).unwrap();
+        let object_state = object.predict(&self.timeline_state.time()).unwrap();
         let points = calculate_visibility_area(&object_state.position);
         Self::draw_lines(ctx, points, state.visibility_area_color);
     }
@@ -369,7 +332,6 @@ async fn handle_key_event(event: KeyEvent, app: &mut App) -> Result<()> {
         KeyCode::Char('f') => {
             app.world_map_state.follow_object = !app.world_map_state.follow_object;
         }
-        KeyCode::Char('r') => app.world_map_state.time_offset = chrono::Duration::zero(),
         KeyCode::Char('t') => {
             app.world_map_state.show_terminator = !app.world_map_state.show_terminator;
         }
@@ -396,18 +358,10 @@ async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
             app.world_map_state.selected_object_index = None;
         }
         MouseEventKind::ScrollUp => {
-            if event.modifiers == KeyModifiers::SHIFT {
-                app.world_map_state.scroll_map_left();
-            } else {
-                app.world_map_state.rewind_time();
-            }
+            app.world_map_state.scroll_map_left();
         }
         MouseEventKind::ScrollDown => {
-            if event.modifiers == KeyModifiers::SHIFT {
-                app.world_map_state.scroll_map_right();
-            } else {
-                app.world_map_state.advance_time();
-            }
+            app.world_map_state.scroll_map_right();
         }
         _ => {}
     }
@@ -423,7 +377,7 @@ fn get_nearest_object_index(app: &App, position: Position, inner_area: Rect) -> 
         .iter()
         .enumerate()
         .min_by_key(|(_, obj)| {
-            let state = obj.predict(&app.world_map_state.time()).unwrap();
+            let state = obj.predict(&app.timeline_state.time()).unwrap();
             // Convert to area position
             let (x, y) = lon_lat_to_area(
                 wrap_longitude_deg(state.longitude() - app.world_map_state.lon_offset),

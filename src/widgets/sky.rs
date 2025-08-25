@@ -14,7 +14,7 @@ use crate::{
     config::SkyConfig,
     event::Event,
     utils::*,
-    widgets::{window_to_area, world_map::WorldMapState},
+    widgets::{timeline::TimelineState, window_to_area, world_map::WorldMapState},
 };
 
 use super::satellite_groups::SatelliteGroupsState;
@@ -23,6 +23,7 @@ use super::satellite_groups::SatelliteGroupsState;
 pub struct Sky<'a> {
     pub world_map_state: &'a WorldMapState,
     pub satellite_groups_state: &'a SatelliteGroupsState,
+    pub timeline_state: &'a TimelineState,
 }
 
 /// State of a [`Sky`] widget.
@@ -120,7 +121,7 @@ impl Sky<'_> {
         else {
             return;
         };
-        let time = self.world_map_state.time();
+        let time = self.timeline_state.time();
 
         let points = calculate_sky_track(object, station_position, &time);
         Self::draw_lines(ctx, points, Color::LightBlue);
