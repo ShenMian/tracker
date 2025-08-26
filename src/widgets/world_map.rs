@@ -101,7 +101,13 @@ impl WorldMap<'_> {
     }
 
     fn block(&self) -> Block<'static> {
-        let mut block = Block::bordered().title(t!("map.title").to_string().blue());
+        let mut block = Block::bordered()
+            .border_set(symbols::border::Set {
+                bottom_left: symbols::line::VERTICAL_RIGHT,
+                bottom_right: symbols::line::VERTICAL_LEFT,
+                ..Default::default()
+            })
+            .title(t!("map.title").to_string().blue());
 
         // Show follow mode indicator if enabled
         if self.state.follow_object {
