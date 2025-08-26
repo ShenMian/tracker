@@ -32,10 +32,8 @@ pub struct WorldMap<'a> {
 /// State of a [`WorldMap`] widget.
 #[derive(Default)]
 pub struct WorldMapState {
-    /// Index of the selected object.
-    pub selected_object_index: Option<usize>,
-    /// Index of the hovered object.
-    hovered_object_index: Option<usize>,
+    pub selected_object: Option<Object>,
+    hovered_object: Option<Object>,
 
     /// Center longitude offset for horizontal map scrolling in degrees.
     lon_offset: f64,
@@ -78,26 +76,6 @@ impl WorldMapState {
         }
     }
 
-    /// Returns a reference to the selected object.
-    pub fn selected_object<'a>(
-        &self,
-        satellite_groups_state: &'a SatelliteGroupsState,
-    ) -> Option<&'a Object> {
-        satellite_groups_state
-            .objects
-            .get(self.selected_object_index?)
-    }
-
-    /// Returns a reference to the hovered object.
-    fn hovered_object<'a>(
-        &self,
-        satellite_groups_state: &'a SatelliteGroupsState,
-    ) -> Option<&'a Object> {
-        satellite_groups_state
-            .objects
-            .get(self.hovered_object_index?)
-    }
-
     /// Scrolls the map view to the left.
     fn scroll_map_left(&mut self) {
         self.lon_offset = wrap_longitude_deg(self.lon_offset - self.lon_delta);
@@ -127,7 +105,7 @@ impl WorldMap<'_> {
 
         // Show follow mode indicator if enabled
         if self.state.follow_object {
-            let style = if self.state.selected_object_index.is_none() {
+            let style = if self.state.selected_object.is_none() {
                 Style::new().dark_gray()
             } else {
                 Style::new().green().slow_blink()
@@ -144,7 +122,7 @@ impl WorldMap<'_> {
     fn render_map(&mut self, buf: &mut Buffer) {
         // Follow the longitude of the selected object
         if self.state.follow_object
-            && let Some(selected) = self.state.selected_object(self.satellite_groups_state)
+            && let Some(selected) = &self.state.selected_object
         {
             let object_state = selected.predict(&self.timeline_state.time()).unwrap();
 
@@ -236,7 +214,7 @@ impl WorldMap<'_> {
     fn draw_objects(&self, ctx: &mut Context) {
         for object in self.satellite_groups_state.objects.iter() {
             let object_name = object.name().unwrap_or(Self::UNKNOWN_NAME);
-            let text = if self.state.selected_object_index.is_none() {
+            let text = if self.state.selected_object.is_none() {
                 Self::OBJECT_SYMBOL.light_red() + format!(" {object_name}").white()
             } else {
                 Self::OBJECT_SYMBOL.red() + format!(" {object_name}").dark_gray()
@@ -248,7 +226,7 @@ impl WorldMap<'_> {
 
     /// Draws the highlight and trajectory for the selected or hovered object.
     fn draw_object_highlight(&self, ctx: &mut Context) {
-        if let Some(selected) = self.state.selected_object(self.satellite_groups_state) {
+        if let Some(selected) = &self.state.selected_object {
             // Draw the trajectory
             Self::draw_lines(
                 ctx,
@@ -262,7 +240,7 @@ impl WorldMap<'_> {
                 Self::OBJECT_SYMBOL.light_green().slow_blink() + format!(" {object_name}").white();
             let object_state = selected.predict(&self.timeline_state.time()).unwrap();
             ctx.print(object_state.longitude(), object_state.latitude(), text);
-        } else if let Some(hovered) = self.state.hovered_object(self.satellite_groups_state) {
+        } else if let Some(hovered) = &self.state.hovered_object {
             // Highlight the hovered object
             let object_name = hovered.name().unwrap_or(Self::UNKNOWN_NAME);
             let text = Self::OBJECT_SYMBOL.light_red().reversed()
@@ -275,7 +253,7 @@ impl WorldMap<'_> {
 
     /// Draws the visibility area for the selected object.
     fn draw_visibility_area(&self, ctx: &mut Context) {
-        let Some(object) = self.state.selected_object(self.satellite_groups_state) else {
+        let Some(object) = &self.state.selected_object else {
             return;
         };
         let object_state = object.predict(&self.timeline_state.time()).unwrap();
@@ -343,17 +321,18 @@ async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
     let global_mouse = Position::new(event.column, event.row);
     let inner_area = app.world_map_state.inner_area;
     let Some(local_mouse) = window_to_area(global_mouse, inner_area) else {
-        app.world_map_state.hovered_object_index = None;
+        app.world_map_state.hovered_object = None;
         return Ok(());
     };
 
     let nearest_object_index = get_nearest_object_index(app, local_mouse, inner_area);
     match event.kind {
         MouseEventKind::Down(MouseButton::Left) => {
-            app.world_map_state.selected_object_index = nearest_object_index
+            app.world_map_state.selected_object =
+                nearest_object_index.map(|index| app.satellite_groups_state.objects[index].clone());
         }
         MouseEventKind::Down(MouseButton::Right) => {
-            app.world_map_state.selected_object_index = None;
+            app.world_map_state.selected_object = None;
         }
         MouseEventKind::ScrollUp => {
             app.world_map_state.scroll_map_left();
@@ -363,7 +342,8 @@ async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
         }
         _ => {}
     }
-    app.world_map_state.hovered_object_index = nearest_object_index;
+    app.world_map_state.hovered_object =
+        nearest_object_index.map(|index| app.satellite_groups_state.objects[index].clone());
 
     Ok(())
 }

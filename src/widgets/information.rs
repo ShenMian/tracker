@@ -21,12 +21,11 @@ use crate::{
     widgets::{timeline::TimelineState, window_to_area},
 };
 
-use super::{satellite_groups::SatelliteGroupsState, world_map::WorldMapState};
+use super::world_map::WorldMapState;
 
 /// A widget that displays information about a selected object.
 pub struct Information<'a> {
     pub state: &'a mut InformationState,
-    pub satellite_groups_state: &'a SatelliteGroupsState,
     pub world_map_state: &'a WorldMapState,
     pub timeline_state: &'a TimelineState,
 }
@@ -63,10 +62,7 @@ impl Information<'_> {
         self.state.inner_area = block.inner(area);
         block.render(area, buf);
 
-        if let Some(object) = self
-            .world_map_state
-            .selected_object(self.satellite_groups_state)
-        {
+        if let Some(object) = &self.world_map_state.selected_object {
             self.render_table(buf, object);
             self.render_scrollbar(area, buf);
         } else {

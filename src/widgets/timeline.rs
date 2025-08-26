@@ -14,10 +14,7 @@ use crate::{
     config::TimelineConfig,
     event::Event,
     utils::calculate_pass_times,
-    widgets::{
-        satellite_groups::SatelliteGroupsState, sky::SkyState, window_to_area,
-        world_map::WorldMapState,
-    },
+    widgets::{sky::SkyState, window_to_area, world_map::WorldMapState},
 };
 
 const SECS_PER_HOUR: f64 = 3600.0;
@@ -25,7 +22,6 @@ const SECS_PER_HOUR: f64 = 3600.0;
 pub struct Timeline<'a> {
     pub state: &'a mut TimelineState,
     pub world_map_state: &'a WorldMapState,
-    pub satellite_groups_state: &'a SatelliteGroupsState,
     pub sky_state: &'a SkyState,
 }
 
@@ -149,10 +145,7 @@ impl Timeline<'_> {
     }
 
     fn draw_pass_times(&self, ctx: &mut Context) {
-        let Some(selected_object) = self
-            .world_map_state
-            .selected_object(self.satellite_groups_state)
-        else {
+        let Some(selected_object) = &self.world_map_state.selected_object else {
             return;
         };
         let Some(ground_station) = &self.sky_state.ground_station else {

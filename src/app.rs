@@ -89,7 +89,6 @@ impl App {
             Timeline {
                 state: &mut self.timeline_state,
                 world_map_state: &self.world_map_state,
-                satellite_groups_state: &self.satellite_groups_state,
                 sky_state: &self.sky_state,
             }
             .render(left_bottom_area, frame.buffer_mut());
@@ -100,7 +99,6 @@ impl App {
             Tabs {
                 state: &mut self.tab_state,
                 world_map_state: &self.world_map_state,
-                satellite_groups_state: &self.satellite_groups_state,
                 sky_state: &mut self.sky_state,
                 information_state: &mut self.information_state,
                 timeline_state: &self.timeline_state,

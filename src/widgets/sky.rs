@@ -17,13 +17,10 @@ use crate::{
     widgets::{timeline::TimelineState, window_to_area, world_map::WorldMapState},
 };
 
-use super::satellite_groups::SatelliteGroupsState;
-
 /// A widget that displays the sky track on a polar plot.
 pub struct Sky<'a> {
     pub state: &'a mut SkyState,
     pub world_map_state: &'a WorldMapState,
-    pub satellite_groups_state: &'a SatelliteGroupsState,
     pub timeline_state: &'a TimelineState,
 }
 
@@ -85,7 +82,7 @@ impl Sky<'_> {
             return;
         }
 
-        if self.world_map_state.selected_object_index.is_none() {
+        if self.world_map_state.selected_object.is_none() {
             Self::centered_paragraph(t!("no_object_selected").dark_gray())
                 .render(self.state.inner_area, buf);
             return;
@@ -149,10 +146,7 @@ impl Sky<'_> {
     fn draw_sky_track(&self, ctx: &mut Context, station_position: &Lla) {
         const UNKNOWN_NAME: &str = "UNK";
 
-        let Some(object) = self
-            .world_map_state
-            .selected_object(self.satellite_groups_state)
-        else {
+        let Some(object) = &self.world_map_state.selected_object else {
             return;
         };
         let time = self.timeline_state.time();

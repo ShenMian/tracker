@@ -193,7 +193,7 @@ async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
             // Select the clicked entry.
             if let Some(index) = state.list_state.selected() {
                 state.list_entries[index].selected = !state.list_entries[index].selected;
-                app.world_map_state.selected_object_index = None;
+                app.world_map_state.selected_object = None;
                 state.refresh_objects().await;
             }
         }

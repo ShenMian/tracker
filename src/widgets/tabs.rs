@@ -10,7 +10,6 @@ use crate::{
     event::Event,
     widgets::{
         information::{Information, InformationState},
-        satellite_groups::SatelliteGroupsState,
         sky::{Sky, SkyState},
         timeline::TimelineState,
         world_map::WorldMapState,
@@ -57,7 +56,6 @@ impl Display for Tab {
 pub struct Tabs<'a> {
     pub state: &'a mut TabsState,
     pub world_map_state: &'a WorldMapState,
-    pub satellite_groups_state: &'a SatelliteGroupsState,
     pub sky_state: &'a mut SkyState,
     pub information_state: &'a mut InformationState,
     pub timeline_state: &'a TimelineState,
@@ -95,7 +93,6 @@ impl Tabs<'_> {
                 let sky = Sky {
                     state: self.sky_state,
                     world_map_state: self.world_map_state,
-                    satellite_groups_state: self.satellite_groups_state,
                     timeline_state: self.timeline_state,
                 };
                 sky.render(area, buf);
@@ -103,7 +100,6 @@ impl Tabs<'_> {
             Tab::Info => {
                 let information = Information {
                     state: self.information_state,
-                    satellite_groups_state: self.satellite_groups_state,
                     world_map_state: self.world_map_state,
                     timeline_state: self.timeline_state,
                 };
