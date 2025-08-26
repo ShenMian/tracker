@@ -119,9 +119,9 @@ impl WorldMap<'_> {
         // Show follow mode indicator if enabled
         if state.follow_object {
             let style = if state.selected_object_index.is_none() {
-                Style::default().dark_gray()
+                Style::new().dark_gray()
             } else {
-                Style::default().green().slow_blink()
+                Style::new().green().slow_blink()
             };
             block = block.title_bottom(
                 Line::from(format!("({})", t!("map.follow")).set_style(style)).right_aligned(),

@@ -97,8 +97,7 @@ impl Information<'_> {
                 .height(1)
             });
 
-        Table::new(rows, widths)
-            .row_highlight_style(Style::default().add_modifier(Modifier::REVERSED))
+        Table::new(rows, widths).row_highlight_style(Style::new().add_modifier(Modifier::REVERSED))
     }
 
     fn render_table(&self, buf: &mut Buffer, state: &mut InformationState, object: &Object) {

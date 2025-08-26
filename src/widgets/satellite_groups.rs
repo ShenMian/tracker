@@ -96,18 +96,18 @@ impl SatelliteGroups {
 
     fn list(state: &mut SatelliteGroupsState) -> List<'static> {
         let items = state.list_entries.iter().map(|entry| {
-            let style = if entry.selected {
-                Style::default().fg(Color::White)
-            } else {
-                Style::default()
-            };
             let icon = if entry.selected { "✓" } else { "☐" };
+            let style = if entry.selected {
+                Style::new().fg(Color::White)
+            } else {
+                Style::new()
+            };
             ListItem::new(Text::styled(
                 format!("{} {}", icon, entry.satellite.label()),
                 style,
             ))
         });
-        List::new(items).highlight_style(Style::default().add_modifier(Modifier::REVERSED))
+        List::new(items).highlight_style(Style::new().add_modifier(Modifier::REVERSED))
     }
 
     fn render_list(buf: &mut Buffer, state: &mut SatelliteGroupsState) {
