@@ -59,13 +59,13 @@ impl TimelineState {
     }
 
     /// Advances the simulation time.
-    fn advance_time(&mut self) {
-        self.time_offset += self.time_delta;
+    fn advance_time(&mut self, delta: Duration) {
+        self.time_offset += delta;
     }
 
     /// Rewinds the simulation time.
-    fn rewind_time(&mut self) {
-        self.time_offset -= self.time_delta;
+    fn rewind_time(&mut self, delta: Duration) {
+        self.time_offset -= delta;
     }
 }
 
@@ -87,9 +87,11 @@ impl Timeline<'_> {
                 .white(),
             );
 
-        if let Some(duration) = self.mouse_time(state) {
-            let time = state.time().with_timezone(&Local) + duration;
-            let label = time.format("%Y-%m-%d %H:%M:%S").to_string();
+        if let Some(time) = self.mouse_time(state) {
+            let label = time
+                .with_timezone(&Local)
+                .format("%Y-%m-%d %H:%M:%S")
+                .to_string();
             block = block.title_bottom(Line::from(label).right_aligned());
         }
 
@@ -106,21 +108,24 @@ impl Timeline<'_> {
         });
     }
 
-    fn draw_hour_marks(ctx: &mut Context, time: DateTime<Utc>) {
-        for offset in (-Self::HOURS_WINDOW / 2)..=(Self::HOURS_WINDOW / 2) {
-            let time = time.with_timezone(&Local) + Duration::hours(offset);
-            let minutes = time.minute() % 60;
-            let hours = time.hour() % 24;
+    fn draw_hour_marks(ctx: &mut Context, state: &TimelineState) {
+        let minutes = Duration::minutes(state.time().minute() as i64);
+        for hour_offset in
+            ((-Self::HOURS_WINDOW / 2)..=(Self::HOURS_WINDOW / 2)).map(Duration::hours)
+        {
+            let mark_time = state.time() + hour_offset - minutes;
+            let x = time_to_canvas_x(&mark_time, &state.time());
 
-            let x_offset = (Self::HOURS_WINDOW / 2) as f64 + offset as f64 - minutes as f64 / 60.0;
             ctx.draw(&canvas::Line {
-                x1: x_offset,
+                x1: x,
                 y1: 0.5,
-                x2: x_offset,
+                x2: x,
                 y2: 0.5,
                 color: Color::White,
             });
-            ctx.print(x_offset, 0.0, format!("{hours:02}").fg(Color::DarkGray));
+
+            let hours = mark_time.with_timezone(&Local).hour() % 24;
+            ctx.print(x, 0.0, format!("{hours:02}").fg(Color::DarkGray));
         }
     }
 
@@ -154,18 +159,14 @@ impl Timeline<'_> {
         );
 
         for (start_time, end_time) in pass_segments {
-            let start_offset_hours = (start_time - current_time).as_seconds_f64() / SECS_PER_HOUR;
-            let end_offset_hours = (end_time - current_time).as_seconds_f64() / SECS_PER_HOUR;
-
-            // Convert to canvas coordinates
-            let x1 = (Self::HOURS_WINDOW as f64 / 2.0) + start_offset_hours;
-            let x2 = (Self::HOURS_WINDOW as f64 / 2.0) + end_offset_hours;
+            let x1 = time_to_canvas_x(&start_time, &current_time).max(0.0);
+            let x2 = time_to_canvas_x(&end_time, &current_time).min(Self::HOURS_WINDOW as f64);
 
             debug_assert!(x2 >= 0.0 && x1 <= Self::HOURS_WINDOW as f64);
             ctx.draw(&canvas::Line {
-                x1: x1.max(0.0),
+                x1,
                 y1: 0.5,
-                x2: x2.min(Self::HOURS_WINDOW as f64),
+                x2,
                 y2: 0.5,
                 color: Color::LightYellow,
             });
@@ -181,17 +182,19 @@ impl Timeline<'_> {
                 ctx.layer();
                 self.draw_pass_times(ctx, state);
                 ctx.layer();
-                Self::draw_hour_marks(ctx, state.time());
+                Self::draw_hour_marks(ctx, state);
                 ctx.layer();
                 Self::draw_current_time_marker(ctx);
             })
             .render(state.inner_area, buf);
     }
 
-    fn mouse_time(&self, state: &TimelineState) -> Option<Duration> {
+    fn mouse_time(&self, state: &TimelineState) -> Option<DateTime<Utc>> {
         let mouse = state.mouse_position?;
-        let duration = canvas_x_to_duration(area_to_canvas_x(state.inner_area, mouse));
-        Some(duration)
+        Some(canvas_x_to_time(
+            area_to_canvas_x(state.inner_area, mouse),
+            &state.time(),
+        ))
     }
 }
 
@@ -224,26 +227,27 @@ async fn handle_key_event(event: KeyEvent, app: &mut App) -> Result<()> {
 }
 
 async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
+    let state = &mut app.timeline_state;
+
     let global_mouse = Position::new(event.column, event.row);
-    let inner_area = app.timeline_state.inner_area;
+    let inner_area = state.inner_area;
     let Some(local_mouse) = window_to_area(global_mouse, inner_area) else {
-        app.timeline_state.mouse_position = None;
+        state.mouse_position = None;
         return Ok(());
     };
-    app.timeline_state.mouse_position = Some(local_mouse);
+    state.mouse_position = Some(local_mouse);
 
-    let duration = canvas_x_to_duration(area_to_canvas_x(inner_area, local_mouse));
-    let time = app.timeline_state.time() + duration;
+    let time = canvas_x_to_time(area_to_canvas_x(inner_area, local_mouse), &state.time());
 
     match event.kind {
         MouseEventKind::Down(MouseButton::Left) => {
-            app.timeline_state.set_time(time);
+            state.set_time(time);
         }
         MouseEventKind::ScrollUp => {
-            app.timeline_state.rewind_time();
+            state.rewind_time(state.time_delta);
         }
         MouseEventKind::ScrollDown => {
-            app.timeline_state.advance_time();
+            state.advance_time(state.time_delta);
         }
         _ => {}
     }
@@ -255,7 +259,12 @@ fn area_to_canvas_x(area: Rect, position: Position) -> f64 {
     (position.x as f64 + 0.5) / area.width as f64 * Timeline::HOURS_WINDOW as f64
 }
 
-fn canvas_x_to_duration(offset: f64) -> Duration {
-    let hours_offset = offset - Timeline::HOURS_WINDOW as f64 / 2.0;
-    Duration::seconds((hours_offset * SECS_PER_HOUR).round() as i64)
+fn time_to_canvas_x(time: &DateTime<Utc>, reference: &DateTime<Utc>) -> f64 {
+    let hours_offset = (*time - *reference).as_seconds_f64() / SECS_PER_HOUR;
+    Timeline::HOURS_WINDOW as f64 / 2.0 + hours_offset
+}
+
+fn canvas_x_to_time(x: f64, reference: &DateTime<Utc>) -> DateTime<Utc> {
+    let hours_offset = x - Timeline::HOURS_WINDOW as f64 / 2.0;
+    *reference + Duration::seconds((hours_offset * SECS_PER_HOUR).round() as i64)
 }
