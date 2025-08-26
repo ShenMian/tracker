@@ -120,7 +120,7 @@ impl Timeline<'_> {
                 y2: 0.5,
                 color: Color::White,
             });
-            ctx.print(x_offset, 0.0, format!("{:02}", hours).fg(Color::DarkGray));
+            ctx.print(x_offset, 0.0, format!("{hours:02}").fg(Color::DarkGray));
         }
     }
 

@@ -64,8 +64,8 @@ impl Sky<'_> {
         let mut block = Block::new().borders(Borders::LEFT | Borders::RIGHT | Borders::BOTTOM);
         if let Some((x, y)) = state.mouse_position {
             let (az, el) = canvas_to_az_el(x, y);
-            block = block
-                .title_bottom(Line::from(format!("Az {:.1}°, El {:.1}°", az, el)).right_aligned());
+            block =
+                block.title_bottom(Line::from(format!("Az {az:.1}°, El {el:.1}°")).right_aligned());
         }
         block
     }
