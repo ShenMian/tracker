@@ -55,6 +55,7 @@ impl Display for Tab {
 }
 
 pub struct Tabs<'a> {
+    pub state: &'a mut TabsState,
     pub world_map_state: &'a WorldMapState,
     pub satellite_groups_state: &'a SatelliteGroupsState,
     pub sky_state: &'a mut SkyState,
@@ -68,10 +69,18 @@ pub struct TabsState {
 }
 
 impl Tabs<'_> {
-    fn block(state: &TabsState) -> Block<'static> {
+    pub fn render(self, area: Rect, buf: &mut Buffer) {
+        let vertical = Layout::vertical([Constraint::Length(1), Constraint::Fill(1)]);
+        let [top_area, bottom_area] = vertical.areas(area);
+
+        self.block().render(top_area, buf);
+        self.render_tab(bottom_area, buf);
+    }
+
+    fn block(&self) -> Block<'static> {
         let mut block = Block::bordered();
         for tab in Tab::iter() {
-            if tab == state.selected {
+            if tab == self.state.selected {
                 block = block.title(tab.to_string().blue());
             } else {
                 block = block.title(tab.to_string().gray());
@@ -80,37 +89,27 @@ impl Tabs<'_> {
         block
     }
 
-    fn render_tab(self, area: Rect, buf: &mut Buffer, state: &TabsState) {
-        match state.selected {
+    fn render_tab(self, area: Rect, buf: &mut Buffer) {
+        match self.state.selected {
             Tab::Sky => {
                 let sky = Sky {
+                    state: self.sky_state,
                     world_map_state: self.world_map_state,
                     satellite_groups_state: self.satellite_groups_state,
                     timeline_state: self.timeline_state,
                 };
-                sky.render(area, buf, self.sky_state);
+                sky.render(area, buf);
             }
             Tab::Info => {
                 let information = Information {
+                    state: self.information_state,
                     satellite_groups_state: self.satellite_groups_state,
                     world_map_state: self.world_map_state,
                     timeline_state: self.timeline_state,
                 };
-                information.render(area, buf, self.information_state);
+                information.render(area, buf);
             }
         }
-    }
-}
-
-impl StatefulWidget for Tabs<'_> {
-    type State = TabsState;
-
-    fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
-        let vertical = Layout::vertical([Constraint::Length(1), Constraint::Fill(1)]);
-        let [top_area, bottom_area] = vertical.areas(area);
-
-        Self::block(state).render(top_area, buf);
-        self.render_tab(bottom_area, buf, state);
     }
 }
 

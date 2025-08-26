@@ -21,6 +21,7 @@ use super::satellite_groups::SatelliteGroupsState;
 
 /// A widget that displays the sky track on a polar plot.
 pub struct Sky<'a> {
+    pub state: &'a mut SkyState,
     pub world_map_state: &'a WorldMapState,
     pub satellite_groups_state: &'a SatelliteGroupsState,
     pub timeline_state: &'a TimelineState,
@@ -60,9 +61,42 @@ impl SkyState {
 }
 
 impl Sky<'_> {
-    fn block(state: &mut SkyState) -> Block<'static> {
+    pub fn render(self, area: Rect, buf: &mut Buffer) {
+        let block = self.block();
+        self.state.inner_area = block.inner(area);
+        block.render(area, buf);
+        self.state.canvas_area = centered_square(self.state.inner_area);
+
+        if self
+            .state
+            .canvas_area
+            .width
+            .min(self.state.canvas_area.height)
+            < 5
+        {
+            Self::centered_paragraph(t!("no_enough_space").dark_gray())
+                .render(self.state.inner_area, buf);
+            return;
+        }
+
+        if self.state.ground_station.is_none() {
+            Self::centered_paragraph(t!("sky.no_ground_station").dark_gray())
+                .render(self.state.inner_area, buf);
+            return;
+        }
+
+        if self.world_map_state.selected_object_index.is_none() {
+            Self::centered_paragraph(t!("no_object_selected").dark_gray())
+                .render(self.state.inner_area, buf);
+            return;
+        }
+
+        self.render_graph(buf);
+    }
+
+    fn block(&self) -> Block<'static> {
         let mut block = Block::new().borders(Borders::LEFT | Borders::RIGHT | Borders::BOTTOM);
-        if let Some((x, y)) = state.mouse_position {
+        if let Some((x, y)) = self.state.mouse_position {
             let (az, el) = canvas_to_az_el(x, y);
             block =
                 block.title_bottom(Line::from(format!("Az {az:.1}°, El {el:.1}°")).right_aligned());
@@ -70,16 +104,16 @@ impl Sky<'_> {
         block
     }
 
-    fn render_graph(&self, buf: &mut Buffer, state: &mut SkyState) {
+    fn render_graph(&self, buf: &mut Buffer) {
         Canvas::default()
             .x_bounds([-1.0, 1.0])
             .y_bounds([-1.0, 1.0])
             .paint(|ctx| {
                 Self::draw_grid(ctx);
                 ctx.layer();
-                self.draw_sky_track(ctx, &state.ground_station.as_ref().unwrap().position);
+                self.draw_sky_track(ctx, &self.state.ground_station.as_ref().unwrap().position);
             })
-            .render(state.canvas_area, buf);
+            .render(self.state.canvas_area, buf);
     }
 
     fn draw_grid(ctx: &mut Context) {
@@ -168,37 +202,6 @@ fn centered_square(area: Rect) -> Rect {
         y: area.y + (area.height - height) / 2,
         width,
         height,
-    }
-}
-
-impl StatefulWidget for Sky<'_> {
-    type State = SkyState;
-
-    fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
-        let block = Self::block(state);
-        state.inner_area = block.inner(area);
-        block.render(area, buf);
-        state.canvas_area = centered_square(state.inner_area);
-
-        if state.canvas_area.width.min(state.canvas_area.height) < 5 {
-            Self::centered_paragraph(t!("no_enough_space").dark_gray())
-                .render(state.inner_area, buf);
-            return;
-        }
-
-        if state.ground_station.is_none() {
-            Self::centered_paragraph(t!("sky.no_ground_station").dark_gray())
-                .render(state.inner_area, buf);
-            return;
-        }
-
-        if self.world_map_state.selected_object_index.is_none() {
-            Self::centered_paragraph(t!("no_object_selected").dark_gray())
-                .render(state.inner_area, buf);
-            return;
-        }
-
-        self.render_graph(buf, state);
     }
 }
 

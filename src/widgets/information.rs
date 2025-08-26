@@ -25,6 +25,7 @@ use super::{satellite_groups::SatelliteGroupsState, world_map::WorldMapState};
 
 /// A widget that displays information about a selected object.
 pub struct Information<'a> {
+    pub state: &'a mut InformationState,
     pub satellite_groups_state: &'a SatelliteGroupsState,
     pub world_map_state: &'a WorldMapState,
     pub timeline_state: &'a TimelineState,
@@ -57,14 +58,32 @@ impl InformationState {
 }
 
 impl Information<'_> {
+    pub fn render(mut self, area: Rect, buf: &mut Buffer) {
+        let block = Self::block();
+        self.state.inner_area = block.inner(area);
+        block.render(area, buf);
+
+        if let Some(object) = self
+            .world_map_state
+            .selected_object(self.satellite_groups_state)
+        {
+            self.render_table(buf, object);
+            self.render_scrollbar(area, buf);
+        } else {
+            Self::centered_paragraph(t!("no_object_selected").dark_gray())
+                .render(self.state.inner_area, buf);
+        }
+    }
+
     fn block() -> Block<'static> {
         Block::new().borders(Borders::LEFT | Borders::RIGHT | Borders::BOTTOM)
     }
 
-    fn table(&self, object: &Object, state: &mut InformationState) -> Table<'static> {
-        self.update_table_entries(state, object);
+    fn table(&mut self, object: &Object) -> Table<'static> {
+        self.update_table_entries(object);
 
-        let (max_key_width, _max_value_width) = state
+        let (max_key_width, _max_value_width) = self
+            .state
             .table_entries
             .iter()
             .map(|(key, value)| (key.width(), value.width()))
@@ -74,11 +93,12 @@ impl Information<'_> {
 
         let widths = [Constraint::Max(max_key_width as u16), Constraint::Fill(1)];
         let [_left, right] = Layout::horizontal(widths)
-            .areas(state.inner_area)
+            .areas(self.state.inner_area)
             .map(|rect| rect.width);
         let right = right.saturating_sub(1) as usize;
 
-        let rows = state
+        let rows = self
+            .state
             .table_entries
             .iter()
             .enumerate()
@@ -100,28 +120,28 @@ impl Information<'_> {
         Table::new(rows, widths).row_highlight_style(Style::new().add_modifier(Modifier::REVERSED))
     }
 
-    fn render_table(&self, buf: &mut Buffer, state: &mut InformationState, object: &Object) {
+    fn render_table(&mut self, buf: &mut Buffer, object: &Object) {
         StatefulWidget::render(
-            self.table(object, state),
-            state.inner_area,
+            self.table(object),
+            self.state.inner_area,
             buf,
-            &mut state.table_state,
+            &mut self.state.table_state,
         );
     }
 
-    fn render_scrollbar(&self, area: Rect, buf: &mut Buffer, state: &mut InformationState) {
+    fn render_scrollbar(&self, area: Rect, buf: &mut Buffer) {
         let inner_area = area.inner(Margin::new(0, 1));
         let mut scrollbar_state = ScrollbarState::new(
-            state
+            self.state
                 .table_entries
                 .len()
                 .saturating_sub(inner_area.height as usize),
         )
-        .position(state.table_state.offset());
+        .position(self.state.table_state.offset());
         Scrollbar::default().render(inner_area, buf, &mut scrollbar_state);
     }
 
-    fn update_table_entries(&self, state: &mut InformationState, object: &Object) {
+    fn update_table_entries(&mut self, object: &Object) {
         const UNKNOWN: &str = "(Unknown)";
 
         let object_state = object.predict(&self.timeline_state.time()).unwrap();
@@ -129,7 +149,7 @@ impl Information<'_> {
         let (country, city) = object_state.position.country_city();
 
         let elements = object.elements();
-        state.table_entries = vec![
+        self.state.table_entries = vec![
             (
                 t!("info.name").into(),
                 object.name().unwrap_or(UNKNOWN).into(),
@@ -201,27 +221,6 @@ impl Information<'_> {
 
     fn centered_paragraph<'a>(text: impl Into<Text<'a>>) -> Paragraph<'a> {
         Paragraph::new(text).centered().wrap(Wrap { trim: true })
-    }
-}
-
-impl StatefulWidget for Information<'_> {
-    type State = InformationState;
-
-    fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
-        let block = Self::block();
-        state.inner_area = block.inner(area);
-        block.render(area, buf);
-
-        if let Some(object) = self
-            .world_map_state
-            .selected_object(self.satellite_groups_state)
-        {
-            self.render_table(buf, state, object);
-            self.render_scrollbar(area, buf, state);
-        } else {
-            Self::centered_paragraph(t!("no_object_selected").dark_gray())
-                .render(state.inner_area, buf);
-        }
     }
 }
 

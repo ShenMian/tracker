@@ -78,37 +78,39 @@ impl App {
             let left_vertical = Layout::vertical([Constraint::Min(0), Constraint::Length(3)]);
             let [left_top_area, left_bottom_area] = left_vertical.areas(left_area);
 
-            let world_map = WorldMap {
+            WorldMap {
+                state: &mut self.world_map_state,
                 satellite_groups_state: &self.satellite_groups_state,
                 sky_state: &self.sky_state,
                 timeline_state: &self.timeline_state,
-            };
-            frame.render_stateful_widget(world_map, left_top_area, &mut self.world_map_state);
+            }
+            .render(left_top_area, frame.buffer_mut());
 
-            let timeline = Timeline {
+            Timeline {
+                state: &mut self.timeline_state,
                 world_map_state: &self.world_map_state,
                 satellite_groups_state: &self.satellite_groups_state,
                 sky_state: &self.sky_state,
-            };
-            frame.render_stateful_widget(timeline, left_bottom_area, &mut self.timeline_state);
+            }
+            .render(left_bottom_area, frame.buffer_mut());
 
             let vertical = Layout::vertical([Constraint::Percentage(60), Constraint::Fill(1)]);
             let [right_top_area, right_bottom_area] = vertical.areas(right_area);
 
-            let tabs = Tabs {
+            Tabs {
+                state: &mut self.tab_state,
                 world_map_state: &self.world_map_state,
                 satellite_groups_state: &self.satellite_groups_state,
                 sky_state: &mut self.sky_state,
                 information_state: &mut self.information_state,
                 timeline_state: &self.timeline_state,
-            };
-            frame.render_stateful_widget(tabs, right_top_area, &mut self.tab_state);
+            }
+            .render(right_top_area, frame.buffer_mut());
 
-            frame.render_stateful_widget(
-                SatelliteGroups,
-                right_bottom_area,
-                &mut self.satellite_groups_state,
-            );
+            SatelliteGroups {
+                state: &mut self.satellite_groups_state,
+            }
+            .render(right_bottom_area, frame.buffer_mut());
         })?;
         Ok(())
     }

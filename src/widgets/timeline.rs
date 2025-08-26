@@ -23,6 +23,7 @@ use crate::{
 const SECS_PER_HOUR: f64 = 3600.0;
 
 pub struct Timeline<'a> {
+    pub state: &'a mut TimelineState,
     pub world_map_state: &'a WorldMapState,
     pub satellite_groups_state: &'a SatelliteGroupsState,
     pub sky_state: &'a SkyState,
@@ -72,22 +73,30 @@ impl TimelineState {
 impl Timeline<'_> {
     const HOURS_WINDOW: i64 = 8;
 
-    fn block(&self, state: &TimelineState) -> Block<'static> {
+    pub fn render(self, area: Rect, buf: &mut Buffer) {
+        let block = self.block();
+        self.state.inner_area = block.inner(area);
+        block.render(area, buf);
+
+        self.render_canvas(buf);
+    }
+
+    fn block(&self) -> Block<'static> {
         let mut block = Block::new()
             .borders(Borders::LEFT | Borders::RIGHT | Borders::BOTTOM)
             .title_bottom(
                 format!(
                     "{} ({:+}m)",
-                    state
+                    self.state
                         .time()
                         .with_timezone(&Local)
                         .format("%Y-%m-%d %H:%M:%S"),
-                    state.time_offset.num_minutes()
+                    self.state.time_offset.num_minutes()
                 )
                 .white(),
             );
 
-        if let Some(time) = self.mouse_time(state) {
+        if let Some(time) = self.mouse_time() {
             let label = time
                 .with_timezone(&Local)
                 .format("%Y-%m-%d %H:%M:%S")
@@ -108,13 +117,13 @@ impl Timeline<'_> {
         });
     }
 
-    fn draw_hour_marks(ctx: &mut Context, state: &TimelineState) {
-        let minutes = Duration::minutes(state.time().minute() as i64);
+    fn draw_hour_marks(&self, ctx: &mut Context) {
+        let minutes = Duration::minutes(self.state.time().minute() as i64);
         for hour_offset in
             ((-Self::HOURS_WINDOW / 2)..=(Self::HOURS_WINDOW / 2)).map(Duration::hours)
         {
-            let mark_time = state.time() + hour_offset - minutes;
-            let x = time_to_canvas_x(&mark_time, &state.time());
+            let mark_time = self.state.time() + hour_offset - minutes;
+            let x = time_to_canvas_x(&mark_time, &self.state.time());
 
             ctx.draw(&canvas::Line {
                 x1: x,
@@ -139,7 +148,7 @@ impl Timeline<'_> {
         });
     }
 
-    fn draw_pass_times(&self, ctx: &mut Context, state: &TimelineState) {
+    fn draw_pass_times(&self, ctx: &mut Context) {
         let Some(selected_object) = self
             .world_map_state
             .selected_object(self.satellite_groups_state)
@@ -150,7 +159,7 @@ impl Timeline<'_> {
             return;
         };
 
-        let current_time = state.time();
+        let current_time = self.state.time();
         let pass_segments = calculate_pass_times(
             selected_object,
             &ground_station.position,
@@ -173,40 +182,28 @@ impl Timeline<'_> {
         }
     }
 
-    fn render_canvas(&self, buf: &mut Buffer, state: &mut TimelineState) {
+    fn render_canvas(&self, buf: &mut Buffer) {
         Canvas::default()
             .x_bounds([0.0, Self::HOURS_WINDOW as f64])
             .y_bounds([0.0, 1.0])
             .paint(|ctx| {
                 Self::draw_axis(ctx);
                 ctx.layer();
-                self.draw_pass_times(ctx, state);
+                self.draw_pass_times(ctx);
                 ctx.layer();
-                Self::draw_hour_marks(ctx, state);
+                self.draw_hour_marks(ctx);
                 ctx.layer();
                 Self::draw_current_time_marker(ctx);
             })
-            .render(state.inner_area, buf);
+            .render(self.state.inner_area, buf);
     }
 
-    fn mouse_time(&self, state: &TimelineState) -> Option<DateTime<Utc>> {
-        let mouse = state.mouse_position?;
+    fn mouse_time(&self) -> Option<DateTime<Utc>> {
+        let mouse = self.state.mouse_position?;
         Some(canvas_x_to_time(
-            area_to_canvas_x(state.inner_area, mouse),
-            &state.time(),
+            area_to_canvas_x(self.state.inner_area, mouse),
+            &self.state.time(),
         ))
-    }
-}
-
-impl<'a> StatefulWidget for Timeline<'a> {
-    type State = TimelineState;
-
-    fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
-        let block = self.block(state);
-        state.inner_area = block.inner(area);
-        block.render(area, buf);
-
-        self.render_canvas(buf, state);
     }
 }
 

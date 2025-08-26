@@ -13,8 +13,9 @@ use ratatui::{
 };
 
 /// A widget that displays a list of satellite groups.
-#[derive(Default)]
-pub struct SatelliteGroups;
+pub struct SatelliteGroups<'a> {
+    pub state: &'a mut SatelliteGroupsState,
+}
 
 /// State of a [`SatelliteGroups`] widget.
 pub struct SatelliteGroupsState {
@@ -89,13 +90,22 @@ impl Default for SatelliteGroupsState {
     }
 }
 
-impl SatelliteGroups {
+impl SatelliteGroups<'_> {
+    pub fn render(mut self, area: Rect, buf: &mut Buffer) {
+        let block = Self::block();
+        self.state.inner_area = block.inner(area);
+        block.render(area, buf);
+
+        self.render_list(buf);
+        self.render_scrollbar(area, buf);
+    }
+
     fn block() -> Block<'static> {
         Block::bordered().title(t!("group.title").to_string().blue())
     }
 
-    fn list(state: &mut SatelliteGroupsState) -> List<'static> {
-        let items = state.list_entries.iter().map(|entry| {
+    fn list(&self) -> List<'static> {
+        let items = self.state.list_entries.iter().map(|entry| {
             let icon = if entry.selected { "✓" } else { "☐" };
             let style = if entry.selected {
                 Style::new().fg(Color::White)
@@ -110,38 +120,25 @@ impl SatelliteGroups {
         List::new(items).highlight_style(Style::new().add_modifier(Modifier::REVERSED))
     }
 
-    fn render_list(buf: &mut Buffer, state: &mut SatelliteGroupsState) {
+    fn render_list(&mut self, buf: &mut Buffer) {
         StatefulWidget::render(
-            Self::list(state),
-            state.inner_area,
+            self.list(),
+            self.state.inner_area,
             buf,
-            &mut state.list_state,
+            &mut self.state.list_state,
         );
     }
 
-    fn render_scrollbar(area: Rect, buf: &mut Buffer, state: &mut SatelliteGroupsState) {
+    fn render_scrollbar(&self, area: Rect, buf: &mut Buffer) {
         let inner_area = area.inner(Margin::new(0, 1));
         let mut scrollbar_state = ScrollbarState::new(
-            state
+            self.state
                 .list_entries
                 .len()
                 .saturating_sub(inner_area.height as usize),
         )
-        .position(state.list_state.offset());
+        .position(self.state.list_state.offset());
         Scrollbar::default().render(inner_area, buf, &mut scrollbar_state);
-    }
-}
-
-impl StatefulWidget for SatelliteGroups {
-    type State = SatelliteGroupsState;
-
-    fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
-        let block = Self::block();
-        state.inner_area = block.inner(area);
-        block.render(area, buf);
-
-        Self::render_list(buf, state);
-        Self::render_scrollbar(area, buf, state);
     }
 }
 

@@ -23,6 +23,7 @@ use super::satellite_groups::SatelliteGroupsState;
 
 /// A widget that displays a world map with objects.
 pub struct WorldMap<'a> {
+    pub state: &'a mut WorldMapState,
     pub satellite_groups_state: &'a SatelliteGroupsState,
     pub sky_state: &'a SkyState,
     pub timeline_state: &'a TimelineState,
@@ -113,12 +114,20 @@ impl WorldMap<'_> {
     const SUBSOLAR_SYMBOL: &'static str = "*";
     const UNKNOWN_NAME: &'static str = "UNK";
 
-    fn block(state: &mut WorldMapState) -> Block<'static> {
+    pub fn render(mut self, area: Rect, buf: &mut Buffer) {
+        let block = self.block();
+        self.state.inner_area = block.inner(area);
+        block.render(area, buf);
+
+        self.render_map(buf);
+    }
+
+    fn block(&self) -> Block<'static> {
         let mut block = Block::bordered().title(t!("map.title").to_string().blue());
 
         // Show follow mode indicator if enabled
-        if state.follow_object {
-            let style = if state.selected_object_index.is_none() {
+        if self.state.follow_object {
+            let style = if self.state.selected_object_index.is_none() {
                 Style::new().dark_gray()
             } else {
                 Style::new().green().slow_blink()
@@ -132,20 +141,21 @@ impl WorldMap<'_> {
     }
 
     /// Renders the world map.
-    fn render_map(&self, buf: &mut Buffer, state: &mut WorldMapState) {
+    fn render_map(&mut self, buf: &mut Buffer) {
         // Follow the longitude of the selected object
-        if state.follow_object
-            && let Some(selected) = state.selected_object(self.satellite_groups_state)
+        if self.state.follow_object
+            && let Some(selected) = self.state.selected_object(self.satellite_groups_state)
         {
             let object_state = selected.predict(&self.timeline_state.time()).unwrap();
 
-            state.lon_offset += wrap_longitude_deg(object_state.longitude() - state.lon_offset)
-                * state.follow_smoothing;
-            state.lon_offset = wrap_longitude_deg(state.lon_offset);
+            self.state.lon_offset +=
+                wrap_longitude_deg(object_state.longitude() - self.state.lon_offset)
+                    * self.state.follow_smoothing;
+            self.state.lon_offset = wrap_longitude_deg(self.state.lon_offset);
         }
 
-        let x_min = state.lon_offset - 180.0;
-        let x_max = state.lon_offset + 180.0;
+        let x_min = self.state.lon_offset - 180.0;
+        let x_max = self.state.lon_offset + 180.0;
 
         // Adjust the rendering order to prevent the labels on the left mapfrom being
         // covered by the right map
@@ -161,56 +171,56 @@ impl WorldMap<'_> {
         }
 
         for bounds in &bounds_vec {
-            self.render_bottom_layer(buf, *bounds, state);
+            self.render_bottom_layer(buf, *bounds);
         }
         for bounds in &bounds_vec {
-            self.render_top_layer(buf, *bounds, state);
+            self.render_top_layer(buf, *bounds);
         }
     }
 
     /// Renders the bottom layer of the world map, including the map and all
     /// objects.
-    fn render_bottom_layer(&self, buf: &mut Buffer, x_bounds: [f64; 2], state: &mut WorldMapState) {
+    fn render_bottom_layer(&self, buf: &mut Buffer, x_bounds: [f64; 2]) {
         Canvas::default()
             .x_bounds(x_bounds)
             .y_bounds([-90.0, 90.0])
             .paint(|ctx| {
                 ctx.draw(&Map {
-                    color: state.map_color,
+                    color: self.state.map_color,
                     resolution: MapResolution::High,
                 });
                 ctx.layer();
-                if state.show_terminator {
-                    self.draw_terminator(ctx, state);
+                if self.state.show_terminator {
+                    self.draw_terminator(ctx);
                 }
-                self.draw_objects(ctx, state);
+                self.draw_objects(ctx);
             })
-            .render(state.inner_area, buf);
+            .render(self.state.inner_area, buf);
     }
 
     /// Renders the top layer of the world map, including object highlights and
     /// trajectories.
-    fn render_top_layer(&self, buf: &mut Buffer, x_bounds: [f64; 2], state: &mut WorldMapState) {
+    fn render_top_layer(&self, buf: &mut Buffer, x_bounds: [f64; 2]) {
         Canvas::default()
             .x_bounds(x_bounds)
             .y_bounds([-90.0, 90.0])
             .paint(|ctx| {
-                self.draw_object_highlight(ctx, state);
-                if state.show_visibility_area {
-                    self.draw_visibility_area(ctx, state);
+                self.draw_object_highlight(ctx);
+                if self.state.show_visibility_area {
+                    self.draw_visibility_area(ctx);
                 }
                 self.draw_ground_station(ctx);
             })
-            .render(state.inner_area, buf);
+            .render(self.state.inner_area, buf);
     }
 
     /// Draws the day-night terminator and subsolar point.
-    fn draw_terminator(&self, ctx: &mut Context, state: &WorldMapState) {
+    fn draw_terminator(&self, ctx: &mut Context) {
         // Draw the terminator line
         Self::draw_lines(
             ctx,
             calculate_terminator(&self.timeline_state.time()),
-            state.terminator_color,
+            self.state.terminator_color,
         );
 
         // Mark the subsolar point
@@ -223,10 +233,10 @@ impl WorldMap<'_> {
     }
 
     /// Draws all objects and their labels.
-    fn draw_objects(&self, ctx: &mut Context, state: &WorldMapState) {
+    fn draw_objects(&self, ctx: &mut Context) {
         for object in self.satellite_groups_state.objects.iter() {
             let object_name = object.name().unwrap_or(Self::UNKNOWN_NAME);
-            let text = if state.selected_object_index.is_none() {
+            let text = if self.state.selected_object_index.is_none() {
                 Self::OBJECT_SYMBOL.light_red() + format!(" {object_name}").white()
             } else {
                 Self::OBJECT_SYMBOL.red() + format!(" {object_name}").dark_gray()
@@ -237,13 +247,13 @@ impl WorldMap<'_> {
     }
 
     /// Draws the highlight and trajectory for the selected or hovered object.
-    fn draw_object_highlight(&self, ctx: &mut Context, state: &WorldMapState) {
-        if let Some(selected) = state.selected_object(self.satellite_groups_state) {
+    fn draw_object_highlight(&self, ctx: &mut Context) {
+        if let Some(selected) = self.state.selected_object(self.satellite_groups_state) {
             // Draw the trajectory
             Self::draw_lines(
                 ctx,
                 calculate_ground_track(selected, &self.timeline_state.time()),
-                state.trajectory_color,
+                self.state.trajectory_color,
             );
 
             // Highlight the selected object
@@ -252,7 +262,7 @@ impl WorldMap<'_> {
                 Self::OBJECT_SYMBOL.light_green().slow_blink() + format!(" {object_name}").white();
             let object_state = selected.predict(&self.timeline_state.time()).unwrap();
             ctx.print(object_state.longitude(), object_state.latitude(), text);
-        } else if let Some(hovered) = state.hovered_object(self.satellite_groups_state) {
+        } else if let Some(hovered) = self.state.hovered_object(self.satellite_groups_state) {
             // Highlight the hovered object
             let object_name = hovered.name().unwrap_or(Self::UNKNOWN_NAME);
             let text = Self::OBJECT_SYMBOL.light_red().reversed()
@@ -264,13 +274,13 @@ impl WorldMap<'_> {
     }
 
     /// Draws the visibility area for the selected object.
-    fn draw_visibility_area(&self, ctx: &mut Context, state: &WorldMapState) {
-        let Some(object) = state.selected_object(self.satellite_groups_state) else {
+    fn draw_visibility_area(&self, ctx: &mut Context) {
+        let Some(object) = self.state.selected_object(self.satellite_groups_state) else {
             return;
         };
         let object_state = object.predict(&self.timeline_state.time()).unwrap();
         let points = calculate_visibility_area(&object_state.position);
-        Self::draw_lines(ctx, points, state.visibility_area_color);
+        Self::draw_lines(ctx, points, self.state.visibility_area_color);
     }
 
     fn draw_ground_station(&self, ctx: &mut Context) {
@@ -302,18 +312,6 @@ impl WorldMap<'_> {
             return;
         }
         ctx.draw(&canvas::Line::new(x1, y1, x2, y2, color));
-    }
-}
-
-impl StatefulWidget for WorldMap<'_> {
-    type State = WorldMapState;
-
-    fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
-        let block = Self::block(state);
-        state.inner_area = block.inner(area);
-        block.render(area, buf);
-
-        self.render_map(buf, state);
     }
 }
 
