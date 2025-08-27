@@ -236,8 +236,7 @@ async fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()
     let state = &mut states.information_state;
 
     let global_mouse = Position::new(event.column, event.row);
-    let inner_area = state.inner_area;
-    let Some(local_mouse) = window_to_area(global_mouse, inner_area) else {
+    let Some(local_mouse) = window_to_area(global_mouse, state.inner_area) else {
         *state.table_state.selected_mut() = None;
         return Ok(());
     };
