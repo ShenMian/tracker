@@ -57,8 +57,8 @@ impl SkyState {
     }
 }
 
-impl Sky<'_> {
-    pub fn render(self, area: Rect, buf: &mut Buffer) {
+impl Widget for Sky<'_> {
+    fn render(self, area: Rect, buf: &mut Buffer) {
         let block = self.block();
         self.state.inner_area = block.inner(area);
         block.render(area, buf);
@@ -90,7 +90,9 @@ impl Sky<'_> {
 
         self.render_graph(buf);
     }
+}
 
+impl Sky<'_> {
     fn block(&self) -> Block<'static> {
         let mut block = Block::new().borders(Borders::LEFT | Borders::RIGHT | Borders::BOTTOM);
         if let Some((x, y)) = self.state.mouse_position {

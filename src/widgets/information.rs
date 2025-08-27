@@ -56,8 +56,8 @@ impl InformationState {
     }
 }
 
-impl Information<'_> {
-    pub fn render(mut self, area: Rect, buf: &mut Buffer) {
+impl Widget for Information<'_> {
+    fn render(mut self, area: Rect, buf: &mut Buffer) {
         let block = Self::block();
         self.state.inner_area = block.inner(area);
         block.render(area, buf);
@@ -70,7 +70,9 @@ impl Information<'_> {
                 .render(self.state.inner_area, buf);
         }
     }
+}
 
+impl Information<'_> {
     fn block() -> Block<'static> {
         Block::new().borders(Borders::LEFT | Borders::RIGHT | Borders::BOTTOM)
     }

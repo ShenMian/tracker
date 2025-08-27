@@ -90,8 +90,8 @@ impl Default for SatelliteGroupsState {
     }
 }
 
-impl SatelliteGroups<'_> {
-    pub fn render(mut self, area: Rect, buf: &mut Buffer) {
+impl Widget for SatelliteGroups<'_> {
+    fn render(mut self, area: Rect, buf: &mut Buffer) {
         let block = Self::block();
         self.state.inner_area = block.inner(area);
         block.render(area, buf);
@@ -99,7 +99,9 @@ impl SatelliteGroups<'_> {
         self.render_list(buf);
         self.render_scrollbar(area, buf);
     }
+}
 
+impl SatelliteGroups<'_> {
     fn block() -> Block<'static> {
         Block::bordered().title(t!("group.title").to_string().blue())
     }

@@ -66,15 +66,17 @@ pub struct TabsState {
     pub selected: Tab,
 }
 
-impl Tabs<'_> {
-    pub fn render(self, area: Rect, buf: &mut Buffer) {
+impl Widget for Tabs<'_> {
+    fn render(self, area: Rect, buf: &mut Buffer) {
         let vertical = Layout::vertical([Constraint::Length(1), Constraint::Fill(1)]);
         let [top_area, bottom_area] = vertical.areas(area);
 
         self.block().render(top_area, buf);
         self.render_tab(bottom_area, buf);
     }
+}
 
+impl Tabs<'_> {
     fn block(&self) -> Block<'static> {
         let mut block = Block::bordered();
         for tab in Tab::iter() {

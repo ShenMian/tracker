@@ -66,16 +66,18 @@ impl TimelineState {
     }
 }
 
-impl Timeline<'_> {
-    const HOURS_WINDOW: i64 = 8;
-
-    pub fn render(self, area: Rect, buf: &mut Buffer) {
+impl Widget for Timeline<'_> {
+    fn render(self, area: Rect, buf: &mut Buffer) {
         let block = self.block();
         self.state.inner_area = block.inner(area);
         block.render(area, buf);
 
         self.render_canvas(buf);
     }
+}
+
+impl Timeline<'_> {
+    const HOURS_WINDOW: i64 = 8;
 
     fn block(&self) -> Block<'static> {
         let mut block = Block::new()
