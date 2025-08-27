@@ -105,6 +105,22 @@ impl Timeline<'_> {
         block
     }
 
+    fn render_canvas(&self, buf: &mut Buffer) {
+        Canvas::default()
+            .x_bounds([0.0, Self::HOURS_WINDOW as f64])
+            .y_bounds([0.0, 1.0])
+            .paint(|ctx| {
+                Self::draw_axis(ctx);
+                ctx.layer();
+                self.draw_pass_times(ctx);
+                ctx.layer();
+                self.draw_hour_marks(ctx);
+                ctx.layer();
+                Self::draw_current_time_marker(ctx);
+            })
+            .render(self.state.inner_area, buf);
+    }
+
     fn draw_axis(ctx: &mut Context) {
         ctx.draw(&canvas::Line {
             x1: 0.0,
@@ -175,22 +191,6 @@ impl Timeline<'_> {
                 color: Color::LightYellow,
             });
         }
-    }
-
-    fn render_canvas(&self, buf: &mut Buffer) {
-        Canvas::default()
-            .x_bounds([0.0, Self::HOURS_WINDOW as f64])
-            .y_bounds([0.0, 1.0])
-            .paint(|ctx| {
-                Self::draw_axis(ctx);
-                ctx.layer();
-                self.draw_pass_times(ctx);
-                ctx.layer();
-                self.draw_hour_marks(ctx);
-                ctx.layer();
-                Self::draw_current_time_marker(ctx);
-            })
-            .render(self.state.inner_area, buf);
     }
 
     fn mouse_time(&self) -> Option<DateTime<Utc>> {

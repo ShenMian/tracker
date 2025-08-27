@@ -48,11 +48,13 @@ impl InformationState {
     }
 
     fn scroll_down(&mut self) {
-        let max_offset = self
-            .table_entries
+        *self.table_state.offset_mut() = (self.table_state.offset() + 1).min(self.max_offset());
+    }
+
+    fn max_offset(&self) -> usize {
+        self.table_entries
             .len()
-            .saturating_sub(self.inner_area.height as usize);
-        *self.table_state.offset_mut() = (self.table_state.offset() + 1).min(max_offset);
+            .saturating_sub(self.inner_area.height as usize)
     }
 }
 
@@ -128,15 +130,16 @@ impl Information<'_> {
     }
 
     fn render_scrollbar(&self, area: Rect, buf: &mut Buffer) {
-        let inner_area = area.inner(Margin::new(0, 1));
-        let mut scrollbar_state = ScrollbarState::new(
-            self.state
-                .table_entries
-                .len()
-                .saturating_sub(inner_area.height as usize),
-        )
-        .position(self.state.table_state.offset());
-        Scrollbar::default().render(inner_area, buf, &mut scrollbar_state);
+        let inner_area = Rect {
+            height: area.height.saturating_sub(1),
+            ..area
+        };
+        Scrollbar::default().render(
+            inner_area,
+            buf,
+            &mut ScrollbarState::new(self.state.max_offset())
+                .position(self.state.table_state.offset()),
+        );
     }
 
     fn update_table_entries(&mut self, object: &Object) {

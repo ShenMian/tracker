@@ -69,11 +69,13 @@ impl SatelliteGroupsState {
     }
 
     fn scroll_down(&mut self) {
-        let max_offset = self
-            .list_entries
+        *self.list_state.offset_mut() = (self.list_state.offset() + 1).min(self.max_offset());
+    }
+
+    fn max_offset(&self) -> usize {
+        self.list_entries
             .len()
-            .saturating_sub(self.inner_area.height as usize);
-        *self.list_state.offset_mut() = (self.list_state.offset() + 1).min(max_offset);
+            .saturating_sub(self.inner_area.height as usize)
     }
 }
 
@@ -133,14 +135,12 @@ impl SatelliteGroups<'_> {
 
     fn render_scrollbar(&self, area: Rect, buf: &mut Buffer) {
         let inner_area = area.inner(Margin::new(0, 1));
-        let mut scrollbar_state = ScrollbarState::new(
-            self.state
-                .list_entries
-                .len()
-                .saturating_sub(inner_area.height as usize),
-        )
-        .position(self.state.list_state.offset());
-        Scrollbar::default().render(inner_area, buf, &mut scrollbar_state);
+        Scrollbar::default().render(
+            inner_area,
+            buf,
+            &mut ScrollbarState::new(self.state.max_offset())
+                .position(self.state.list_state.offset()),
+        );
     }
 }
 
