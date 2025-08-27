@@ -2,7 +2,7 @@ use rust_i18n::t;
 use std::time::{Duration, Instant};
 
 use crate::{
-    app::App, config::SatelliteGroupsConfig, event::Event, group::Group, object::Object,
+    app::States, config::SatelliteGroupsConfig, event::Event, group::Group, object::Object,
     widgets::window_to_area,
 };
 use anyhow::Result;
@@ -158,20 +158,20 @@ impl From<Group> for Entry {
     }
 }
 
-pub async fn handle_event(event: Event, app: &mut App) -> Result<()> {
+pub async fn handle_event(event: Event, states: &mut States) -> Result<()> {
     match event {
         Event::Update => {
-            handle_update_event(app).await;
+            handle_update_event(states).await;
             Ok(())
         }
-        Event::Mouse(event) => handle_mouse_event(event, app).await,
+        Event::Mouse(event) => handle_mouse_event(event, states).await,
         _ => Ok(()),
     }
 }
 
 /// Handle update events.
-async fn handle_update_event(app: &mut App) {
-    let state = &mut app.satellite_groups_state;
+async fn handle_update_event(states: &mut States) {
+    let state = &mut states.satellite_groups_state;
 
     let now = Instant::now();
     if now.duration_since(state.last_update_instant) >= state.cache_lifetime {
@@ -180,8 +180,8 @@ async fn handle_update_event(app: &mut App) {
     }
 }
 
-async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
-    let state = &mut app.satellite_groups_state;
+async fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()> {
+    let state = &mut states.satellite_groups_state;
 
     let global_mouse = Position::new(event.column, event.row);
     let inner_area = state.inner_area;
@@ -195,7 +195,7 @@ async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
             // Select the clicked entry.
             if let Some(index) = state.list_state.selected() {
                 state.list_entries[index].selected = !state.list_entries[index].selected;
-                app.world_map_state.selected_object = None;
+                states.world_map_state.selected_object = None;
                 state.refresh_objects().await;
             }
         }

@@ -10,7 +10,7 @@ use ratatui::{
 use rust_i18n::t;
 
 use crate::{
-    app::App,
+    app::States,
     config::SkyConfig,
     event::Event,
     utils::*,
@@ -201,18 +201,18 @@ fn centered_square(area: Rect) -> Rect {
     }
 }
 
-pub async fn handle_event(event: Event, app: &mut App) -> Result<()> {
+pub async fn handle_event(event: Event, states: &mut States) -> Result<()> {
     match event {
-        Event::Mouse(event) => handle_mouse_event(event, app).await,
+        Event::Mouse(event) => handle_mouse_event(event, states).await,
         _ => Ok(()),
     }
 }
 
-async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
+async fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()> {
     let global_mouse = Position::new(event.column, event.row);
-    let canvas_area = app.sky_state.canvas_area;
+    let canvas_area = states.sky_state.canvas_area;
     let Some(local_mouse) = window_to_area(global_mouse, canvas_area) else {
-        app.sky_state.mouse_position = None;
+        states.sky_state.mouse_position = None;
         return Ok(());
     };
 
@@ -222,10 +222,10 @@ async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
     let canvas_x = local_x * 2.0 - 1.0;
     let canvas_y = 1.0 - (local_y * 2.0);
     if (canvas_x.powi(2) + canvas_y.powi(2)).sqrt() > 1.0 {
-        app.sky_state.mouse_position = None;
+        states.sky_state.mouse_position = None;
         return Ok(());
     }
-    app.sky_state.mouse_position = Some((canvas_x, canvas_y));
+    states.sky_state.mouse_position = Some((canvas_x, canvas_y));
 
     Ok(())
 }

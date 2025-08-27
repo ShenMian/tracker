@@ -6,7 +6,7 @@ use ratatui::{prelude::*, widgets::Block};
 use rust_i18n::t;
 
 use crate::{
-    app::App,
+    app::States,
     event::Event,
     widgets::{
         information::{Information, InformationState},
@@ -111,15 +111,15 @@ impl Tabs<'_> {
     }
 }
 
-pub async fn handle_event(event: Event, app: &mut App) -> Result<()> {
+pub async fn handle_event(event: Event, states: &mut States) -> Result<()> {
     match event {
-        Event::Key(event) => handle_key_event(event, app).await,
+        Event::Key(event) => handle_key_event(event, states).await,
         _ => Ok(()),
     }
 }
 
-async fn handle_key_event(event: KeyEvent, app: &mut App) -> Result<()> {
-    let state = &mut app.tab_state;
+async fn handle_key_event(event: KeyEvent, states: &mut States) -> Result<()> {
+    let state = &mut states.tab_state;
 
     if event.code == KeyCode::Tab {
         if event.modifiers == KeyModifiers::SHIFT {

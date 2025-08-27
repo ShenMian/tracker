@@ -11,7 +11,7 @@ use ratatui::{
 use rust_i18n::t;
 
 use crate::{
-    app::App,
+    app::States,
     config::WorldMapConfig,
     event::Event,
     object::Object,
@@ -299,23 +299,23 @@ impl WorldMap<'_> {
     }
 }
 
-pub async fn handle_event(event: Event, app: &mut App) -> Result<()> {
+pub async fn handle_event(event: Event, states: &mut States) -> Result<()> {
     match event {
-        Event::Key(event) => handle_key_event(event, app).await,
-        Event::Mouse(event) => handle_mouse_event(event, app).await,
+        Event::Key(event) => handle_key_event(event, states).await,
+        Event::Mouse(event) => handle_mouse_event(event, states).await,
         _ => Ok(()),
     }
 }
 
-async fn handle_key_event(event: KeyEvent, app: &mut App) -> Result<()> {
+async fn handle_key_event(event: KeyEvent, states: &mut States) -> Result<()> {
     match event.code {
-        KeyCode::Char('[') => app.world_map_state.scroll_map_left(),
-        KeyCode::Char(']') => app.world_map_state.scroll_map_right(),
+        KeyCode::Char('[') => states.world_map_state.scroll_map_left(),
+        KeyCode::Char(']') => states.world_map_state.scroll_map_right(),
         KeyCode::Char('f') => {
-            app.world_map_state.follow_object = !app.world_map_state.follow_object;
+            states.world_map_state.follow_object = !states.world_map_state.follow_object;
         }
         KeyCode::Char('t') => {
-            app.world_map_state.show_terminator = !app.world_map_state.show_terminator;
+            states.world_map_state.show_terminator = !states.world_map_state.show_terminator;
         }
         _ => {}
     }
@@ -323,48 +323,53 @@ async fn handle_key_event(event: KeyEvent, app: &mut App) -> Result<()> {
     Ok(())
 }
 
-async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
+async fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()> {
     let global_mouse = Position::new(event.column, event.row);
-    let inner_area = app.world_map_state.inner_area;
+    let inner_area = states.world_map_state.inner_area;
     let Some(local_mouse) = window_to_area(global_mouse, inner_area) else {
-        app.world_map_state.hovered_object = None;
+        states.world_map_state.hovered_object = None;
         return Ok(());
     };
 
-    let nearest_object_index = get_nearest_object_index(app, local_mouse, inner_area);
+    let nearest_object_index = get_nearest_object_index(states, local_mouse, inner_area);
     match event.kind {
         MouseEventKind::Down(MouseButton::Left) => {
-            app.world_map_state.selected_object =
-                nearest_object_index.map(|index| app.satellite_groups_state.objects[index].clone());
+            states.world_map_state.selected_object = nearest_object_index
+                .map(|index| states.satellite_groups_state.objects[index].clone());
         }
         MouseEventKind::Down(MouseButton::Right) => {
-            app.world_map_state.selected_object = None;
+            states.world_map_state.selected_object = None;
         }
         MouseEventKind::ScrollUp => {
-            app.world_map_state.scroll_map_left();
+            states.world_map_state.scroll_map_left();
         }
         MouseEventKind::ScrollDown => {
-            app.world_map_state.scroll_map_right();
+            states.world_map_state.scroll_map_right();
         }
         _ => {}
     }
-    app.world_map_state.hovered_object =
-        nearest_object_index.map(|index| app.satellite_groups_state.objects[index].clone());
+    states.world_map_state.hovered_object =
+        nearest_object_index.map(|index| states.satellite_groups_state.objects[index].clone());
 
     Ok(())
 }
 
 /// Get the index of the nearest object to the given area position
-fn get_nearest_object_index(app: &App, position: Position, inner_area: Rect) -> Option<usize> {
-    app.satellite_groups_state
+fn get_nearest_object_index(
+    states: &States,
+    position: Position,
+    inner_area: Rect,
+) -> Option<usize> {
+    states
+        .satellite_groups_state
         .objects
         .iter()
         .enumerate()
         .min_by_key(|(_, obj)| {
-            let state = obj.predict(&app.timeline_state.time()).unwrap();
+            let state = obj.predict(&states.timeline_state.time()).unwrap();
             // Convert to area position
             let (x, y) = lon_lat_to_area(
-                wrap_longitude_deg(state.longitude() - app.world_map_state.lon_offset),
+                wrap_longitude_deg(state.longitude() - states.world_map_state.lon_offset),
                 state.latitude(),
                 inner_area,
             );

@@ -10,7 +10,7 @@ use ratatui::{
 };
 
 use crate::{
-    app::App,
+    app::States,
     config::TimelineConfig,
     event::Event,
     utils::calculate_pass_times,
@@ -202,24 +202,24 @@ impl Timeline<'_> {
     }
 }
 
-pub async fn handle_event(event: Event, app: &mut App) -> Result<()> {
+pub async fn handle_event(event: Event, states: &mut States) -> Result<()> {
     match event {
-        Event::Key(event) => handle_key_event(event, app).await,
-        Event::Mouse(event) => handle_mouse_event(event, app).await,
+        Event::Key(event) => handle_key_event(event, states).await,
+        Event::Mouse(event) => handle_mouse_event(event, states).await,
         _ => Ok(()),
     }
 }
 
-async fn handle_key_event(event: KeyEvent, app: &mut App) -> Result<()> {
+async fn handle_key_event(event: KeyEvent, states: &mut States) -> Result<()> {
     if let KeyCode::Char('r') = event.code {
-        app.timeline_state.time_offset = chrono::Duration::zero()
+        states.timeline_state.time_offset = chrono::Duration::zero()
     }
 
     Ok(())
 }
 
-async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
-    let state = &mut app.timeline_state;
+async fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()> {
+    let state = &mut states.timeline_state;
 
     let global_mouse = Position::new(event.column, event.row);
     let inner_area = state.inner_area;

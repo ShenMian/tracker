@@ -15,7 +15,7 @@ use rust_i18n::t;
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
-    app::App,
+    app::States,
     event::Event,
     object::Object,
     widgets::{timeline::TimelineState, window_to_area},
@@ -222,15 +222,15 @@ impl Information<'_> {
     }
 }
 
-pub async fn handle_event(event: Event, app: &mut App) -> Result<()> {
+pub async fn handle_event(event: Event, states: &mut States) -> Result<()> {
     match event {
-        Event::Mouse(event) => handle_mouse_event(event, app).await,
+        Event::Mouse(event) => handle_mouse_event(event, states).await,
         _ => Ok(()),
     }
 }
 
-async fn handle_mouse_event(event: MouseEvent, app: &mut App) -> Result<()> {
-    let state = &mut app.information_state;
+async fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()> {
+    let state = &mut states.information_state;
 
     let global_mouse = Position::new(event.column, event.row);
     let inner_area = state.inner_area;
