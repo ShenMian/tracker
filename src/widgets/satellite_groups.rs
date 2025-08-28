@@ -9,6 +9,7 @@ use anyhow::Result;
 use crossterm::event::{MouseButton, MouseEvent, MouseEventKind};
 use ratatui::{
     prelude::*,
+    style::Styled,
     widgets::{Block, List, ListItem, ListState, Scrollbar, ScrollbarState},
 };
 
@@ -116,10 +117,7 @@ impl SatelliteGroups<'_> {
             } else {
                 Style::new()
             };
-            ListItem::new(Text::styled(
-                format!("{} {}", icon, entry.satellite.label()),
-                style,
-            ))
+            ListItem::new(format!("{} {}", icon, entry.satellite.label()).set_style(style))
         });
         List::new(items).highlight_style(Style::new().add_modifier(Modifier::REVERSED))
     }

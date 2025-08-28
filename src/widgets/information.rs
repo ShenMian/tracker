@@ -113,7 +113,7 @@ impl Information<'_> {
                     Cell::from(Text::from(key.to_owned().bold())),
                     Cell::from(Text::from(value.to_string())),
                 ])
-                .style(Style::new().bg(row_color))
+                .bg(row_color)
                 .height(1)
             });
 
