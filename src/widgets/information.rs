@@ -269,15 +269,18 @@ async fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()
     Ok(())
 }
 
+/// Truncates a string to fit within the specified width, adding an ellipsis if
+/// necessary.
 fn truncate<'a>(str: &'a str, max_width: usize) -> Cow<'a, str> {
+    const ELLIPSIS: &str = "…";
+    debug_assert!(max_width >= ELLIPSIS.width());
     if str.width() > max_width {
-        let ellipsis = "…";
         let end = str
             .char_indices()
             .map(|(i, _)| i)
-            .nth(max_width.saturating_sub(ellipsis.width()))
+            .nth(max_width.saturating_sub(ELLIPSIS.width()))
             .unwrap_or(str.len());
-        Cow::Owned(format!("{}{}", &str[..end], ellipsis))
+        Cow::Owned(format!("{}{}", &str[..end], ELLIPSIS))
     } else {
         Cow::Borrowed(str)
     }
