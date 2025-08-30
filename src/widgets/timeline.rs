@@ -1,5 +1,5 @@
 use anyhow::Result;
-use chrono::{DateTime, Duration, Local, Timelike, Utc};
+use chrono::{DateTime, Duration, Local, TimeZone, Timelike, Utc};
 use crossterm::event::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use ratatui::{
     prelude::*,
@@ -137,7 +137,7 @@ impl Timeline<'_> {
             ((-Self::HOURS_WINDOW / 2)..=(Self::HOURS_WINDOW / 2)).map(Duration::hours)
         {
             let mark_time = self.state.time() + hour_offset - minutes;
-            let x = time_to_canvas_x(&mark_time, &self.state.time());
+            let x = time_to_canvas_x(mark_time, self.state.time());
 
             ctx.draw(&canvas::Line {
                 x1: x,
@@ -179,8 +179,8 @@ impl Timeline<'_> {
         );
 
         for (start_time, end_time) in pass_segments {
-            let x1 = time_to_canvas_x(&start_time, &current_time).max(0.0);
-            let x2 = time_to_canvas_x(&end_time, &current_time).min(Self::HOURS_WINDOW as f64);
+            let x1 = time_to_canvas_x(start_time, current_time).max(0.0);
+            let x2 = time_to_canvas_x(end_time, current_time).min(Self::HOURS_WINDOW as f64);
 
             debug_assert!(x2 >= 0.0 && x1 <= Self::HOURS_WINDOW as f64);
             ctx.draw(&canvas::Line {
@@ -197,7 +197,7 @@ impl Timeline<'_> {
         let mouse = self.state.mouse_position?;
         Some(canvas_x_to_time(
             area_to_canvas_x(self.state.inner_area, mouse),
-            &self.state.time(),
+            self.state.time(),
         ))
     }
 }
@@ -229,7 +229,7 @@ async fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()
     };
     state.mouse_position = Some(local_mouse);
 
-    let time = canvas_x_to_time(area_to_canvas_x(inner_area, local_mouse), &state.time());
+    let time = canvas_x_to_time(area_to_canvas_x(inner_area, local_mouse), state.time());
 
     match event.kind {
         MouseEventKind::Down(MouseButton::Left) => {
@@ -247,16 +247,19 @@ async fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()
     Ok(())
 }
 
+/// Converts a position within a rectangular area to a canvas x-coordinate.
 fn area_to_canvas_x(area: Rect, position: Position) -> f64 {
     (position.x as f64 + 0.5) / area.width as f64 * Timeline::HOURS_WINDOW as f64
 }
 
-fn time_to_canvas_x(time: &DateTime<Utc>, reference: &DateTime<Utc>) -> f64 {
-    let hours_offset = (*time - *reference).as_seconds_f64() / SECS_PER_HOUR;
+/// Converts a time to a canvas x-coordinate relative to a reference time.
+fn time_to_canvas_x<Tz: TimeZone>(time: DateTime<Tz>, reference: DateTime<Tz>) -> f64 {
+    let hours_offset = (time - reference).as_seconds_f64() / SECS_PER_HOUR;
     Timeline::HOURS_WINDOW as f64 / 2.0 + hours_offset
 }
 
-fn canvas_x_to_time(x: f64, reference: &DateTime<Utc>) -> DateTime<Utc> {
+/// Converts a canvas x-coordinate to a time relative to a reference time.
+fn canvas_x_to_time<Tz: TimeZone>(x: f64, reference: DateTime<Tz>) -> DateTime<Tz> {
     let hours_offset = x - Timeline::HOURS_WINDOW as f64 / 2.0;
-    *reference + Duration::seconds((hours_offset * SECS_PER_HOUR).round() as i64)
+    reference + Duration::seconds((hours_offset * SECS_PER_HOUR).round() as i64)
 }
