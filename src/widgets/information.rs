@@ -154,7 +154,7 @@ impl Information<'_> {
                 object.name().unwrap_or(UNKNOWN).into(),
             ),
             (
-                "COSPAR ID".into(),
+                t!("info.cospar_id").into(),
                 elements
                     .international_designator
                     .as_deref()

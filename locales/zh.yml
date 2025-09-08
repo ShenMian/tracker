@@ -7,6 +7,7 @@ group.title: "卫星组"
 # Information
 info.title: "信息"
 info.name: "名称"
+info.cospar_id: "COSPAR 编号"
 info.norad_id: "NORAD 编号"
 info.longitude: "经度"
 info.latitude: "纬度"

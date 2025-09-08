@@ -7,6 +7,7 @@ group.title: "Satellite groups"
 # Information
 info.title: "Info"
 info.name: "Name"
+info.cospar_id: "COSPAR ID"
 info.norad_id: "NORAD ID"
 info.longitude: "Longitude"
 info.latitude: "Latitude"
