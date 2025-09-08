@@ -145,10 +145,8 @@ impl Information<'_> {
     fn update_table_entries(&mut self, object: &Object) {
         const UNKNOWN: &str = "(Unknown)";
 
-        let object_state = object.predict(&self.timeline_state.time()).unwrap();
-
-        let (country, city) = object_state.position.country_city();
-
+        let state = object.predict(&self.timeline_state.time()).unwrap();
+        let (country, city) = state.position.country_city();
         let elements = object.elements();
         self.state.table_entries = vec![
             (
@@ -166,19 +164,19 @@ impl Information<'_> {
             (t!("info.norad_id").into(), elements.norad_id.to_string()),
             (
                 t!("info.longitude").into(),
-                format!("{:9.4}°", object_state.longitude()),
+                format!("{:9.4}°", state.longitude()),
             ),
             (
                 t!("info.latitude").into(),
-                format!("{:9.4}°", object_state.latitude()),
+                format!("{:9.4}°", state.latitude()),
             ),
             (
                 t!("info.altitude").into(),
-                format!("{:8.3} km", object_state.altitude()),
+                format!("{:8.3} km", state.altitude()),
             ),
             (
                 t!("info.speed").into(),
-                format!("{:.2} km/s", object_state.speed()),
+                format!("{:.2} km/s", state.speed()),
             ),
             (
                 t!("info.period").into(),
