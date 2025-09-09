@@ -21,9 +21,7 @@ pub struct WorldMapConfig {
     pub follow_smoothing: f64,
     pub show_terminator: bool,
     pub show_visibility_area: bool,
-
     pub lon_delta_deg: f64,
-
     pub map_color: Color,
     pub trajectory_color: Color,
     pub terminator_color: Color,

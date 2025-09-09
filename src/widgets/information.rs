@@ -272,14 +272,16 @@ async fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()
 fn truncate<'a>(str: &'a str, max_width: usize) -> Cow<'a, str> {
     const ELLIPSIS: &str = "…";
     debug_assert!(max_width >= ELLIPSIS.width());
-    if str.width() > max_width {
+    if str.width() < max_width {
+        Cow::Borrowed(str)
+    } else if max_width == ELLIPSIS.width() {
+        Cow::Borrowed(ELLIPSIS)
+    } else {
         let end = str
             .char_indices()
             .map(|(i, _)| i)
             .nth(max_width.saturating_sub(ELLIPSIS.width()))
             .unwrap_or(str.len());
         Cow::Owned(format!("{}{}", &str[..end], ELLIPSIS))
-    } else {
-        Cow::Borrowed(str)
     }
 }
