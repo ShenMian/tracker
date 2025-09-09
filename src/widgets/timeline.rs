@@ -27,6 +27,7 @@ pub struct Timeline<'a> {
 
 #[derive(Default)]
 pub struct TimelineState {
+    /// Current mouse position within the widget's area.
     mouse_position: Option<Position>,
     /// Time offset from the current UTC time for time simulation.
     time_offset: Duration,
@@ -64,6 +65,14 @@ impl TimelineState {
     fn rewind_time(&mut self, delta: Duration) {
         self.time_offset -= delta;
     }
+
+    fn hovered_time(&self) -> Option<DateTime<Utc>> {
+        let mouse = self.mouse_position?;
+        Some(canvas_x_to_time(
+            area_to_canvas_x(self.inner_area, mouse),
+            self.time(),
+        ))
+    }
 }
 
 impl Widget for Timeline<'_> {
@@ -94,7 +103,7 @@ impl Timeline<'_> {
                 .white(),
             );
 
-        if let Some(time) = self.mouse_time() {
+        if let Some(time) = self.state.hovered_time() {
             let label = time
                 .with_timezone(&Local)
                 .format("%Y-%m-%d %H:%M:%S")
@@ -191,14 +200,6 @@ impl Timeline<'_> {
                 color: Color::LightYellow,
             });
         }
-    }
-
-    fn mouse_time(&self) -> Option<DateTime<Utc>> {
-        let mouse = self.state.mouse_position?;
-        Some(canvas_x_to_time(
-            area_to_canvas_x(self.state.inner_area, mouse),
-            self.state.time(),
-        ))
     }
 }
 

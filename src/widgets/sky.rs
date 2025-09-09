@@ -27,10 +27,10 @@ pub struct Sky<'a> {
 /// State of a [`Sky`] widget.
 pub struct SkyState {
     pub ground_station: Option<Station>,
+    /// The area of the canvas.
     canvas_area: Rect,
-
+    /// Current mouse position within the canvas's area.
     mouse_position: Option<(f64, f64)>,
-
     /// The inner rendering area of the widget.
     inner_area: Rect,
 }
@@ -54,6 +54,11 @@ impl SkyState {
             mouse_position: None,
             inner_area: Default::default(),
         }
+    }
+
+    fn hovered_az_el(&self) -> Option<(f64, f64)> {
+        let (x, y) = self.mouse_position?;
+        Some(canvas_to_az_el(x, y))
     }
 }
 
@@ -95,8 +100,7 @@ impl Widget for Sky<'_> {
 impl Sky<'_> {
     fn block(&self) -> Block<'static> {
         let mut block = Block::new().borders(Borders::LEFT | Borders::RIGHT | Borders::BOTTOM);
-        if let Some((x, y)) = self.state.mouse_position {
-            let (az, el) = canvas_to_az_el(x, y);
+        if let Some((az, el)) = self.state.hovered_az_el() {
             block =
                 block.title_bottom(Line::from(format!("Az {az:.1}°, El {el:.1}°")).right_aligned());
         }
