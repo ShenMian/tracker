@@ -23,6 +23,13 @@ A terminal-based real-time satellite tracking and orbit prediction application.
 
 ### Package manager
 
+#### Homebrew (macOS and Linux)
+
+```bash
+brew tap ShenMian/tap
+brew install tracker
+```
+
 #### Arch Linux
 
 `tracker` is available in the [AUR](https://aur.archlinux.org/packages/tracker/):
@@ -48,6 +55,7 @@ cargo install --git https://github.com/ShenMian/tracker
 
 - [Keymap](docs/keymap.md).
 - [Configuration](docs/configuration.md).
+- [Homebrew Setup Guide](docs/homebrew-setup.md) - For maintainers setting up Homebrew distribution.
 
 ## License
 
