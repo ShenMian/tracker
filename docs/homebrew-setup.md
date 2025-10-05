@@ -2,6 +2,15 @@
 
 This document provides instructions for setting up Homebrew distribution for tracker.
 
+## Quick Start
+
+The fastest way to set up Homebrew distribution:
+
+1. **Create tap repository**: Create a new GitHub repository named `homebrew-tap` (e.g., `ShenMian/homebrew-tap`)
+2. **Add formula**: Copy one of the formula templates below to `Formula/tracker.rb` in your tap repository
+3. **Set up automation** (optional): Configure the included GitHub Actions workflow to automatically update checksums
+4. **Users install via**: `brew tap ShenMian/tap && brew install tracker`
+
 ## Overview
 
 To make tracker available via Homebrew, you'll need to:
@@ -113,7 +122,21 @@ curl -L https://github.com/ShenMian/tracker/archive/refs/tags/v0.1.15.tar.gz | s
 
 ## Automation (Optional)
 
-Consider using GitHub Actions to automatically update the formula on new releases. See [homebrew-releaser](https://github.com/Homebrew/homebrew-releaser) action.
+### Option 1: Using GitHub Actions (Recommended)
+
+This repository includes a GitHub Actions workflow (`.github/workflows/homebrew.yml`) that automatically computes checksums when a new release is published.
+
+To enable full automation:
+
+1. Create a Personal Access Token (PAT) with `repo` scope for the homebrew-tap repository
+2. Add it as a repository secret named `HOMEBREW_TAP_TOKEN`
+3. The workflow will use [bump-homebrew-formula-action](https://github.com/mislav/bump-homebrew-formula-action) to update the formula
+
+If the automation fails or the token is not set, the workflow will output manual update instructions with all the necessary checksums.
+
+### Option 2: Using homebrew-releaser Action
+
+Alternatively, consider using GitHub's official [homebrew-releaser](https://github.com/Homebrew/homebrew-releaser) action.
 
 ## Resources
 

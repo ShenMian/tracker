@@ -1,0 +1,87 @@
+name: Update Homebrew Formula
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  update-formula:
+    name: Update Homebrew Tap Formula
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+      
+      - name: Download release assets and compute checksums
+        id: checksums
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          
+          # Download macOS ARM64
+          curl -L -o tracker-macos-aarch64.tar.gz \
+            "https://github.com/${{ github.repository }}/releases/download/v${VERSION}/tracker-macos-aarch64.tar.gz"
+          SHA_MACOS_ARM64=$(shasum -a 256 tracker-macos-aarch64.tar.gz | awk '{print $1}')
+          echo "sha_macos_arm64=$SHA_MACOS_ARM64" >> $GITHUB_OUTPUT
+          
+          # Download macOS x86_64
+          curl -L -o tracker-macos-x86_64.tar.gz \
+            "https://github.com/${{ github.repository }}/releases/download/v${VERSION}/tracker-macos-x86_64.tar.gz"
+          SHA_MACOS_X64=$(shasum -a 256 tracker-macos-x86_64.tar.gz | awk '{print $1}')
+          echo "sha_macos_x64=$SHA_MACOS_X64" >> $GITHUB_OUTPUT
+          
+          # Download Linux x86_64
+          curl -L -o tracker-linux-x86_64.tar.gz \
+            "https://github.com/${{ github.repository }}/releases/download/v${VERSION}/tracker-linux-x86_64.tar.gz"
+          SHA_LINUX_X64=$(shasum -a 256 tracker-linux-x86_64.tar.gz | awk '{print $1}')
+          echo "sha_linux_x64=$SHA_LINUX_X64" >> $GITHUB_OUTPUT
+          
+          echo "Checksums computed:"
+          echo "  macOS ARM64: $SHA_MACOS_ARM64"
+          echo "  macOS x86_64: $SHA_MACOS_X64"
+          echo "  Linux x86_64: $SHA_LINUX_X64"
+      
+      - name: Update Homebrew formula
+        uses: mislav/bump-homebrew-formula-action@v3
+        with:
+          formula-name: tracker
+          homebrew-tap: ShenMian/homebrew-tap
+          download-url: https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/tracker-macos-x86_64.tar.gz
+        env:
+          COMMITTER_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+      
+      # Alternative: Create PR with detailed instructions if automation token not set
+      - name: Create manual update instructions
+        if: failure()
+        run: |
+          cat << EOF > formula_update_instructions.md
+          # Homebrew Formula Update Instructions
+          
+          Please update the formula in ShenMian/homebrew-tap with the following checksums:
+          
+          Version: ${{ steps.version.outputs.version }}
+          
+          \`\`\`ruby
+          on_macos do
+            if Hardware::CPU.arm?
+              url "https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.version }}/tracker-macos-aarch64.tar.gz"
+              sha256 "${{ steps.checksums.outputs.sha_macos_arm64 }}"
+            else
+              url "https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.version }}/tracker-macos-x86_64.tar.gz"
+              sha256 "${{ steps.checksums.outputs.sha_macos_x64 }}"
+            end
+          end
+          
+          on_linux do
+            url "https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.version }}/tracker-linux-x86_64.tar.gz"
+            sha256 "${{ steps.checksums.outputs.sha_linux_x64 }}"
+          end
+          \`\`\`
+          EOF
+          
+          cat formula_update_instructions.md
+          echo "::notice::Automated update failed. Manual update instructions created."
