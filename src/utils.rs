@@ -132,9 +132,10 @@ impl Lla {
     pub fn country_city(&self) -> (String, String) {
         let record = GEOCODER.search((self.lat, self.lon)).record;
         let city = &record.name;
-        let country = isocountry::CountryCode::for_alpha2(&record.cc)
-            .unwrap()
-            .name();
+        let country = match isocountry::CountryCode::for_alpha2(&record.cc) {
+            Ok(code) => code.name(),
+            Err(_) => "Unknown",
+        };
         (country.to_owned(), city.to_owned())
     }
 }
