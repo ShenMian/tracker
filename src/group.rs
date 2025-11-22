@@ -37,7 +37,7 @@ impl Group {
             .unwrap();
 
         // Fetch elements if cache doesn't exist
-        if !std::fs::exists(&cache_path).unwrap() {
+        if !fs::try_exists(&cache_path).await.unwrap() {
             if let Some(elements) = self.fetch_elements().await {
                 fs::write(&cache_path, serde_json::to_string(&elements).unwrap())
                     .await
@@ -70,20 +70,34 @@ impl Group {
     /// Fetches SGP4 elements from <https://celestrak.org>.
     async fn fetch_elements(&self) -> Option<Vec<sgp4::Elements>> {
         const URL: &str = "https://celestrak.com/NORAD/elements/gp.php";
+        const TIMEOUT_SECS: u64 = 10;
 
-        let mut request = reqwest::Client::new().get(URL).query(&[("FORMAT", "json")]);
+        let client = reqwest::Client::builder()
+            .timeout(Duration::from_secs(TIMEOUT_SECS))
+            .build()
+            .ok()?;
+
+        let mut request = client.get(URL).query(&[("FORMAT", "json")]);
         request = match &self.identifier {
             Identifier::Id(id) => request.query(&[("INTDES", id)]),
             Identifier::Group(group) => request.query(&[("GROUP", group)]),
         };
 
-        let response = request.send().await.ok()?;
-        Some(
-            response
-                .json()
-                .await
-                .expect("failed to parse JSON from celestrak.org"),
-        )
+        let response = match request.send().await {
+            Ok(resp) => resp,
+            Err(e) => {
+                eprintln!("Failed to fetch from celestrak.org: {}", e);
+                return None;
+            }
+        };
+
+        match response.json().await {
+            Ok(data) => Some(data),
+            Err(e) => {
+                eprintln!("Failed to parse JSON from celestrak.org: {}", e);
+                None
+            }
+        }
     }
 }
 
