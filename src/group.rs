@@ -36,35 +36,26 @@ impl Group {
             .await
             .unwrap();
 
-        // Fetch elements if cache doesn't exist
-        if !fs::try_exists(&cache_path).await.unwrap() {
-            if let Some(elements) = self.fetch_elements().await {
-                fs::write(&cache_path, serde_json::to_string(&elements).unwrap())
-                    .await
-                    .unwrap();
-            } else {
-                return None;
-            }
-        }
-
-        let age = fs::metadata(&cache_path)
-            .await
-            .unwrap()
-            .modified()
-            .unwrap()
-            .elapsed()
-            .unwrap();
-        let is_cache_expired = age > cache_lifetime;
-
-        // Fetch elements if cache is expired
-        if is_cache_expired && let Some(elements) = self.fetch_elements().await {
-            fs::write(&cache_path, serde_json::to_string(&elements).unwrap())
+        // Check if cache needs refresh (doesn't exist or expired)
+        let needs_refresh = !fs::try_exists(&cache_path).await.unwrap()
+            || fs::metadata(&cache_path)
                 .await
-                .unwrap();
+                .unwrap()
+                .modified()
+                .unwrap()
+                .elapsed()
+                .unwrap()
+                > cache_lifetime;
+
+        if needs_refresh {
+            let elements = self.fetch_elements().await?;
+            let path = cache_path.clone();
+            let json = serde_json::to_string(&elements).unwrap();
+            fs::write(path, json).await.unwrap();
         }
 
         let json = fs::read_to_string(&cache_path).await.unwrap();
-        serde_json::from_str(&json).unwrap()
+        serde_json::from_str(&json).expect("failed to parse cache")
     }
 
     /// Fetches SGP4 elements from <https://celestrak.org>.
