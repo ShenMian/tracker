@@ -1,8 +1,19 @@
-use std::{fmt::Display, time::Duration};
+use std::{fmt::Display, sync::LazyLock, time::Duration};
 
 use tokio::fs;
 
 use crate::config::GroupConfig;
+
+/// The timeout duration for HTTP requests.
+const HTTP_TIMEOUT_SECS: u64 = 10;
+
+/// The shared HTTP client used for making requests.
+static HTTP_CLIENT: LazyLock<reqwest::Client> = LazyLock::new(|| {
+    reqwest::Client::builder()
+        .timeout(Duration::from_secs(HTTP_TIMEOUT_SECS))
+        .build()
+        .expect("failed to create HTTP client")
+});
 
 /// The `Group` type.
 ///
@@ -61,14 +72,8 @@ impl Group {
     /// Fetches SGP4 elements from <https://celestrak.org>.
     async fn fetch_elements(&self) -> Option<Vec<sgp4::Elements>> {
         const URL: &str = "https://celestrak.com/NORAD/elements/gp.php";
-        const TIMEOUT_SECS: u64 = 10;
 
-        let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(TIMEOUT_SECS))
-            .build()
-            .ok()?;
-
-        let mut request = client.get(URL).query(&[("FORMAT", "json")]);
+        let mut request = HTTP_CLIENT.get(URL).query(&[("FORMAT", "json")]);
         request = match &self.identifier {
             Identifier::Id(id) => request.query(&[("INTDES", id)]),
             Identifier::Group(group) => request.query(&[("GROUP", group)]),
