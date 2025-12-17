@@ -108,12 +108,12 @@ impl App {
             _ => {}
         }
 
-        world_map::handle_event(event, &mut self.states).await?;
+        world_map::handle_event(event, &mut self.states)?;
         satellite_groups::handle_event(event, &mut self.states)?;
-        tabs::handle_event(event, &mut self.states).await?;
-        information::handle_event(event, &mut self.states).await?;
-        sky::handle_event(event, &mut self.states).await?;
-        timeline::handle_event(event, &mut self.states).await
+        tabs::handle_event(event, &mut self.states)?;
+        information::handle_event(event, &mut self.states)?;
+        sky::handle_event(event, &mut self.states)?;
+        timeline::handle_event(event, &mut self.states)
     }
 
     fn handle_key_events(&mut self, event: KeyEvent) {

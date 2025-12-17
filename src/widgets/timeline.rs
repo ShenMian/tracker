@@ -203,15 +203,15 @@ impl Timeline<'_> {
     }
 }
 
-pub async fn handle_event(event: Event, states: &mut States) -> Result<()> {
+pub fn handle_event(event: Event, states: &mut States) -> Result<()> {
     match event {
-        Event::Key(event) => handle_key_event(event, states).await,
-        Event::Mouse(event) => handle_mouse_event(event, states).await,
+        Event::Key(event) => handle_key_event(event, states),
+        Event::Mouse(event) => handle_mouse_event(event, states),
         _ => Ok(()),
     }
 }
 
-async fn handle_key_event(event: KeyEvent, states: &mut States) -> Result<()> {
+fn handle_key_event(event: KeyEvent, states: &mut States) -> Result<()> {
     if let KeyCode::Char('r') = event.code {
         states.timeline_state.time_offset = chrono::Duration::zero()
     }
@@ -219,7 +219,7 @@ async fn handle_key_event(event: KeyEvent, states: &mut States) -> Result<()> {
     Ok(())
 }
 
-async fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()> {
+fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()> {
     let state = &mut states.timeline_state;
 
     let global_mouse = Position::new(event.column, event.row);

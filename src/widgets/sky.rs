@@ -205,14 +205,14 @@ fn centered_square(area: Rect) -> Rect {
     }
 }
 
-pub async fn handle_event(event: Event, states: &mut States) -> Result<()> {
+pub fn handle_event(event: Event, states: &mut States) -> Result<()> {
     match event {
-        Event::Mouse(event) => handle_mouse_event(event, states).await,
+        Event::Mouse(event) => handle_mouse_event(event, states),
         _ => Ok(()),
     }
 }
 
-async fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()> {
+fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()> {
     let global_mouse = Position::new(event.column, event.row);
     let canvas_area = states.sky_state.canvas_area;
     let Some(local_mouse) = window_to_area(global_mouse, canvas_area) else {

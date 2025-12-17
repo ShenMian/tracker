@@ -299,15 +299,15 @@ impl WorldMap<'_> {
     }
 }
 
-pub async fn handle_event(event: Event, states: &mut States) -> Result<()> {
+pub fn handle_event(event: Event, states: &mut States) -> Result<()> {
     match event {
-        Event::Key(event) => handle_key_event(event, states).await,
-        Event::Mouse(event) => handle_mouse_event(event, states).await,
+        Event::Key(event) => handle_key_event(event, states),
+        Event::Mouse(event) => handle_mouse_event(event, states),
         _ => Ok(()),
     }
 }
 
-async fn handle_key_event(event: KeyEvent, states: &mut States) -> Result<()> {
+fn handle_key_event(event: KeyEvent, states: &mut States) -> Result<()> {
     match event.code {
         KeyCode::Char('[') => states.world_map_state.scroll_map_left(),
         KeyCode::Char(']') => states.world_map_state.scroll_map_right(),
@@ -323,7 +323,7 @@ async fn handle_key_event(event: KeyEvent, states: &mut States) -> Result<()> {
     Ok(())
 }
 
-async fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()> {
+fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()> {
     let global_mouse = Position::new(event.column, event.row);
     let inner_area = states.world_map_state.inner_area;
     let Some(local_mouse) = window_to_area(global_mouse, inner_area) else {

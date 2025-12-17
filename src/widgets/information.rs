@@ -223,14 +223,14 @@ impl Information<'_> {
     }
 }
 
-pub async fn handle_event(event: Event, states: &mut States) -> Result<()> {
+pub fn handle_event(event: Event, states: &mut States) -> Result<()> {
     match event {
-        Event::Mouse(event) => handle_mouse_event(event, states).await,
+        Event::Mouse(event) => handle_mouse_event(event, states),
         _ => Ok(()),
     }
 }
 
-async fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()> {
+fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()> {
     let state = &mut states.information_state;
 
     let global_mouse = Position::new(event.column, event.row);

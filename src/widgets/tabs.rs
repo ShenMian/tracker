@@ -111,14 +111,14 @@ impl Tabs<'_> {
     }
 }
 
-pub async fn handle_event(event: Event, states: &mut States) -> Result<()> {
+pub fn handle_event(event: Event, states: &mut States) -> Result<()> {
     match event {
-        Event::Key(event) => handle_key_event(event, states).await,
+        Event::Key(event) => handle_key_event(event, states),
         _ => Ok(()),
     }
 }
 
-async fn handle_key_event(event: KeyEvent, states: &mut States) -> Result<()> {
+fn handle_key_event(event: KeyEvent, states: &mut States) -> Result<()> {
     let state = &mut states.tab_state;
 
     if event.code == KeyCode::Tab {
