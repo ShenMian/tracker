@@ -1,7 +1,7 @@
 use ratatui::style::Color;
 use serde::Deserialize;
 
-use crate::utils::Lla;
+use crate::coordinates::Lla;
 
 /// Configuration for the application.
 #[derive(Default, Deserialize)]

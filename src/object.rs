@@ -1,6 +1,9 @@
 use chrono::{DateTime, Duration, TimeZone, Utc};
 
-use crate::utils::*;
+use crate::{
+    coordinates::{Lla, Teme},
+    utils::*,
+};
 
 const SECONDS_PER_DAY: f64 = 24.0 * 60.0 * 60.0;
 

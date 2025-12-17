@@ -12,6 +12,7 @@ use rust_i18n::t;
 use crate::{
     app::States,
     config::SkyConfig,
+    coordinates::Lla,
     event::Event,
     utils::*,
     widgets::{timeline::TimelineState, window_to_area, world_map::WorldMapState},
