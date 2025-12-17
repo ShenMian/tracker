@@ -1,0 +1,31 @@
+_version: 1
+# World map
+map.title: "世界地図"
+map.follow: "追跡"
+# Satellite groups
+group.title: "衛星グループ"
+# Information
+info.title: "情報"
+info.name: "名前"
+info.cospar_id: "COSPAR ID"
+info.norad_id: "NORAD ID"
+info.longitude: "経度"
+info.latitude: "緯度"
+info.altitude: "高度"
+info.speed: "速度"
+info.period: "周期"
+info.location: "位置"
+info.epoch: "元期"
+info.drag_term: "抗力項"
+info.inclination: "傾斜角"
+info.right_ascension: "赤経"
+info.eccentricity: "離心率"
+info.mean_anomaly: "平均近点角"
+info.mean_motion: "平均運動"
+info.rev_num: "周回数"
+# Sky
+sky.title: "空"
+sky.no_ground_station: "地上局なし"
+
+no_object_selected: "対象未選択"
+no_enough_space: "スペース不足"
