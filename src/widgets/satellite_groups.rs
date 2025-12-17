@@ -267,6 +267,7 @@ fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()> {
                 if was_selected {
                     // Deselecting: cancel if loading
                     state.cancel_entry_loading(index);
+                    state.reload_selected_entries();
                 } else {
                     // Selecting: start loading
                     state.load_entry(index);
