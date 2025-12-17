@@ -109,7 +109,7 @@ impl App {
         }
 
         world_map::handle_event(event, &mut self.states).await?;
-        satellite_groups::handle_event(event, &mut self.states).await?;
+        satellite_groups::handle_event(event, &mut self.states)?;
         tabs::handle_event(event, &mut self.states).await?;
         information::handle_event(event, &mut self.states).await?;
         sky::handle_event(event, &mut self.states).await?;

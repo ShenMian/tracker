@@ -1,5 +1,6 @@
 use rust_i18n::t;
 use std::time::{Duration, Instant};
+use tokio::{sync::mpsc, task::AbortHandle};
 
 use crate::{
     app::States, config::SatelliteGroupsConfig, event::Event, group::Group, object::Object,
@@ -35,6 +36,10 @@ pub struct SatelliteGroupsState {
     cache_lifetime: Duration,
     /// The inner rendering area of the widget.
     inner_area: Rect,
+    /// Sender for async data updates.
+    update_sender: mpsc::UnboundedSender<UpdateResult>,
+    /// Receiver for async data updates.
+    update_receiver: mpsc::UnboundedReceiver<UpdateResult>,
 }
 
 impl SatelliteGroupsState {
@@ -52,11 +57,46 @@ impl SatelliteGroupsState {
         }
     }
 
-    /// Updates the orbital elements for selected satellite group.
-    pub async fn refresh_objects(&mut self) {
+    /// Spawns async task to load orbital elements for a single entry.
+    fn load_entry(&mut self, index: usize) {
+        let entry = &mut self.list_entries[index];
+        entry.loading = true;
+        let tx = self.update_sender.clone();
+        let group = entry.group.clone();
+        let cache_lifetime = self.cache_lifetime;
+        let handle = tokio::spawn(async move {
+            let elements = group.get_elements(cache_lifetime).await;
+            let _ = tx.send(UpdateResult { index, elements });
+        });
+        entry.abort_handle = Some(handle.abort_handle());
+    }
+
+    /// Cancels the entry loading task at the given index.
+    fn cancel_entry_loading(&mut self, index: usize) {
+        let entry = &mut self.list_entries[index];
+        if let Some(handle) = entry.abort_handle.take() {
+            handle.abort();
+        }
+        entry.loading = false;
+    }
+
+    /// Spawns async tasks to reload orbital elements for all selected entries.
+    pub fn reload_selected_entries(&mut self) {
         self.objects.clear();
-        for entry in self.list_entries.iter_mut().filter(|e| e.selected) {
-            if let Some(elements) = entry.satellite.get_elements(self.cache_lifetime).await {
+        for index in 0..self.list_entries.len() {
+            if self.list_entries[index].selected {
+                self.load_entry(index);
+            }
+        }
+    }
+
+    /// Polls for async entry update results.
+    pub fn poll_entry_updates(&mut self) {
+        while let Ok(result) = self.update_receiver.try_recv() {
+            let entry = &mut self.list_entries[result.index];
+            entry.loading = false;
+            entry.abort_handle = None;
+            if let Some(elements) = result.elements {
                 self.objects
                     .extend(elements.into_iter().map(Object::from_elements));
             } else {
@@ -82,6 +122,7 @@ impl SatelliteGroupsState {
 
 impl Default for SatelliteGroupsState {
     fn default() -> Self {
+        let (tx, rx) = mpsc::unbounded_channel();
         Self {
             objects: Vec::new(),
             list_entries: Default::default(),
@@ -89,6 +130,8 @@ impl Default for SatelliteGroupsState {
             inner_area: Default::default(),
             cache_lifetime: Default::default(),
             last_update_instant: Instant::now(),
+            update_sender: tx,
+            update_receiver: rx,
         }
     }
 }
@@ -111,13 +154,19 @@ impl SatelliteGroups<'_> {
 
     fn list(&self) -> List<'static> {
         let items = self.state.list_entries.iter().map(|entry| {
-            let icon = if entry.selected { "✓" } else { "☐" };
+            let icon = if entry.loading {
+                "⋯"
+            } else if entry.selected {
+                "✓"
+            } else {
+                "☐"
+            };
             let style = if entry.selected {
                 Style::new().fg(Color::White)
             } else {
                 Style::new()
             };
-            ListItem::new(format!("{} {}", icon, entry.satellite.label()).set_style(style))
+            ListItem::new(format!("{} {}", icon, entry.group.label()).set_style(style))
         });
         List::new(items).highlight_style(Style::new().add_modifier(Modifier::REVERSED))
     }
@@ -142,43 +191,63 @@ impl SatelliteGroups<'_> {
     }
 }
 
+/// Result of an async satellite group update task.
+struct UpdateResult {
+    /// Index of the entry in the list that was updated.
+    index: usize,
+    /// Fetched orbital elements, or `None` if the fetch failed.
+    elements: Option<Vec<sgp4::Elements>>,
+}
+
+/// A satellite group entry in the list.
 pub struct Entry {
-    satellite: Group,
+    /// The satellite group.
+    group: Group,
+    /// Whether this entry is selected.
     selected: bool,
+    /// Whether this entry is currently loading data.
+    loading: bool,
+    /// Handle to abort the loading task.
+    abort_handle: Option<AbortHandle>,
 }
 
 impl From<Group> for Entry {
-    fn from(satellite: Group) -> Self {
+    fn from(group: Group) -> Self {
         Self {
-            satellite,
+            group,
             selected: false,
+            loading: false,
+            abort_handle: None,
         }
     }
 }
 
-pub async fn handle_event(event: Event, states: &mut States) -> Result<()> {
+pub fn handle_event(event: Event, states: &mut States) -> Result<()> {
     match event {
         Event::Update => {
-            handle_update_event(states).await;
+            handle_update_event(states);
             Ok(())
         }
-        Event::Mouse(event) => handle_mouse_event(event, states).await,
+        Event::Mouse(event) => handle_mouse_event(event, states),
         _ => Ok(()),
     }
 }
 
 /// Handle update events.
-async fn handle_update_event(states: &mut States) {
+fn handle_update_event(states: &mut States) {
     let state = &mut states.satellite_groups_state;
+
+    // Poll for async update results
+    state.poll_entry_updates();
 
     let now = Instant::now();
     if now.duration_since(state.last_update_instant) >= state.cache_lifetime {
-        state.refresh_objects().await;
+        state.reload_selected_entries();
         state.last_update_instant = now;
     }
 }
 
-async fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()> {
+fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()> {
     let state = &mut states.satellite_groups_state;
 
     let global_mouse = Position::new(event.column, event.row);
@@ -189,11 +258,19 @@ async fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()
 
     match event.kind {
         MouseEventKind::Down(MouseButton::Left) => {
-            // Select the clicked entry.
+            // Toggle selection of the clicked entry.
             if let Some(index) = state.list_state.selected() {
-                state.list_entries[index].selected = !state.list_entries[index].selected;
+                let was_selected = state.list_entries[index].selected;
+                state.list_entries[index].selected = !was_selected;
                 states.world_map_state.selected_object = None;
-                state.refresh_objects().await;
+
+                if was_selected {
+                    // Deselecting: cancel if loading
+                    state.cancel_entry_loading(index);
+                } else {
+                    // Selecting: start loading
+                    state.load_entry(index);
+                }
             }
         }
         MouseEventKind::ScrollUp => state.scroll_up(),
