@@ -8,11 +8,10 @@ use rust_i18n::t;
 use crate::{
     app::States,
     event::Event,
+    shared_state::SharedState,
     widgets::{
         information::{Information, InformationState},
         sky::{Sky, SkyState},
-        timeline::TimelineState,
-        world_map::WorldMapState,
     },
 };
 
@@ -55,10 +54,9 @@ impl Display for Tab {
 
 pub struct Tabs<'a> {
     pub state: &'a mut TabsState,
-    pub world_map_state: &'a WorldMapState,
+    pub shared: &'a SharedState,
     pub sky_state: &'a mut SkyState,
     pub information_state: &'a mut InformationState,
-    pub timeline_state: &'a TimelineState,
 }
 
 #[derive(Default)]
@@ -94,16 +92,14 @@ impl Tabs<'_> {
             Tab::Sky => {
                 let sky = Sky {
                     state: self.sky_state,
-                    world_map_state: self.world_map_state,
-                    timeline_state: self.timeline_state,
+                    shared: self.shared,
                 };
                 sky.render(area, buf);
             }
             Tab::Info => {
                 let information = Information {
                     state: self.information_state,
-                    world_map_state: self.world_map_state,
-                    timeline_state: self.timeline_state,
+                    shared: self.shared,
                 };
                 information.render(area, buf);
             }

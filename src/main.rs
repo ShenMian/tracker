@@ -9,6 +9,7 @@ mod coordinates;
 mod event;
 mod group;
 mod object;
+mod shared_state;
 mod tui;
 mod utils;
 mod widgets;

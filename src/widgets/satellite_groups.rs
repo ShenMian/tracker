@@ -21,9 +21,6 @@ pub struct SatelliteGroups<'a> {
 
 /// State of a [`SatelliteGroups`] widget.
 pub struct SatelliteGroupsState {
-    /// Collection of satellite objects loaded from the selected satellite
-    /// groups.
-    pub objects: Vec<Object>,
     /// List entries representing available satellite groups with their
     /// selection state.
     list_entries: Vec<Entry>,
@@ -81,28 +78,31 @@ impl SatelliteGroupsState {
     }
 
     /// Spawns async tasks to reload orbital elements for all selected entries.
-    pub fn reload_selected_entries(&mut self) {
-        self.objects.clear();
+    /// Returns the loaded objects.
+    pub fn reload_selected_entries(&mut self) -> Vec<Object> {
+        let objects = Vec::new();
         for index in 0..self.list_entries.len() {
             if self.list_entries[index].selected {
                 self.load_entry(index);
             }
         }
+        objects
     }
 
-    /// Polls for async entry update results.
-    pub fn poll_entry_updates(&mut self) {
+    /// Polls for async entry update results and returns new objects.
+    pub fn poll_entry_updates(&mut self) -> Vec<Object> {
+        let mut new_objects = Vec::new();
         while let Ok(result) = self.update_receiver.try_recv() {
             let entry = &mut self.list_entries[result.index];
             entry.loading = false;
             entry.abort_handle = None;
             if let Some(elements) = result.elements {
-                self.objects
-                    .extend(elements.into_iter().map(Object::from_elements));
+                new_objects.extend(elements.into_iter().map(Object::from_elements));
             } else {
                 entry.selected = false;
             }
         }
+        new_objects
     }
 
     fn scroll_up(&mut self) {
@@ -124,7 +124,6 @@ impl Default for SatelliteGroupsState {
     fn default() -> Self {
         let (tx, rx) = mpsc::unbounded_channel();
         Self {
-            objects: Vec::new(),
             list_entries: Default::default(),
             list_state: Default::default(),
             inner_area: Default::default(),
@@ -238,10 +237,12 @@ fn handle_update_event(states: &mut States) {
     let state = &mut states.satellite_groups_state;
 
     // Poll for async update results
-    state.poll_entry_updates();
+    let new_objects = state.poll_entry_updates();
+    states.shared.objects.extend(new_objects);
 
     let now = Instant::now();
     if now.duration_since(state.last_update_instant) >= state.cache_lifetime {
+        states.shared.objects.clear();
         state.reload_selected_entries();
         state.last_update_instant = now;
     }
@@ -262,11 +263,12 @@ fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()> {
             if let Some(index) = state.list_state.selected() {
                 let was_selected = state.list_entries[index].selected;
                 state.list_entries[index].selected = !was_selected;
-                states.world_map_state.selected_object = None;
+                states.shared.selected_object = None;
 
                 if was_selected {
                     // Deselecting: cancel if loading
                     state.cancel_entry_loading(index);
+                    states.shared.objects.clear();
                     state.reload_selected_entries();
                 } else {
                     // Selecting: start loading

@@ -11,30 +11,19 @@ use ratatui::{
 use rust_i18n::t;
 
 use crate::{
-    app::States,
-    config::WorldMapConfig,
-    event::Event,
-    object::Object,
-    utils::*,
-    widgets::{sky::SkyState, timeline::TimelineState, window_to_area},
+    app::States, config::WorldMapConfig, event::Event, shared_state::SharedState, utils::*,
+    widgets::window_to_area,
 };
-
-use super::satellite_groups::SatelliteGroupsState;
 
 /// A widget that displays a world map with objects.
 pub struct WorldMap<'a> {
     pub state: &'a mut WorldMapState,
-    pub satellite_groups_state: &'a SatelliteGroupsState,
-    pub sky_state: &'a SkyState,
-    pub timeline_state: &'a TimelineState,
+    pub shared: &'a SharedState,
 }
 
 /// State of a [`WorldMap`] widget.
 #[derive(Default)]
 pub struct WorldMapState {
-    pub selected_object: Option<Object>,
-    hovered_object: Option<Object>,
-
     /// Center longitude offset for horizontal map scrolling in degrees.
     lon_offset: f64,
     /// The amount of longitude (in degrees) to move the map when scrolling left
@@ -111,7 +100,7 @@ impl WorldMap<'_> {
 
         // Show follow mode indicator if enabled
         if self.state.follow_object {
-            let style = if self.state.selected_object.is_none() {
+            let style = if self.shared.selected_object.is_none() {
                 Style::new().dark_gray()
             } else {
                 Style::new().green().slow_blink()
@@ -128,9 +117,9 @@ impl WorldMap<'_> {
     fn render_map(&mut self, buf: &mut Buffer) {
         // Follow the longitude of the selected object
         if self.state.follow_object
-            && let Some(selected) = &self.state.selected_object
+            && let Some(selected) = &self.shared.selected_object
         {
-            let object_state = selected.predict(&self.timeline_state.time()).unwrap();
+            let object_state = selected.predict(&self.shared.time.time()).unwrap();
 
             self.state.lon_offset +=
                 wrap_longitude_deg(object_state.longitude() - self.state.lon_offset)
@@ -141,7 +130,7 @@ impl WorldMap<'_> {
         let x_min = self.state.lon_offset - 180.0;
         let x_max = self.state.lon_offset + 180.0;
 
-        // Adjust the rendering order to prevent the labels on the left mapfrom being
+        // Adjust the rendering order to prevent the labels on the left map from being
         // covered by the right map
         let mut bounds_vec = Vec::new();
         if x_min < -180.0 {
@@ -203,12 +192,12 @@ impl WorldMap<'_> {
         // Draw the terminator line
         Self::draw_lines(
             ctx,
-            calculate_terminator(&self.timeline_state.time()),
+            calculate_terminator(&self.shared.time.time()),
             self.state.terminator_color,
         );
 
         // Mark the subsolar point
-        let (sub_lon, sub_lat) = subsolar_point(&self.timeline_state.time());
+        let (sub_lon, sub_lat) = subsolar_point(&self.shared.time.time());
         ctx.print(
             sub_lon.to_degrees(),
             sub_lat.to_degrees(),
@@ -218,25 +207,25 @@ impl WorldMap<'_> {
 
     /// Draws all objects and their labels.
     fn draw_objects(&self, ctx: &mut Context) {
-        for object in self.satellite_groups_state.objects.iter() {
+        for object in self.shared.objects.iter() {
             let object_name = object.name().unwrap_or(Self::UNKNOWN_NAME);
-            let text = if self.state.selected_object.is_none() {
+            let text = if self.shared.selected_object.is_none() {
                 Self::OBJECT_SYMBOL.light_red() + format!(" {object_name}").white()
             } else {
                 Self::OBJECT_SYMBOL.red() + format!(" {object_name}").dark_gray()
             };
-            let object_state = object.predict(&self.timeline_state.time()).unwrap();
+            let object_state = object.predict(&self.shared.time.time()).unwrap();
             ctx.print(object_state.longitude(), object_state.latitude(), text);
         }
     }
 
     /// Draws the highlight and trajectory for the selected or hovered object.
     fn draw_object_highlight(&self, ctx: &mut Context) {
-        if let Some(selected) = &self.state.selected_object {
+        if let Some(selected) = &self.shared.selected_object {
             // Draw the trajectory
             Self::draw_lines(
                 ctx,
-                calculate_ground_track(selected, &self.timeline_state.time()),
+                calculate_ground_track(selected, &self.shared.time.time()),
                 self.state.trajectory_color,
             );
 
@@ -244,31 +233,31 @@ impl WorldMap<'_> {
             let object_name = selected.name().unwrap_or(Self::UNKNOWN_NAME);
             let text =
                 Self::OBJECT_SYMBOL.light_green().slow_blink() + format!(" {object_name}").white();
-            let object_state = selected.predict(&self.timeline_state.time()).unwrap();
+            let object_state = selected.predict(&self.shared.time.time()).unwrap();
             ctx.print(object_state.longitude(), object_state.latitude(), text);
-        } else if let Some(hovered) = &self.state.hovered_object {
+        } else if let Some(hovered) = &self.shared.hovered_object {
             // Highlight the hovered object
             let object_name = hovered.name().unwrap_or(Self::UNKNOWN_NAME);
             let text = Self::OBJECT_SYMBOL.light_red().reversed()
                 + " ".into()
                 + object_name.to_string().white().reversed();
-            let object_state = hovered.predict(&self.timeline_state.time()).unwrap();
+            let object_state = hovered.predict(&self.shared.time.time()).unwrap();
             ctx.print(object_state.longitude(), object_state.latitude(), text);
         }
     }
 
     /// Draws the visibility area for the selected object.
     fn draw_visibility_area(&self, ctx: &mut Context) {
-        let Some(object) = &self.state.selected_object else {
+        let Some(object) = &self.shared.selected_object else {
             return;
         };
-        let object_state = object.predict(&self.timeline_state.time()).unwrap();
+        let object_state = object.predict(&self.shared.time.time()).unwrap();
         let points = calculate_visibility_area(&object_state.position);
         Self::draw_lines(ctx, points, self.state.visibility_area_color);
     }
 
     fn draw_ground_station(&self, ctx: &mut Context) {
-        let Some(ground_station) = &self.sky_state.ground_station else {
+        let Some(ground_station) = &self.shared.ground_station else {
             return;
         };
         ctx.print(
@@ -327,18 +316,18 @@ fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()> {
     let global_mouse = Position::new(event.column, event.row);
     let inner_area = states.world_map_state.inner_area;
     let Some(local_mouse) = window_to_area(global_mouse, inner_area) else {
-        states.world_map_state.hovered_object = None;
+        states.shared.hovered_object = None;
         return Ok(());
     };
 
     let nearest_object_index = get_nearest_object_index(states, local_mouse, inner_area);
     match event.kind {
         MouseEventKind::Down(MouseButton::Left) => {
-            states.world_map_state.selected_object = nearest_object_index
-                .map(|index| states.satellite_groups_state.objects[index].clone());
+            states.shared.selected_object =
+                nearest_object_index.map(|index| states.shared.objects[index].clone());
         }
         MouseEventKind::Down(MouseButton::Right) => {
-            states.world_map_state.selected_object = None;
+            states.shared.selected_object = None;
         }
         MouseEventKind::ScrollUp => {
             states.world_map_state.scroll_map_left();
@@ -348,25 +337,25 @@ fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()> {
         }
         _ => {}
     }
-    states.world_map_state.hovered_object =
-        nearest_object_index.map(|index| states.satellite_groups_state.objects[index].clone());
+    states.shared.hovered_object =
+        nearest_object_index.map(|index| states.shared.objects[index].clone());
 
     Ok(())
 }
 
-/// Get the index of the nearest object to the given area position
+/// Get the index of the nearest object to the given area position.
 fn get_nearest_object_index(
     states: &States,
     position: Position,
     inner_area: Rect,
 ) -> Option<usize> {
     states
-        .satellite_groups_state
+        .shared
         .objects
         .iter()
         .enumerate()
         .min_by_key(|(_, obj)| {
-            let state = obj.predict(&states.timeline_state.time()).unwrap();
+            let state = obj.predict(&states.shared.time.time()).unwrap();
             // Convert to area position
             let (x, y) = lon_lat_to_area(
                 wrap_longitude_deg(state.longitude() - states.world_map_state.lon_offset),

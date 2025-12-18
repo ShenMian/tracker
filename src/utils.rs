@@ -115,7 +115,7 @@ pub fn calculate_ground_track(object: &Object, time: &DateTime<Utc>) -> Vec<(f64
 
 /// Calculates the visibility circle for a point on the Earth's surface.
 ///
-/// See <https://en.wikipedia.org/wiki/Great-circle_distance>
+/// See <https://en.wikipedia.org/wiki/Great-circle_distance>.
 pub fn calculate_visibility_area(position: &Lla) -> Vec<(f64, f64)> {
     const AZIMUTH_STEP: usize = 10;
 
