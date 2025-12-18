@@ -75,7 +75,7 @@ impl Group {
 
         let mut request = HTTP_CLIENT.get(URL).query(&[("FORMAT", "json")]);
         request = match &self.identifier {
-            Identifier::Id(id) => request.query(&[("INTDES", id)]),
+            Identifier::CosparId(id) => request.query(&[("INTDES", id)]),
             Identifier::Group(group) => request.query(&[("GROUP", group)]),
         };
 
@@ -108,7 +108,7 @@ impl From<GroupConfig> for Group {
         match (config.id, config.group) {
             (Some(id), None) => Self {
                 label: config.label,
-                identifier: Identifier::Id(id),
+                identifier: Identifier::CosparId(id),
             },
             (None, Some(group)) => Self {
                 label: config.label,
@@ -122,7 +122,7 @@ impl From<GroupConfig> for Group {
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 enum Identifier {
     /// COSPAR ID.
-    Id(String),
+    CosparId(String),
     /// Group name.
     Group(String),
 }
@@ -130,7 +130,7 @@ enum Identifier {
 impl Display for Identifier {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Identifier::Id(id) => write!(f, "{id}"),
+            Identifier::CosparId(id) => write!(f, "{id}"),
             Identifier::Group(group) => write!(f, "{group}"),
         }
     }

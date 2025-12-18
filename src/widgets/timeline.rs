@@ -35,7 +35,7 @@ impl TimelineState {
     /// Creates a new `TimelineState` with the given configuration.
     pub fn with_config(config: TimelineConfig) -> Self {
         Self {
-            time_delta: Duration::minutes(config.time_delta_min),
+            time_delta: Duration::minutes(config.time_delta_mins),
             ..Default::default()
         }
     }

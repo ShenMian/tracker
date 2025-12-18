@@ -48,7 +48,7 @@ impl Default for WorldMapConfig {
 #[derive(Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct SatelliteGroupsConfig {
-    pub cache_lifetime_min: u64,
+    pub cache_lifetime_mins: u64,
     pub groups: Vec<GroupConfig>,
 }
 
@@ -81,7 +81,7 @@ impl GroupConfig {
 impl Default for SatelliteGroupsConfig {
     fn default() -> Self {
         Self {
-            cache_lifetime_min: 2 * 60,
+            cache_lifetime_mins: 2 * 60,
             groups: vec![
                 GroupConfig::with_id("ISS".into(), "1998-067A".into()),
                 GroupConfig::with_id("CSS".into(), "2021-035A".into()),
@@ -125,11 +125,11 @@ pub struct GroundStationConfig {
 #[derive(Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct TimelineConfig {
-    pub time_delta_min: i64,
+    pub time_delta_mins: i64,
 }
 
 impl Default for TimelineConfig {
     fn default() -> Self {
-        Self { time_delta_min: 1 }
+        Self { time_delta_mins: 1 }
     }
 }

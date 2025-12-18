@@ -49,7 +49,7 @@ impl SatelliteGroupsState {
                 .map(Group::from)
                 .map(Entry::from)
                 .collect(),
-            cache_lifetime: Duration::from_mins(config.cache_lifetime_min),
+            cache_lifetime: Duration::from_mins(config.cache_lifetime_mins),
             ..Self::default()
         }
     }
