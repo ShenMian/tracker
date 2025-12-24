@@ -101,27 +101,10 @@ impl Sky<'_> {
 
     fn draw_grid(ctx: &mut Context) {
         for radius in [1.0, 0.67, 0.33] {
-            ctx.draw(&Circle {
-                x: 0.0,
-                y: 0.0,
-                radius,
-                color: Color::DarkGray,
-            });
+            ctx.draw(&Circle::new(0.0, 0.0, radius, Color::DarkGray));
         }
-        ctx.draw(&canvas::Line {
-            x1: -1.0,
-            y1: 0.0,
-            x2: 1.0,
-            y2: 0.0,
-            color: Color::DarkGray,
-        });
-        ctx.draw(&canvas::Line {
-            x1: 0.0,
-            y1: -1.0,
-            x2: 0.0,
-            y2: 1.0,
-            color: Color::DarkGray,
-        });
+        ctx.draw(&canvas::Line::new(-1.0, 0.0, 1.0, 0.0, Color::DarkGray));
+        ctx.draw(&canvas::Line::new(0.0, -1.0, 0.0, 1.0, Color::DarkGray));
         ctx.print(0.0, 1.0, "N".green());
         ctx.print(1.0, 0.0, "E".green());
         ctx.print(0.0, -1.0, "S".green());

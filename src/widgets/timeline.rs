@@ -105,13 +105,13 @@ impl Timeline<'_> {
     }
 
     fn draw_axis(ctx: &mut Context) {
-        ctx.draw(&canvas::Line {
-            x1: 0.0,
-            y1: 0.5,
-            x2: Self::HOURS_WINDOW as f64,
-            y2: 0.5,
-            color: Color::DarkGray,
-        });
+        ctx.draw(&canvas::Line::new(
+            0.0,
+            0.5,
+            Self::HOURS_WINDOW as f64,
+            0.5,
+            Color::DarkGray,
+        ));
     }
 
     fn draw_hour_marks(&self, ctx: &mut Context) {
@@ -123,13 +123,7 @@ impl Timeline<'_> {
             let mark_time = current_time + hour_offset - minutes;
             let x = time_to_canvas_x(mark_time, current_time);
 
-            ctx.draw(&canvas::Line {
-                x1: x,
-                y1: 0.5,
-                x2: x,
-                y2: 0.5,
-                color: Color::White,
-            });
+            ctx.draw(&canvas::Line::new(x, 0.5, x, 0.5, Color::White));
 
             let hours = mark_time.with_timezone(&Local).hour() % 24;
             ctx.print(x, 0.0, format!("{hours:02}").fg(Color::DarkGray));
@@ -137,13 +131,13 @@ impl Timeline<'_> {
     }
 
     fn draw_current_time_marker(ctx: &mut Context) {
-        ctx.draw(&canvas::Line {
-            x1: Self::HOURS_WINDOW as f64 / 2.0,
-            y1: 0.0,
-            x2: Self::HOURS_WINDOW as f64 / 2.0,
-            y2: 1.0,
-            color: Color::LightRed,
-        });
+        ctx.draw(&canvas::Line::new(
+            Self::HOURS_WINDOW as f64 / 2.0,
+            0.0,
+            Self::HOURS_WINDOW as f64 / 2.0,
+            1.0,
+            Color::LightRed,
+        ));
     }
 
     fn draw_pass_times(&self, ctx: &mut Context) {
