@@ -3,20 +3,21 @@
 A terminal-based real-time satellite tracking and orbit prediction application.
 
 <p align="center">
-    <img src="docs/screenshot.png" width="80%" alt="Screenshot"><br/>
+    <img src="docs/screenshot_1.png" width="80%" alt="Screenshot"><br/>
     <small><i>The font used in the screenshot is <a href="https://github.com/microsoft/cascadia-code">Cascadia Code NF</a>.</i></small>
 </p>
 
 ## Features
 
-- **Position and trajectory**: Displays current positions and trajectories using the SGP4 model.
-- **Detailed information**: Provides comprehensive details about selected object.
-- **Time adjustment**: View satellite positions at any past or future time.
-- **Map scrolling**: Horizontal scrolling with infinite world map view.
-- **Object following**: Follows selected object on the map.
-- **Automatic updates**: Updates orbital elements automatically via internet.
-- **Custom configuration**: Customizable settings for display and behavior.
-- **Multi-language support**: Interface available in multiple languages.
+- **Orbit propagation**: Real-time positions & trajectories using SGP4.
+- **Detailed info**: Object information.
+- **Sky view**: Polar azimuth/elevation plot.
+- **Time shift**: View past/future positions.
+- **Object following**: Follow selected object.
+- **Infinite map**: Continuous horizontal world map.
+- **Auto updates**: Automatic TLE updates.
+- **Configurable**: Custom display & behavior.
+- **Localization**: UI translations.
 
 ## Installation
 

@@ -1,0 +1,31 @@
+_version: 1
+# World map
+map.title: "Carte du monde"
+map.follow: "Suivre"
+# Satellite groups
+group.title: "Groupes de satellites"
+# Information
+info.title: "Infos"
+info.name: "Nom"
+info.cospar_id: "ID COSPAR"
+info.norad_id: "ID NORAD"
+info.longitude: "Longitude"
+info.latitude: "Latitude"
+info.altitude: "Altitude"
+info.speed: "Vitesse"
+info.period: "Période"
+info.location: "Position"
+info.epoch: "Époque"
+info.drag_term: "Terme de traînée"
+info.inclination: "Inc"
+info.right_ascension: "Asc. droite"
+info.eccentricity: "Exc"
+info.mean_anomaly: "Anom. moy."
+info.mean_motion: "Mouv. moy."
+info.rev_num: "Rév. #"
+# Sky
+sky.title: "Ciel"
+sky.no_ground_station: "Aucune station au sol"
+
+no_object_selected: "Aucun objet sélectionné"
+no_enough_space: "Espace insuffisant"

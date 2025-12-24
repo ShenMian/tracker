@@ -2,26 +2,27 @@
 
 ## Location
 
-Default locations of configuration files on different platforms:
+Default configuration file locations on different platforms:
 
 - **Linux/macOS**: `$HOME/.config/tracker/config.toml`.
 - **Windows**: `%USERPROFILE%\.config\tracker\config.toml`.
 
-## Default settings
+## Default Settings
 
 ```toml
 [world_map]
 follow_object = true
 follow_smoothing = 0.3
 show_terminator = true
-time_delta_min = 1
+show_visibility_area = true
 lon_delta_deg = 10.0
 map_color = "gray"
 trajectory_color = "light_blue"
 terminator_color = "dark_gray"
+visibility_area_color = "yellow"
 
 [satellite_groups]
-cache_lifetime_min = 120
+cache_lifetime_mins = 120
 groups = [
     # Space Stations
     { label = "ISS", id = "1998-067A" },
@@ -48,24 +49,34 @@ groups = [
     { label = "Radar calibration", group = "radar" },
     { label = "CubeSats", group = "cubesat" },
 ]
+
+[sky]
+# ground_station = { name = <NAME>, position = {lat = <LAT_DEG>, lon = <LON_DEG>, alt = <ALT_KM>} }
+
+[timeline]
+time_delta_mins = 1
 ```
 
-## World Map Configuration
+## World Map
 
 - `follow_object`: Whether to automatically center the map on the selected satellite.
 - `follow_smoothing`: Smoothing factor for follow mode (0.0 = no movement, 1.0 = instant snap).
 - `show_terminator`: Whether to display the day-night terminator line.
 - `lon_delta_deg`: Longitude offset in degrees when scrolling the map horizontally.
-- `time_delta_min`: Time step in minutes for time simulation controls.
+- `time_delta_mins`: Time step in minutes for time simulation controls.
 
-## Satellite groups
+## Satellite Groups
 
 Satellite TLE (Two-Line Element) data is retrieved from [CelesTrak](https://celestrak.org), a 501(c)(3) non-profit organization dedicated to providing free orbital data and resources to the space community.
 
 - **Individual satellites**: Use the [Search Satellite Catalog](https://celestrak.org/satcat/search.php) to locate specific satellites. The `id` field should match the satellite's International Designator as listed in the catalog.
 - **Function-based groups**: Complete list of available satellite categories can be found at [Current GP Element Sets](https://celestrak.org/NORAD/elements/). The `group` field in the configuration corresponds to these category identifiers.
 
-## Color options
+## Sky
+
+The `ground_station.name` is optional. If not provided, the city name corresponding to the specified coordinates will be used.
+
+## Color Options
 
 Available colors:
 

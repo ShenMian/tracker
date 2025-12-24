@@ -1,27 +1,31 @@
+use ratatui::style::Color;
 use serde::Deserialize;
 
+use crate::coordinates::Lla;
+
 /// Configuration for the application.
-#[derive(Default, Deserialize)]
+#[derive(Clone, Default, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Config {
     pub world_map: WorldMapConfig,
     pub satellite_groups: SatelliteGroupsConfig,
+    pub sky: SkyConfig,
+    pub timeline: TimelineConfig,
 }
 
 /// Configuration for the world map widget.
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct WorldMapConfig {
     pub follow_object: bool,
     pub follow_smoothing: f64,
     pub show_terminator: bool,
-
+    pub show_visibility_area: bool,
     pub lon_delta_deg: f64,
-    pub time_delta_min: i64,
-
-    pub map_color: String,
-    pub trajectory_color: String,
-    pub terminator_color: String,
+    pub map_color: Color,
+    pub trajectory_color: Color,
+    pub terminator_color: Color,
+    pub visibility_area_color: Color,
 }
 
 impl Default for WorldMapConfig {
@@ -30,24 +34,25 @@ impl Default for WorldMapConfig {
             follow_object: true,
             follow_smoothing: 0.3,
             show_terminator: true,
-            time_delta_min: 1,
+            show_visibility_area: true,
             lon_delta_deg: 10.0,
-            map_color: "gray".into(),
-            trajectory_color: "light_blue".into(),
-            terminator_color: "dark_gray".into(),
+            map_color: Color::Gray,
+            trajectory_color: Color::LightBlue,
+            terminator_color: Color::DarkGray,
+            visibility_area_color: Color::Yellow,
         }
     }
 }
 
 /// Configuration for satellite groups widget.
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct SatelliteGroupsConfig {
-    pub cache_lifetime_min: u64,
+    pub cache_lifetime_mins: u64,
     pub groups: Vec<GroupConfig>,
 }
 
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct GroupConfig {
     pub label: String,
@@ -76,7 +81,7 @@ impl GroupConfig {
 impl Default for SatelliteGroupsConfig {
     fn default() -> Self {
         Self {
-            cache_lifetime_min: 2 * 60,
+            cache_lifetime_mins: 2 * 60,
             groups: vec![
                 GroupConfig::with_id("ISS".into(), "1998-067A".into()),
                 GroupConfig::with_id("CSS".into(), "2021-035A".into()),
@@ -99,5 +104,32 @@ impl Default for SatelliteGroupsConfig {
                 GroupConfig::with_group("CubeSats".into(), "cubesat".into()),
             ],
         }
+    }
+}
+
+/// Configuration for the sky widget.
+#[derive(Clone, Default, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct SkyConfig {
+    pub ground_station: Option<GroundStationConfig>,
+}
+
+#[derive(Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct GroundStationConfig {
+    pub name: Option<String>,
+    pub position: Lla,
+}
+
+/// Configuration for the timeline widget.
+#[derive(Clone, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct TimelineConfig {
+    pub time_delta_mins: i64,
+}
+
+impl Default for TimelineConfig {
+    fn default() -> Self {
+        Self { time_delta_mins: 1 }
     }
 }

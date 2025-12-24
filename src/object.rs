@@ -1,6 +1,9 @@
-use chrono::{DateTime, Duration, Utc};
+use chrono::{DateTime, Duration, TimeZone, Utc};
 
-use crate::utils::*;
+use crate::{
+    coordinates::{Lla, Teme},
+    utils::*,
+};
 
 const SECONDS_PER_DAY: f64 = 24.0 * 60.0 * 60.0;
 
@@ -19,7 +22,7 @@ impl Object {
         let orbital_period = Duration::seconds((SECONDS_PER_DAY / elements.mean_motion) as i64);
 
         Self {
-            epoch: DateTime::from_naive_utc_and_offset(elements.datetime, Utc),
+            epoch: Utc.from_utc_datetime(&elements.datetime),
             orbital_period,
             constants: sgp4::Constants::from_elements(&elements).unwrap(),
             elements,
@@ -55,14 +58,13 @@ impl Object {
             .propagate(sgp4::MinutesSinceEpoch(minutes_since_epoch))?;
 
         let teme = Teme::from(prediction.position);
-
         let epoch = epoch_from_utc(time);
         let gmst = gmst_from_jd_tt(epoch.to_jde_tt_days());
-        let cefe = teme.to_ecef(gmst);
+        let ecef = teme.to_ecef(gmst);
 
         Ok(State {
-            position: cefe.to_lla(),
-            velocity: prediction.velocity,
+            position: ecef.to_lla(),
+            velocity: prediction.velocity.into(),
         })
     }
 }
@@ -72,23 +74,27 @@ pub struct State {
     /// The position of the object in geodetic coordinates in km.
     pub position: Lla,
     /// The velocity of the object in km/s.
-    pub velocity: [f64; 3],
+    pub velocity: Teme,
 }
 
 impl State {
+    /// Returns the latitude of the object in degrees.
     pub fn latitude(&self) -> f64 {
-        self.position.latitude
+        self.position.lat
     }
 
+    /// Returns the longitude of the object in degrees.
     pub fn longitude(&self) -> f64 {
-        self.position.longitude
+        self.position.lon
     }
 
+    /// Returns the altitude of the object in km.
     pub fn altitude(&self) -> f64 {
-        self.position.altitude
+        self.position.alt
     }
 
+    /// Returns the speed of the object in km/s.
     pub fn speed(&self) -> f64 {
-        (self.velocity[0].powi(2) + self.velocity[1].powi(2) + self.velocity[2].powi(2)).sqrt()
+        (self.velocity.x.powi(2) + self.velocity.y.powi(2) + self.velocity.z.powi(2)).sqrt()
     }
 }
