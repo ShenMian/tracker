@@ -10,23 +10,19 @@ use ratatui::{
 use rust_i18n::t;
 
 use crate::{
-    app::States,
-    config::SkyConfig,
-    event::Event,
-    utils::*,
-    widgets::{timeline::TimelineState, window_to_area, world_map::WorldMapState},
+    app::States, config::SkyConfig, coordinates::Lla, event::Event, shared_state::SharedState,
+    utils::*, widgets::window_to_area,
 };
 
 /// A widget that displays the sky track on a polar plot.
 pub struct Sky<'a> {
     pub state: &'a mut SkyState,
-    pub world_map_state: &'a WorldMapState,
-    pub timeline_state: &'a TimelineState,
+    pub shared: &'a SharedState,
 }
 
 /// State of a [`Sky`] widget.
+#[derive(Default)]
 pub struct SkyState {
-    pub ground_station: Option<Station>,
     /// The area of the canvas.
     canvas_area: Rect,
     /// Current mouse position within the canvas's area.
@@ -35,25 +31,9 @@ pub struct SkyState {
     inner_area: Rect,
 }
 
-pub struct Station {
-    pub name: String,
-    pub position: Lla,
-}
-
 impl SkyState {
-    pub fn with_config(config: SkyConfig) -> Self {
-        let ground_station = config.ground_station.map(|config| Station {
-            name: config
-                .name
-                .unwrap_or_else(|| config.position.country_city().1),
-            position: config.position,
-        });
-        Self {
-            ground_station,
-            canvas_area: Default::default(),
-            mouse_position: None,
-            inner_area: Default::default(),
-        }
+    pub fn with_config(_config: SkyConfig) -> Self {
+        Self::default()
     }
 
     fn hovered_az_el(&self) -> Option<(f64, f64)> {
@@ -81,13 +61,13 @@ impl Widget for Sky<'_> {
             return;
         }
 
-        if self.state.ground_station.is_none() {
+        if self.shared.ground_station.is_none() {
             Self::centered_paragraph(t!("sky.no_ground_station").dark_gray())
                 .render(self.state.inner_area, buf);
             return;
         }
 
-        if self.world_map_state.selected_object.is_none() {
+        if self.shared.selected_object.is_none() {
             Self::centered_paragraph(t!("no_object_selected").dark_gray())
                 .render(self.state.inner_area, buf);
             return;
@@ -114,7 +94,7 @@ impl Sky<'_> {
             .paint(|ctx| {
                 Self::draw_grid(ctx);
                 ctx.layer();
-                self.draw_sky_track(ctx, &self.state.ground_station.as_ref().unwrap().position);
+                self.draw_sky_track(ctx, &self.shared.ground_station.as_ref().unwrap().position);
             })
             .render(self.state.canvas_area, buf);
     }
@@ -152,10 +132,10 @@ impl Sky<'_> {
     fn draw_sky_track(&self, ctx: &mut Context, station_position: &Lla) {
         const UNKNOWN_NAME: &str = "UNK";
 
-        let Some(object) = &self.world_map_state.selected_object else {
+        let Some(object) = &self.shared.selected_object else {
             return;
         };
-        let time = self.timeline_state.time();
+        let time = self.shared.time.time();
 
         let points = calculate_sky_track(object, station_position, &time);
         Self::draw_lines(ctx, points, Color::LightBlue);
@@ -205,14 +185,14 @@ fn centered_square(area: Rect) -> Rect {
     }
 }
 
-pub async fn handle_event(event: Event, states: &mut States) -> Result<()> {
+pub fn handle_event(event: Event, states: &mut States) -> Result<()> {
     match event {
-        Event::Mouse(event) => handle_mouse_event(event, states).await,
+        Event::Mouse(event) => handle_mouse_event(event, states),
         _ => Ok(()),
     }
 }
 
-async fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()> {
+fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()> {
     let global_mouse = Position::new(event.column, event.row);
     let canvas_area = states.sky_state.canvas_area;
     let Some(local_mouse) = window_to_area(global_mouse, canvas_area) else {

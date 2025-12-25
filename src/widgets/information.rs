@@ -15,19 +15,13 @@ use rust_i18n::t;
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
-    app::States,
-    event::Event,
-    object::Object,
-    widgets::{timeline::TimelineState, window_to_area},
+    app::States, event::Event, object::Object, shared_state::SharedState, widgets::window_to_area,
 };
-
-use super::world_map::WorldMapState;
 
 /// A widget that displays information about a selected object.
 pub struct Information<'a> {
     pub state: &'a mut InformationState,
-    pub world_map_state: &'a WorldMapState,
-    pub timeline_state: &'a TimelineState,
+    pub shared: &'a SharedState,
 }
 
 /// State of a [`Information`] widget.
@@ -64,7 +58,7 @@ impl Widget for Information<'_> {
         self.state.inner_area = block.inner(area);
         block.render(area, buf);
 
-        if let Some(object) = &self.world_map_state.selected_object {
+        if let Some(object) = &self.shared.selected_object {
             self.render_table(buf, object);
             self.render_scrollbar(area, buf);
         } else {
@@ -145,7 +139,7 @@ impl Information<'_> {
     fn update_table_entries(&mut self, object: &Object) {
         const UNKNOWN: &str = "(Unknown)";
 
-        let state = object.predict(&self.timeline_state.time()).unwrap();
+        let state = object.predict(&self.shared.time.time()).unwrap();
         let (country, city) = state.position.country_city();
         let elements = object.elements();
         self.state.table_entries = vec![
@@ -223,14 +217,14 @@ impl Information<'_> {
     }
 }
 
-pub async fn handle_event(event: Event, states: &mut States) -> Result<()> {
+pub fn handle_event(event: Event, states: &mut States) -> Result<()> {
     match event {
-        Event::Mouse(event) => handle_mouse_event(event, states).await,
+        Event::Mouse(event) => handle_mouse_event(event, states),
         _ => Ok(()),
     }
 }
 
-async fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()> {
+fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()> {
     let state = &mut states.information_state;
 
     let global_mouse = Position::new(event.column, event.row);

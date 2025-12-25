@@ -1,6 +1,9 @@
 use chrono::{DateTime, Duration, TimeZone, Utc};
 
-use crate::utils::*;
+use crate::{
+    coordinates::{Lla, Teme},
+    utils::*,
+};
 
 const SECONDS_PER_DAY: f64 = 24.0 * 60.0 * 60.0;
 
@@ -57,10 +60,10 @@ impl Object {
         let teme = Teme::from(prediction.position);
         let epoch = epoch_from_utc(time);
         let gmst = gmst_from_jd_tt(epoch.to_jde_tt_days());
-        let cefe = teme.to_ecef(gmst);
+        let ecef = teme.to_ecef(gmst);
 
         Ok(State {
-            position: cefe.to_lla(),
+            position: ecef.to_lla(),
             velocity: prediction.velocity.into(),
         })
     }

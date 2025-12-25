@@ -5,6 +5,7 @@ use ratatui::prelude::*;
 use crate::{
     config::Config,
     event::{Event, EventHandler},
+    shared_state::SharedState,
     tui::Tui,
     widgets::{
         information::{self, InformationState},
@@ -68,16 +69,13 @@ impl App {
 
             WorldMap {
                 state: &mut self.states.world_map_state,
-                satellite_groups_state: &self.states.satellite_groups_state,
-                sky_state: &self.states.sky_state,
-                timeline_state: &self.states.timeline_state,
+                shared: &self.states.shared,
             }
             .render(left_top_area, frame.buffer_mut());
 
             Timeline {
                 state: &mut self.states.timeline_state,
-                world_map_state: &self.states.world_map_state,
-                sky_state: &self.states.sky_state,
+                shared: &self.states.shared,
             }
             .render(left_bottom_area, frame.buffer_mut());
 
@@ -86,10 +84,9 @@ impl App {
 
             Tabs {
                 state: &mut self.states.tab_state,
-                world_map_state: &self.states.world_map_state,
+                shared: &self.states.shared,
                 sky_state: &mut self.states.sky_state,
                 information_state: &mut self.states.information_state,
-                timeline_state: &self.states.timeline_state,
             }
             .render(right_top_area, frame.buffer_mut());
 
@@ -108,12 +105,12 @@ impl App {
             _ => {}
         }
 
-        world_map::handle_event(event, &mut self.states).await?;
-        satellite_groups::handle_event(event, &mut self.states).await?;
-        tabs::handle_event(event, &mut self.states).await?;
-        information::handle_event(event, &mut self.states).await?;
-        sky::handle_event(event, &mut self.states).await?;
-        timeline::handle_event(event, &mut self.states).await
+        world_map::handle_event(event, &mut self.states)?;
+        satellite_groups::handle_event(event, &mut self.states)?;
+        tabs::handle_event(event, &mut self.states)?;
+        information::handle_event(event, &mut self.states)?;
+        sky::handle_event(event, &mut self.states)?;
+        timeline::handle_event(event, &mut self.states)
     }
 
     fn handle_key_events(&mut self, event: KeyEvent) {
@@ -134,6 +131,7 @@ impl App {
 }
 
 pub struct States {
+    pub shared: SharedState,
     pub world_map_state: WorldMapState,
     pub satellite_groups_state: SatelliteGroupsState,
     pub tab_state: TabsState,
@@ -145,6 +143,7 @@ pub struct States {
 impl States {
     pub fn with_config(config: Config) -> Self {
         Self {
+            shared: SharedState::with_config(config.clone()),
             world_map_state: WorldMapState::with_config(config.world_map),
             satellite_groups_state: SatelliteGroupsState::with_config(config.satellite_groups),
             tab_state: Default::default(),

@@ -2,12 +2,12 @@
 
 ## Location
 
-Default locations of configuration files on different platforms:
+Default configuration file locations on different platforms:
 
 - **Linux/macOS**: `$HOME/.config/tracker/config.toml`.
 - **Windows**: `%USERPROFILE%\.config\tracker\config.toml`.
 
-## Default settings
+## Default Settings
 
 ```toml
 [world_map]
@@ -22,7 +22,7 @@ terminator_color = "dark_gray"
 visibility_area_color = "yellow"
 
 [satellite_groups]
-cache_lifetime_min = 120
+cache_lifetime_mins = 120
 groups = [
     # Space Stations
     { label = "ISS", id = "1998-067A" },
@@ -51,21 +51,21 @@ groups = [
 ]
 
 [sky]
-ground_station = { name = <NAME>, position = {lat = <LAT>, lon = <LON>, alt = <ALT>} }
+# ground_station = { name = <NAME>, position = {lat = <LAT_DEG>, lon = <LON_DEG>, alt = <ALT_KM>} }
 
 [timeline]
-time_delta_min = 1
+time_delta_mins = 1
 ```
 
-## World Map Configuration
+## World Map
 
 - `follow_object`: Whether to automatically center the map on the selected satellite.
 - `follow_smoothing`: Smoothing factor for follow mode (0.0 = no movement, 1.0 = instant snap).
 - `show_terminator`: Whether to display the day-night terminator line.
 - `lon_delta_deg`: Longitude offset in degrees when scrolling the map horizontally.
-- `time_delta_min`: Time step in minutes for time simulation controls.
+- `time_delta_mins`: Time step in minutes for time simulation controls.
 
-## Satellite groups
+## Satellite Groups
 
 Satellite TLE (Two-Line Element) data is retrieved from [CelesTrak](https://celestrak.org), a 501(c)(3) non-profit organization dedicated to providing free orbital data and resources to the space community.
 
@@ -74,9 +74,9 @@ Satellite TLE (Two-Line Element) data is retrieved from [CelesTrak](https://cele
 
 ## Sky
 
-The `ground_station.name` option is optional. If not provided, the city corresponding to the specified coordinates will be used.
+The `ground_station.name` is optional. If not provided, the city name corresponding to the specified coordinates will be used.
 
-## Color options
+## Color Options
 
 Available colors:
 

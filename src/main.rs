@@ -5,9 +5,11 @@ i18n!("locales", fallback = "en");
 
 mod app;
 mod config;
+mod coordinates;
 mod event;
 mod group;
 mod object;
+mod shared_state;
 mod tui;
 mod utils;
 mod widgets;

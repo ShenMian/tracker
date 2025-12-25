@@ -1,10 +1,10 @@
 use ratatui::style::Color;
 use serde::Deserialize;
 
-use crate::utils::Lla;
+use crate::coordinates::Lla;
 
 /// Configuration for the application.
-#[derive(Default, Deserialize)]
+#[derive(Clone, Default, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Config {
     pub world_map: WorldMapConfig,
@@ -14,7 +14,7 @@ pub struct Config {
 }
 
 /// Configuration for the world map widget.
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct WorldMapConfig {
     pub follow_object: bool,
@@ -45,14 +45,14 @@ impl Default for WorldMapConfig {
 }
 
 /// Configuration for satellite groups widget.
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct SatelliteGroupsConfig {
-    pub cache_lifetime_min: u64,
+    pub cache_lifetime_mins: u64,
     pub groups: Vec<GroupConfig>,
 }
 
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct GroupConfig {
     pub label: String,
@@ -81,7 +81,7 @@ impl GroupConfig {
 impl Default for SatelliteGroupsConfig {
     fn default() -> Self {
         Self {
-            cache_lifetime_min: 2 * 60,
+            cache_lifetime_mins: 2 * 60,
             groups: vec![
                 GroupConfig::with_id("ISS".into(), "1998-067A".into()),
                 GroupConfig::with_id("CSS".into(), "2021-035A".into()),
@@ -108,28 +108,28 @@ impl Default for SatelliteGroupsConfig {
 }
 
 /// Configuration for the sky widget.
-#[derive(Default, Deserialize)]
+#[derive(Clone, Default, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct SkyConfig {
-    pub ground_station: Option<StationConfig>,
+    pub ground_station: Option<GroundStationConfig>,
 }
 
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct StationConfig {
+pub struct GroundStationConfig {
     pub name: Option<String>,
     pub position: Lla,
 }
 
 /// Configuration for the timeline widget.
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct TimelineConfig {
-    pub time_delta_min: i64,
+    pub time_delta_mins: i64,
 }
 
 impl Default for TimelineConfig {
     fn default() -> Self {
-        Self { time_delta_min: 1 }
+        Self { time_delta_mins: 1 }
     }
 }

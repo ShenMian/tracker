@@ -10,27 +10,21 @@ use ratatui::{
 };
 
 use crate::{
-    app::States,
-    config::TimelineConfig,
-    event::Event,
-    utils::calculate_pass_times,
-    widgets::{sky::SkyState, window_to_area, world_map::WorldMapState},
+    app::States, config::TimelineConfig, event::Event, shared_state::SharedState,
+    utils::calculate_pass_times, widgets::window_to_area,
 };
 
 const SECS_PER_HOUR: f64 = 3600.0;
 
 pub struct Timeline<'a> {
     pub state: &'a mut TimelineState,
-    pub world_map_state: &'a WorldMapState,
-    pub sky_state: &'a SkyState,
+    pub shared: &'a SharedState,
 }
 
 #[derive(Default)]
 pub struct TimelineState {
     /// Current mouse position within the widget's area.
     mouse_position: Option<Position>,
-    /// Time offset from the current UTC time for time simulation.
-    time_offset: Duration,
     /// The time step to advance or rewind when scrolling time.
     time_delta: Duration,
     /// The inner rendering area of the widget.
@@ -41,36 +35,16 @@ impl TimelineState {
     /// Creates a new `TimelineState` with the given configuration.
     pub fn with_config(config: TimelineConfig) -> Self {
         Self {
-            time_delta: Duration::minutes(config.time_delta_min),
+            time_delta: Duration::minutes(config.time_delta_mins),
             ..Default::default()
         }
     }
 
-    /// Returns the current simulation time.
-    pub fn time(&self) -> DateTime<Utc> {
-        Utc::now() + self.time_offset
-    }
-
-    /// Sets the current simulation time.
-    pub fn set_time(&mut self, time: DateTime<Utc>) {
-        self.time_offset = time - Utc::now();
-    }
-
-    /// Advances the simulation time.
-    fn advance_time(&mut self, delta: Duration) {
-        self.time_offset += delta;
-    }
-
-    /// Rewinds the simulation time.
-    fn rewind_time(&mut self, delta: Duration) {
-        self.time_offset -= delta;
-    }
-
-    fn hovered_time(&self) -> Option<DateTime<Utc>> {
+    fn hovered_time(&self, current_time: DateTime<Utc>) -> Option<DateTime<Utc>> {
         let mouse = self.mouse_position?;
         Some(canvas_x_to_time(
             area_to_canvas_x(self.inner_area, mouse),
-            self.time(),
+            current_time,
         ))
     }
 }
@@ -89,21 +63,21 @@ impl Timeline<'_> {
     const HOURS_WINDOW: i64 = 8;
 
     fn block(&self) -> Block<'static> {
+        let current_time = self.shared.time.time();
         let mut block = Block::new()
             .borders(Borders::LEFT | Borders::RIGHT | Borders::BOTTOM)
             .title_bottom(
                 format!(
                     "{} ({:+}m)",
-                    self.state
-                        .time()
+                    current_time
                         .with_timezone(&Local)
                         .format("%Y-%m-%d %H:%M:%S"),
-                    self.state.time_offset.num_minutes()
+                    self.shared.time.time_offset().num_minutes()
                 )
                 .white(),
             );
 
-        if let Some(time) = self.state.hovered_time() {
+        if let Some(time) = self.state.hovered_time(current_time) {
             let label = time
                 .with_timezone(&Local)
                 .format("%Y-%m-%d %H:%M:%S")
@@ -141,12 +115,13 @@ impl Timeline<'_> {
     }
 
     fn draw_hour_marks(&self, ctx: &mut Context) {
-        let minutes = Duration::minutes(self.state.time().minute() as i64);
+        let current_time = self.shared.time.time();
+        let minutes = Duration::minutes(current_time.minute() as i64);
         for hour_offset in
             ((-Self::HOURS_WINDOW / 2)..=(Self::HOURS_WINDOW / 2)).map(Duration::hours)
         {
-            let mark_time = self.state.time() + hour_offset - minutes;
-            let x = time_to_canvas_x(mark_time, self.state.time());
+            let mark_time = current_time + hour_offset - minutes;
+            let x = time_to_canvas_x(mark_time, current_time);
 
             ctx.draw(&canvas::Line {
                 x1: x,
@@ -172,14 +147,14 @@ impl Timeline<'_> {
     }
 
     fn draw_pass_times(&self, ctx: &mut Context) {
-        let Some(selected_object) = &self.world_map_state.selected_object else {
+        let Some(selected_object) = &self.shared.selected_object else {
             return;
         };
-        let Some(ground_station) = &self.sky_state.ground_station else {
+        let Some(ground_station) = &self.shared.ground_station else {
             return;
         };
 
-        let current_time = self.state.time();
+        let current_time = self.shared.time.time();
         let pass_segments = calculate_pass_times(
             selected_object,
             &ground_station.position,
@@ -203,24 +178,25 @@ impl Timeline<'_> {
     }
 }
 
-pub async fn handle_event(event: Event, states: &mut States) -> Result<()> {
+pub fn handle_event(event: Event, states: &mut States) -> Result<()> {
     match event {
-        Event::Key(event) => handle_key_event(event, states).await,
-        Event::Mouse(event) => handle_mouse_event(event, states).await,
+        Event::Key(event) => handle_key_event(event, states),
+        Event::Mouse(event) => handle_mouse_event(event, states),
         _ => Ok(()),
     }
 }
 
-async fn handle_key_event(event: KeyEvent, states: &mut States) -> Result<()> {
+fn handle_key_event(event: KeyEvent, states: &mut States) -> Result<()> {
     if let KeyCode::Char('r') = event.code {
-        states.timeline_state.time_offset = chrono::Duration::zero()
+        states.shared.time.set_time_offset(chrono::Duration::zero())
     }
 
     Ok(())
 }
 
-async fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()> {
+fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()> {
     let state = &mut states.timeline_state;
+    let shared = &mut states.shared;
 
     let global_mouse = Position::new(event.column, event.row);
     let inner_area = state.inner_area;
@@ -230,17 +206,20 @@ async fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()
     };
     state.mouse_position = Some(local_mouse);
 
-    let time = canvas_x_to_time(area_to_canvas_x(inner_area, local_mouse), state.time());
+    let time = canvas_x_to_time(
+        area_to_canvas_x(inner_area, local_mouse),
+        shared.time.time(),
+    );
 
     match event.kind {
         MouseEventKind::Down(MouseButton::Left) => {
-            state.set_time(time);
+            shared.time.set_time(time);
         }
         MouseEventKind::ScrollUp => {
-            state.rewind_time(state.time_delta);
+            shared.time.rewind_time(state.time_delta);
         }
         MouseEventKind::ScrollDown => {
-            state.advance_time(state.time_delta);
+            shared.time.advance_time(state.time_delta);
         }
         _ => {}
     }
