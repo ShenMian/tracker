@@ -138,11 +138,11 @@ impl App {
                     self.request_exit();
                 }
             }
-            // Toggle keymap panel.
+            // Toggle keymap popup.
             KeyCode::Char('?') => {
                 self.states.show_keymap = !self.states.show_keymap;
             }
-            // Close keymap panel on `Esc`.
+            // Close keymap popup on `Esc`.
             KeyCode::Esc => {
                 self.states.show_keymap = false;
             }
