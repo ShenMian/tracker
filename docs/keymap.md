@@ -1,15 +1,15 @@
 # Keymap
 
-| Key                              | Action                              |
-|----------------------------------|-------------------------------------|
-| `Ctrl + C` / `Q` / `Esc`         | Quit                                |
-| Left mouse click                 | Select the nearest satellite/object |
-| Right mouse click                | Deselect                            |
-| Mouse wheel up/down              | Time backward/forward               |
-| `Shift` + Mouse wheel Up / `[`   | Move the world map left             |
-| `Shift` + Mouse wheel Down / `]` | Move the world map right            |
-| `Tab`                            | Switch to next tab                  |
-| `Shift` + `Tab`                  | Switch to previous tab              |
-| `F`                              | Toggle satellite tracking (follow)  |
-| `R`                              | Reset time offset                   |
-| `T`                              | Toggle day-night terminator         |
+| Key                                     | Action                              |
+|-----------------------------------------|-------------------------------------|
+| `<C-c>`, `q`, `<Esc>`                   | Quit                                |
+| `<LeftMouse>`                           | Select the nearest satellite/object |
+| `<RightMouse>`                          | Deselect                            |
+| `<ScrollWheelUp>` / `<ScrollWheelDown>` | Time backward/forward               |
+| `<S-ScrollWheelUp>`, `[`                | Move the world map left             |
+| `<S-ScrollWheelDown>`, `]`              | Move the world map right            |
+| `<Tab>`                                 | Switch to next tab                  |
+| `<S-Tab>`                               | Switch to previous tab              |
+| `f`                                     | Toggle satellite tracking (follow)  |
+| `r`                                     | Reset time offset                   |
+| `t`                                     | Toggle day-night terminator         |
