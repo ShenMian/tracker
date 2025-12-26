@@ -1,15 +1,28 @@
 # Keymap
 
-| Key                              | Action                              |
-|----------------------------------|-------------------------------------|
-| `Ctrl + C` / `Q` / `Esc`         | Quit                                |
-| Left mouse click                 | Select the nearest satellite/object |
-| Right mouse click                | Deselect                            |
-| Mouse wheel up/down              | Time backward/forward               |
-| `Shift` + Mouse wheel Up / `[`   | Move the world map left             |
-| `Shift` + Mouse wheel Down / `]` | Move the world map right            |
-| `Tab`                            | Switch to next tab                  |
-| `Shift` + `Tab`                  | Switch to previous tab              |
-| `F`                              | Toggle satellite tracking (follow)  |
-| `R`                              | Reset time offset                   |
-| `T`                              | Toggle day-night terminator         |
+## Global
+
+| Key                 | Action                      |
+|---------------------|-----------------------------|
+| `q`, `<C-c>`        | Quit                        |
+| `?`                 | Toggle keymap popup         |
+| `<Esc>`             | Dismiss popup               |
+| `<Tab>` / `<S-Tab>` | Switch to next/previous tab |
+
+## World Map
+
+| Key                                     | Action                          |
+|-----------------------------------------|---------------------------------|
+| `<LeftMouse>`                           | Select the nearest object       |
+| `<RightMouse>`                          | Deselect current object         |
+| `<ScrollWheelUp>` / `<ScrollWheelDown>` | Move the world map left/right   |
+| `[` / `]`                               | Move the world map left/right   |
+| `f`                                     | Toggle object tracking (follow) |
+| `t`                                     | Toggle day-night terminator     |
+
+## Timeline
+
+| Key                                     | Action                       |
+|-----------------------------------------|------------------------------|
+| `<ScrollWheelUp>` / `<ScrollWheelDown>` | Adjust time backward/forward |
+| `r`                                     | Reset time offset            |

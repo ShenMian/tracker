@@ -76,16 +76,14 @@ impl Information<'_> {
     fn table(&mut self, object: &Object) -> Table<'static> {
         self.update_table_entries(object);
 
-        let (max_key_width, _max_value_width) = self
+        let key_width = self
             .state
             .table_entries
             .iter()
-            .map(|(key, value)| (key.width(), value.width()))
-            .fold((0, 0), |acc, (key_width, value_width)| {
-                (acc.0.max(key_width), acc.1.max(value_width))
-            });
-
-        let widths = [Constraint::Max(max_key_width as u16), Constraint::Fill(1)];
+            .map(|(key, _)| key.width())
+            .max()
+            .unwrap();
+        let widths = [Constraint::Max(key_width as u16), Constraint::Fill(1)];
         let [_left, right] = Layout::horizontal(widths)
             .areas(self.state.inner_area)
             .map(|rect| rect.width);
