@@ -9,6 +9,7 @@ use crate::{
     tui::Tui,
     widgets::{
         information::{self, InformationState},
+        keymap::Keymap,
         satellite_groups::{self, SatelliteGroups, SatelliteGroupsState},
         sky::{self, SkyState},
         tabs::{self, Tabs, TabsState},
@@ -94,6 +95,10 @@ impl App {
                 state: &mut self.states.satellite_groups_state,
             }
             .render(right_bottom_area, frame.buffer_mut());
+
+            if self.states.show_keymap {
+                Keymap.render(frame.area(), frame.buffer_mut());
+            }
         })?;
         Ok(())
     }
@@ -103,6 +108,14 @@ impl App {
             Event::Render => self.render()?,
             Event::Key(event) => self.handle_key_events(event),
             _ => {}
+        }
+
+        // Block input events when keymap is shown
+        if self.states.show_keymap {
+            match event {
+                Event::Key(_) | Event::Mouse(_) => return Ok(()),
+                _ => {}
+            }
         }
 
         world_map::handle_event(event, &mut self.states)?;
@@ -115,8 +128,8 @@ impl App {
 
     fn handle_key_events(&mut self, event: KeyEvent) {
         match event.code {
-            // Exit application on `Q` or `ESC`.
-            KeyCode::Char('q') | KeyCode::Esc => {
+            // Exit application on `Q`.
+            KeyCode::Char('q') => {
                 self.request_exit();
             }
             // Exit application on `Ctrl-C`.
@@ -124,6 +137,14 @@ impl App {
                 if event.modifiers == KeyModifiers::CONTROL {
                     self.request_exit();
                 }
+            }
+            // Toggle keymap panel.
+            KeyCode::Char('?') => {
+                self.states.show_keymap = !self.states.show_keymap;
+            }
+            // Close keymap panel on `Esc`.
+            KeyCode::Esc => {
+                self.states.show_keymap = false;
             }
             _ => {}
         }
@@ -138,6 +159,7 @@ pub struct States {
     pub information_state: InformationState,
     pub sky_state: SkyState,
     pub timeline_state: TimelineState,
+    pub show_keymap: bool,
 }
 
 impl States {
@@ -150,6 +172,7 @@ impl States {
             information_state: Default::default(),
             sky_state: SkyState::with_config(config.sky),
             timeline_state: TimelineState::with_config(config.timeline),
+            show_keymap: false,
         }
     }
 }

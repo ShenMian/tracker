@@ -1,15 +1,28 @@
 # Keymap
 
-| Key                                     | Action                              |
-|-----------------------------------------|-------------------------------------|
-| `<C-c>`, `q`, `<Esc>`                   | Quit                                |
-| `<LeftMouse>`                           | Select the nearest satellite/object |
-| `<RightMouse>`                          | Deselect                            |
-| `<ScrollWheelUp>` / `<ScrollWheelDown>` | Time backward/forward               |
-| `<S-ScrollWheelUp>`, `[`                | Move the world map left             |
-| `<S-ScrollWheelDown>`, `]`              | Move the world map right            |
-| `<Tab>`                                 | Switch to next tab                  |
-| `<S-Tab>`                               | Switch to previous tab              |
-| `f`                                     | Toggle satellite tracking (follow)  |
-| `r`                                     | Reset time offset                   |
-| `t`                                     | Toggle day-night terminator         |
+## Global
+
+| Key                 | Action                      |
+|---------------------|-----------------------------|
+| `q`, `<C-c>`        | Quit                        |
+| `?`                 | Toggle keymap popup         |
+| `<Esc>`             | Dismiss popup               |
+| `<Tab>` / `<S-Tab>` | Switch to next/previous tab |
+
+## World Map
+
+| Key                                     | Action                          |
+|-----------------------------------------|---------------------------------|
+| `<LeftMouse>`                           | Select the nearest object       |
+| `<RightMouse>`                          | Deselect current object         |
+| `<ScrollWheelUp>` / `<ScrollWheelDown>` | Move the world map left/right   |
+| `[` / `]`                               | Move the world map left/right   |
+| `f`                                     | Toggle object tracking (follow) |
+| `t`                                     | Toggle day-night terminator     |
+
+## Timeline
+
+| Key                                     | Action                       |
+|-----------------------------------------|------------------------------|
+| `<ScrollWheelUp>` / `<ScrollWheelDown>` | Adjust time backward/forward |
+| `r`                                     | Reset time offset            |
