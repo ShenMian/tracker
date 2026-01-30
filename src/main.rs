@@ -1,4 +1,5 @@
 use anyhow::{Context as _, Result};
+use clap::Parser;
 use rust_i18n::i18n;
 
 i18n!("locales", fallback = "en");
@@ -17,8 +18,15 @@ mod widgets;
 use app::App;
 use config::Config;
 
+#[derive(Parser)]
+#[command(version)]
+struct Args {}
+
 #[tokio::main]
 async fn main() -> Result<()> {
+    // Parse command-line arguments
+    Args::parse();
+
     // Set the application's locale based on the system locale
     let locale = sys_locale::get_locale().unwrap_or_else(|| String::from("en-US"));
     rust_i18n::set_locale(&locale);
