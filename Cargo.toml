@@ -30,4 +30,9 @@ rust-i18n = "3.1"
 # Async
 tokio = { version = "1.49", features = ["full"] }
 futures = "0.3"
-reqwest = { version = "0.13", default-features = false, features = ["http2", "query", "json", "native-tls"] }
+reqwest = { version = "0.13", default-features = false, features = [
+    "http2",
+    "query",
+    "json",
+    "native-tls",
+] }
