@@ -71,7 +71,7 @@ impl Group {
 
     /// Fetches SGP4 elements from <https://celestrak.org>.
     async fn fetch_elements(&self) -> Option<Vec<sgp4::Elements>> {
-        const URL: &str = "https://celestrak.com/NORAD/elements/gp.php";
+        const URL: &str = "https://celestrak.org/NORAD/elements/gp.php";
 
         let mut request = HTTP_CLIENT.get(URL).query(&[("FORMAT", "json")]);
         request = match &self.identifier {
