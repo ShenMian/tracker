@@ -19,13 +19,6 @@ pub struct Lla {
     pub alt: f64,
 }
 
-mod wgs84 {
-    pub const A: f64 = 6378.137; // Earth semi-major axis (km)
-    pub const F: f64 = 1.0 / 298.257223563; // Flattening
-    pub const B: f64 = A * (1.0 - F); // Semi-minor axis (km)
-    pub const E2: f64 = 1.0 - (B * B) / (A * A); // Square of first eccentricity
-}
-
 impl Lla {
     pub fn new(lat: f64, lon: f64, alt: f64) -> Self {
         debug_assert!((-90.0..=90.0).contains(&lat));
@@ -94,7 +87,7 @@ impl Lla {
 
 /// Converts a geodetic position to ECEF position.
 fn lla_to_ecef(lla: &Lla) -> Ecef {
-    use wgs84::*;
+    use super::wgs84::*;
 
     let lat = lla.lat.to_radians();
     let lon = lla.lon.to_radians();

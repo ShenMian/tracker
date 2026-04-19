@@ -20,16 +20,9 @@ impl Ecef {
     }
 }
 
-mod wgs84 {
-    pub const A: f64 = 6378.137; // Earth semi-major axis (km)
-    pub const F: f64 = 1.0 / 298.257223563; // Flattening
-    pub const B: f64 = A * (1.0 - F); // Semi-minor axis (km)
-    pub const E2: f64 = 1.0 - (B * B) / (A * A); // Square of first eccentricity
-}
-
 /// Converts a ECEF position to geodetic position.
 fn ecef_to_lla(ecef: &Ecef) -> Lla {
-    use wgs84::*;
+    use super::wgs84::*;
 
     // Calculate longitude
     let longitude = ecef.y.atan2(ecef.x);

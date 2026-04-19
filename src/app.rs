@@ -133,10 +133,8 @@ impl App {
                 self.request_exit();
             }
             // Exit application on `Ctrl-C`.
-            KeyCode::Char('c') => {
-                if event.modifiers == KeyModifiers::CONTROL {
-                    self.request_exit();
-                }
+            KeyCode::Char('c') if event.modifiers == KeyModifiers::CONTROL => {
+                self.request_exit();
             }
             // Toggle keymap popup.
             KeyCode::Char('?') => {
