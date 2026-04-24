@@ -15,7 +15,7 @@ A terminal-based real-time satellite tracking and orbit prediction application.
 - **Time shift**: View past/future positions.
 - **Object following**: Follow selected object.
 - **Infinite map**: Continuous horizontal world map.
-- **Auto updates**: Automatic TLE updates.
+- **Auto updates**: Automatic TLE updates sourced from [CelesTrak](https://celestrak.org/).
 - **Configurable**: Custom display & behavior.
 - **Localization**: UI translations.
 
