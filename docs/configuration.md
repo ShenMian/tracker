@@ -24,29 +24,69 @@ visibility_area_color = "yellow"
 [satellite_groups]
 cache_lifetime_mins = 120
 groups = [
-    # Space Stations
+    # Specific objects of interest
     { label = "ISS", id = "1998-067A" },
     { label = "CSS", id = "2021-035A" },
-    # Weather & Earth Resources Satellites
+    
+    # Special-interest satellites
+    { label = "Last 30 Days", group = "last-30-days" },
+    { label = "Space Stations", group = "stations" },
+    { label = "100 Brightest", group = "visual" },
+    { label = "Active", group = "active" },
+    { label = "Analyst", group = "analyst" },
+    
+    # Weather & Earth resources satellites
     { label = "Weather", group = "weather" },
-    { label = "GOES", group = "goes" },
-    { label = "Earth resources", group = "resource" },
-    { label = "Search & rescue", group = "sarsat" },
-    { label = "Disaster monitoring", group = "dmc" },
-    # Navigation Satellites
-    { label = "GPS", group = "gps-ops" },
-    { label = "GLONASS", group = "glo-ops" },
+    { label = "Earth Resources", group = "resource" },
+    { label = "SARSAT", group = "sarsat" },
+    { label = "Disaster Monitoring", group = "dmc" },
+    { label = "TDRSS", group = "tdrss" },
+    { label = "ARGOS", group = "argos" },
+    { label = "Planet", group = "planet" },
+    { label = "Spire", group = "spire" },
+    
+    # Communications satellites
+    { label = "GEO", group = "geo" },
+    { label = "Intelsat", group = "intelsat" },
+    { label = "SES", group = "ses" },
+    { label = "Eutelsat", group = "eutelsat" },
+    { label = "Telesat", group = "telesat" },
+    { label = "Starlink", group = "starlink" },
+    { label = "OneWeb", group = "oneweb" },
+    { label = "Qianfan", group = "qianfan" },
+    { label = "Hulianwang Digui", group = "hulianwang" },
+    { label = "Kuiper", group = "kuiper" },
+    { label = "Iridium NEXT", group = "iridium-NEXT" },
+    { label = "Orbcomm", group = "orbcomm" },
+    { label = "Globalstar", group = "globalstar" },
+    { label = "Amateur Radio", group = "amateur" },
+    { label = "SatNOGS", group = "satnogs" },
+    { label = "Experimental Comm", group = "x-comm" },
+    { label = "Other Comm", group = "other-comm" },
+    
+    # Navigation satellites
+    { label = "GNSS", group = "gnss" },
+    { label = "GPS Ops", group = "gps-ops" },
+    { label = "GLONASS Ops", group = "glo-ops" },
     { label = "Galileo", group = "galileo" },
     { label = "Beidou", group = "beidou" },
-    # Scientific Satellites
+    { label = "SBAS", group = "sbas" },
+    
+    # Scientific satellites
     { label = "Space & Earth Science", group = "science" },
     { label = "Geodetic", group = "geodetic" },
     { label = "Engineering", group = "engineering" },
     { label = "Education", group = "education" },
-    # Miscellaneous Satellites
+    
+    # Miscellaneous satellites
     { label = "Military", group = "military" },
-    { label = "Radar calibration", group = "radar" },
+    { label = "Radar Calibration", group = "radar" },
     { label = "CubeSats", group = "cubesat" },
+    
+    # Debris
+    { label = "Fengyun 1C Debris", group = "fengyun-1c-debris" },
+    { label = "Iridium 33 Debris", group = "iridium-33-debris" },
+    { label = "Cosmos 2251 Debris", group = "cosmos-2251-debris" },
 ]
 
 [sky]
