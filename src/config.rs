@@ -90,6 +90,8 @@ impl Default for SatelliteGroupsConfig {
                 GroupConfig::with_group("Last 30 Days".into(), "last-30-days".into()),
                 GroupConfig::with_group("Space Stations".into(), "stations".into()),
                 GroupConfig::with_group("100 Brightest".into(), "visual".into()),
+                GroupConfig::with_group("Active".into(), "active".into()),
+                GroupConfig::with_group("Analyst".into(), "analyst".into()),
                 // Weather & Earth resources satellites
                 GroupConfig::with_group("Weather".into(), "weather".into()),
                 GroupConfig::with_group("Earth Resources".into(), "resource".into()),
