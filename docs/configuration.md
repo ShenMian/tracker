@@ -29,7 +29,6 @@ groups = [
     { label = "CSS", id = "2021-035A" },
     # Weather & Earth Resources Satellites
     { label = "Weather", group = "weather" },
-    { label = "NOAA", group = "noaa" },
     { label = "GOES", group = "goes" },
     { label = "Earth resources", group = "resource" },
     { label = "Search & rescue", group = "sarsat" },

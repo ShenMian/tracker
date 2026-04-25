@@ -86,7 +86,6 @@ impl Default for SatelliteGroupsConfig {
                 GroupConfig::with_id("ISS".into(), "1998-067A".into()),
                 GroupConfig::with_id("CSS".into(), "2021-035A".into()),
                 GroupConfig::with_group("Weather".into(), "weather".into()),
-                GroupConfig::with_group("NOAA".into(), "noaa".into()),
                 GroupConfig::with_group("GOES".into(), "goes".into()),
                 GroupConfig::with_group("Earth resources".into(), "resource".into()),
                 GroupConfig::with_group("Search & rescue".into(), "sarsat".into()),
