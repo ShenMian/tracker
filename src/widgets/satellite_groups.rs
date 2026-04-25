@@ -1,3 +1,4 @@
+use rayon::prelude::*;
 use rust_i18n::t;
 use std::time::{Duration, Instant};
 use tokio::{sync::mpsc, task::AbortHandle};
@@ -97,7 +98,12 @@ impl SatelliteGroupsState {
             entry.loading = false;
             entry.abort_handle = None;
             if let Some(elements) = result.elements {
-                new_objects.extend(elements.into_iter().map(Object::from_elements));
+                new_objects.extend(
+                    elements
+                        .into_par_iter()
+                        .map(Object::from_elements)
+                        .collect::<Vec<_>>(),
+                );
             } else {
                 entry.selected = false;
             }

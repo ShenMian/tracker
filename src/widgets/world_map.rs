@@ -8,6 +8,7 @@ use ratatui::{
         canvas::{self, Canvas, Context, Map, MapResolution},
     },
 };
+use rayon::prelude::*;
 use rust_i18n::t;
 
 use crate::{
@@ -207,15 +208,24 @@ impl WorldMap<'_> {
 
     /// Draws all objects and their labels.
     fn draw_objects(&self, ctx: &mut Context) {
-        for object in self.shared.objects.iter() {
-            let object_name = object.name().unwrap_or(Self::UNKNOWN_NAME);
-            let text = if self.shared.selected_object.is_none() {
-                Self::OBJECT_SYMBOL.light_red() + format!(" {object_name}").white()
-            } else {
-                Self::OBJECT_SYMBOL.red() + format!(" {object_name}").dark_gray()
-            };
-            let object_state = object.predict(&self.shared.time.time()).unwrap();
-            ctx.print(object_state.longitude(), object_state.latitude(), text);
+        let time = self.shared.time.time();
+
+        for (text, state) in self
+            .shared
+            .objects
+            .par_iter()
+            .map(|object| {
+                let object_name = object.name().unwrap_or(Self::UNKNOWN_NAME);
+                let text = if self.shared.selected_object.is_none() {
+                    Self::OBJECT_SYMBOL.light_red() + format!(" {object_name}").white()
+                } else {
+                    Self::OBJECT_SYMBOL.red() + format!(" {object_name}").dark_gray()
+                };
+                (text, object.predict(&time).unwrap())
+            })
+            .collect::<Vec<_>>()
+        {
+            ctx.print(state.longitude(), state.latitude(), text);
         }
     }
 
@@ -349,13 +359,15 @@ fn get_nearest_object_index(
     position: Position,
     inner_area: Rect,
 ) -> Option<usize> {
+    let time = states.shared.time.time();
+
     states
         .shared
         .objects
-        .iter()
+        .par_iter()
         .enumerate()
         .min_by_key(|(_, obj)| {
-            let state = obj.predict(&states.shared.time.time()).unwrap();
+            let state = obj.predict(&time).unwrap();
             // Convert to area position
             let (x, y) = lon_lat_to_area(
                 wrap_longitude_deg(state.longitude() - states.world_map_state.lon_offset),

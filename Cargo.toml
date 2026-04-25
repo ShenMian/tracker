@@ -26,6 +26,7 @@ toml = "1"
 serde_json = "1"
 sys-locale = "0.3"
 rust-i18n = "4"
+rayon = "1"
 
 # Async
 tokio = { version = "1", features = ["full"] }
