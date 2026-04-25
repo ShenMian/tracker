@@ -103,8 +103,6 @@ impl Default for SatelliteGroupsConfig {
                 GroupConfig::with_group("Spire".into(), "spire".into()),
                 // Communications satellites
                 GroupConfig::with_group("GEO".into(), "geo".into()),
-                GroupConfig::with_group("GPZ".into(), "gpz".into()),
-                GroupConfig::with_group("GPZ+".into(), "gpz-plus".into()),
                 GroupConfig::with_group("Intelsat".into(), "intelsat".into()),
                 GroupConfig::with_group("SES".into(), "ses".into()),
                 GroupConfig::with_group("Eutelsat".into(), "eutelsat".into()),
