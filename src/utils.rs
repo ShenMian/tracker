@@ -1,5 +1,6 @@
 use chrono::{DateTime, Datelike, Duration, Timelike, Utc};
 use hifitime::Epoch;
+use rayon::prelude::*;
 
 use std::f64::consts::{PI, TAU};
 
@@ -105,12 +106,13 @@ pub fn calculate_terminator(time: &DateTime<Utc>) -> Vec<(f64, f64)> {
 
 /// Calculates ground track points of the object.
 pub fn calculate_ground_track(object: &Object, time: &DateTime<Utc>) -> Vec<(f64, f64)> {
-    let mut points = Vec::with_capacity(object.orbital_period().num_minutes() as usize);
-    for duration in (1..object.orbital_period().num_minutes()).map(Duration::minutes) {
-        let state = object.predict(&(*time + duration)).unwrap();
-        points.push((state.longitude(), state.latitude()));
-    }
-    points
+    (1..object.orbital_period().num_minutes())
+        .into_par_iter()
+        .map(|mins| {
+            let state = object.predict(&(*time + Duration::minutes(mins))).unwrap();
+            (state.longitude(), state.latitude())
+        })
+        .collect()
 }
 
 /// Calculates the visibility circle for a point on the Earth's surface.
@@ -151,19 +153,20 @@ pub fn calculate_sky_track(
     const WINDOW_MINUTES: i64 = 30;
     const STEP_MIN: usize = 1;
 
-    let mut points = Vec::with_capacity(2 * WINDOW_MINUTES as usize / STEP_MIN);
-    for duration in (-WINDOW_MINUTES..=WINDOW_MINUTES)
+    (-WINDOW_MINUTES..=WINDOW_MINUTES)
         .step_by(STEP_MIN)
-        .map(Duration::minutes)
-    {
-        let state = object.predict(&(*time + duration)).unwrap();
-        let (az, el) = state.position.az_el(ground_station);
-        if el < 0.0 {
-            continue;
-        }
-        points.push(az_el_to_canvas(az, el));
-    }
-    points
+        .collect::<Vec<_>>()
+        .into_par_iter()
+        .filter_map(|mins| {
+            let state = object.predict(&(*time + Duration::minutes(mins))).unwrap();
+            let (az, el) = state.position.az_el(ground_station);
+            if el < 0.0 {
+                None
+            } else {
+                Some(az_el_to_canvas(az, el))
+            }
+        })
+        .collect()
 }
 
 /// Calculates satellite pass time segments within a given time window.
