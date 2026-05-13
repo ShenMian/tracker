@@ -101,8 +101,8 @@ time_delta_mins = 1
 - `follow_object`: Whether to automatically center the map on the selected satellite.
 - `follow_smoothing`: Smoothing factor for follow mode (0.0 = no movement, 1.0 = instant snap).
 - `show_terminator`: Whether to display the day-night terminator line.
+- `show_visibility_area`: Whether to display the visibility area on the map where the satellite is above the horizon.
 - `lon_delta_deg`: Longitude offset in degrees when scrolling the map horizontally.
-- `time_delta_mins`: Time step in minutes for time simulation controls.
 
 ## Satellite Groups
 
@@ -114,6 +114,10 @@ Satellite TLE (Two-Line Element) data is retrieved from [CelesTrak](https://cele
 ## Sky
 
 The `ground_station.name` is optional. If not provided, the city name corresponding to the specified coordinates will be used.
+
+## Timeline
+
+- `time_delta_mins`: Time step in minutes for time simulation controls.
 
 ## Color Options
 
