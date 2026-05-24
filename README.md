@@ -38,6 +38,14 @@ scoop bucket add extra
 scoop install tracker
 ```
 
+#### macOS
+
+`tracker` is available as `satellite-tracker` in [Homebrew](https://formulae.brew.sh/formula/satellite-tracker):
+
+```bash
+brew install satellite-tracker
+```
+
 ### Build from source
 
 ```bash
