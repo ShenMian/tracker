@@ -163,7 +163,7 @@ pub struct States {
 impl States {
     pub fn with_config(config: Config) -> Self {
         Self {
-            shared: SharedState::with_config(config.clone()),
+            shared: SharedState::with_config(config.sky.clone()),
             world_map_state: WorldMapState::with_config(config.world_map),
             satellite_groups_state: SatelliteGroupsState::with_config(config.satellite_groups),
             tab_state: Default::default(),

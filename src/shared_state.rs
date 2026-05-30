@@ -1,6 +1,6 @@
 use chrono::{DateTime, Duration, Utc};
 
-use crate::{config::Config, coordinates::Lla, object::Object};
+use crate::{config::SkyConfig, coordinates::Lla, object::Object};
 
 /// Shared state accessible by all widgets.
 #[derive(Default)]
@@ -18,8 +18,8 @@ pub struct SharedState {
 }
 
 impl SharedState {
-    pub fn with_config(config: Config) -> Self {
-        let ground_station = config.sky.ground_station.map(|station| Station {
+    pub fn with_config(config: SkyConfig) -> Self {
+        let ground_station = config.ground_station.map(|station| Station {
             name: station
                 .name
                 .unwrap_or_else(|| station.position.country_city().1),
