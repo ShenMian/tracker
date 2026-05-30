@@ -7,7 +7,7 @@ use unicode_width::UnicodeWidthStr;
 
 // Global
 const GLOBAL_BINDINGS: &[(&str, &str)] = &[
-    ("q, <C-c>", "keymap.quit"),
+    ("<C-c>", "keymap.quit"),
     ("?", "keymap.help"),
     ("<Esc>", "keymap.dismiss"),
     ("<Tab> / <S-Tab>", "keymap.switch_tab"),
@@ -17,22 +17,34 @@ const GLOBAL_BINDINGS: &[(&str, &str)] = &[
 const MAP_BINDINGS: &[(&str, &str)] = &[
     ("<LeftMouse>", "keymap.select"),
     ("<RightMouse>", "keymap.deselect"),
-    ("<ScrollWheelUp> / <ScrollWheelDown>", "keymap.map_move"),
-    ("[ / ]", "keymap.map_move"),
+    ("W / A / S / D", "keymap.map_move"),
+    ("E / +", "keymap.map_zoom"),
+    ("Q / -", "keymap.map_zoom"),
     ("f", "keymap.follow"),
     ("t", "keymap.terminator"),
 ];
 
 // Timeline
 const TIMELINE_BINDINGS: &[(&str, &str)] = &[
+    ("<Left> / <Right>", "keymap.adjust_time"),
     ("<ScrollWheelUp> / <ScrollWheelDown>", "keymap.adjust_time"),
     ("r", "keymap.reset_time"),
+];
+
+// Satellite Groups
+const GROUP_BINDINGS: &[(&str, &str)] = &[
+    ("<Up> / <Down>", "keymap.group_move"),
+    ("/", "keymap.group_search"),
+    ("<Space>", "keymap.group_select"),
+    ("<LeftMouse>", "keymap.group_select"),
+    ("<ScrollWheelUp> / <ScrollWheelDown>", "keymap.group_move"),
 ];
 
 const SECTIONS: &[(&str, &[(&str, &str)])] = &[
     ("keymap.global", GLOBAL_BINDINGS),
     ("keymap.world_map", MAP_BINDINGS),
     ("keymap.timeline", TIMELINE_BINDINGS),
+    ("keymap.satellite_groups", GROUP_BINDINGS),
 ];
 
 pub struct Keymap;

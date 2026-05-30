@@ -27,9 +27,16 @@ pub struct WorldMap<'a> {
 pub struct WorldMapState {
     /// Center longitude offset for horizontal map scrolling in degrees.
     lon_offset: f64,
+    /// Center latitude offset for vertical map scrolling in degrees.
+    lat_offset: f64,
     /// The amount of longitude (in degrees) to move the map when scrolling left
     /// or right.
     lon_delta: f64,
+    /// The amount of latitude (in degrees) to move the map when scrolling up
+    /// or down.
+    lat_delta: f64,
+    /// Zoom level. 1.0 is default (360x180).
+    zoom: f64,
 
     /// Whether to follow the selected object by adjusting the map longitude.
     follow_object: bool,
@@ -58,6 +65,8 @@ impl WorldMapState {
             show_terminator: config.show_terminator,
             show_visibility_area: config.show_visibility_area,
             lon_delta: config.lon_delta_deg,
+            lat_delta: config.lon_delta_deg,
+            zoom: 1.0,
             map_color: config.map_color,
             trajectory_color: config.trajectory_color,
             terminator_color: config.terminator_color,
@@ -68,12 +77,36 @@ impl WorldMapState {
 
     /// Scrolls the map view to the left.
     fn scroll_map_left(&mut self) {
-        self.lon_offset = wrap_longitude_deg(self.lon_offset - self.lon_delta);
+        self.lon_offset = wrap_longitude_deg(self.lon_offset - self.lon_delta / self.zoom);
     }
 
     /// Scrolls the map view to the right.
     fn scroll_map_right(&mut self) {
-        self.lon_offset = wrap_longitude_deg(self.lon_offset + self.lon_delta);
+        self.lon_offset = wrap_longitude_deg(self.lon_offset + self.lon_delta / self.zoom);
+    }
+
+    /// Scrolls the map view up.
+    fn scroll_map_up(&mut self) {
+        self.lat_offset = (self.lat_offset + self.lat_delta / self.zoom).min(90.0);
+    }
+
+    /// Scrolls the map view down.
+    fn scroll_map_down(&mut self) {
+        self.lat_offset = (self.lat_offset - self.lat_delta / self.zoom).max(-90.0);
+    }
+
+    /// Zooms in the map.
+    fn zoom_in(&mut self) {
+        self.zoom *= 1.2;
+    }
+
+    /// Zooms out the map.
+    fn zoom_out(&mut self) {
+        self.zoom = (self.zoom / 1.2).max(1.0);
+        // Reset offsets if zoomed all the way out to prevent weird behavior
+        if self.zoom <= 1.0 {
+            self.lat_offset = 0.0;
+        }
     }
 }
 
@@ -126,38 +159,61 @@ impl WorldMap<'_> {
                 wrap_longitude_deg(object_state.longitude() - self.state.lon_offset)
                     * self.state.follow_smoothing;
             self.state.lon_offset = wrap_longitude_deg(self.state.lon_offset);
+
+            self.state.lat_offset +=
+                (object_state.latitude() - self.state.lat_offset) * self.state.follow_smoothing;
         }
 
-        let x_min = self.state.lon_offset - 180.0;
-        let x_max = self.state.lon_offset + 180.0;
+        let lon_span = 360.0 / self.state.zoom;
+        let lat_span = 180.0 / self.state.zoom;
+
+        let x_min = self.state.lon_offset - lon_span / 2.0;
+        let x_max = self.state.lon_offset + lon_span / 2.0;
+
+        let mut y_min = self.state.lat_offset - lat_span / 2.0;
+        let mut y_max = self.state.lat_offset + lat_span / 2.0;
+
+        // Clamp latitude bounds
+        if y_min < -90.0 {
+            y_max += -90.0 - y_min;
+            y_min = -90.0;
+        }
+        if y_max > 90.0 {
+            y_min -= y_max - 90.0;
+            y_max = 90.0;
+        }
+        y_min = y_min.max(-90.0);
+        y_max = y_max.min(90.0);
+
+        let y_bounds = [y_min, y_max];
 
         // Adjust the rendering order to prevent the labels on the left map from being
         // covered by the right map
         let mut bounds_vec = Vec::new();
         if x_min < -180.0 {
-            bounds_vec.push([x_min, x_max]); // Left side
-            bounds_vec.push([x_max, x_max + 360.0]); // Right side
+            bounds_vec.push([x_min, x_max]);
+            bounds_vec.push([x_min + 360.0, x_max + 360.0]);
         } else if x_max > 180.0 {
-            bounds_vec.push([-360.0 + x_min, x_min]); // Left side
-            bounds_vec.push([x_min, x_max]); // Right side
+            bounds_vec.push([x_min, x_max]);
+            bounds_vec.push([x_min - 360.0, x_max - 360.0]);
         } else {
             bounds_vec.push([x_min, x_max]);
         }
 
         for bounds in &bounds_vec {
-            self.render_bottom_layer(buf, *bounds);
+            self.render_bottom_layer(buf, *bounds, y_bounds);
         }
         for bounds in &bounds_vec {
-            self.render_top_layer(buf, *bounds);
+            self.render_top_layer(buf, *bounds, y_bounds);
         }
     }
 
     /// Renders the bottom layer of the world map, including the map and all
     /// objects.
-    fn render_bottom_layer(&self, buf: &mut Buffer, x_bounds: [f64; 2]) {
+    fn render_bottom_layer(&self, buf: &mut Buffer, x_bounds: [f64; 2], y_bounds: [f64; 2]) {
         Canvas::default()
             .x_bounds(x_bounds)
-            .y_bounds([-90.0, 90.0])
+            .y_bounds(y_bounds)
             .paint(|ctx| {
                 ctx.draw(&Map {
                     color: self.state.map_color,
@@ -174,10 +230,10 @@ impl WorldMap<'_> {
 
     /// Renders the top layer of the world map, including object highlights and
     /// trajectories.
-    fn render_top_layer(&self, buf: &mut Buffer, x_bounds: [f64; 2]) {
+    fn render_top_layer(&self, buf: &mut Buffer, x_bounds: [f64; 2], y_bounds: [f64; 2]) {
         Canvas::default()
             .x_bounds(x_bounds)
-            .y_bounds([-90.0, 90.0])
+            .y_bounds(y_bounds)
             .paint(|ctx| {
                 self.draw_object_highlight(ctx);
                 if self.state.show_visibility_area {
@@ -199,7 +255,8 @@ impl WorldMap<'_> {
 
         // Mark the subsolar point
         let (sub_lon, sub_lat) = subsolar_point(&self.shared.time.time());
-        ctx.print(
+        Self::draw_text(
+            ctx,
             sub_lon.to_degrees(),
             sub_lat.to_degrees(),
             Self::SUBSOLAR_SYMBOL.yellow().bold(),
@@ -225,7 +282,7 @@ impl WorldMap<'_> {
             })
             .collect::<Vec<_>>()
         {
-            ctx.print(state.longitude(), state.latitude(), text);
+            Self::draw_text(ctx, state.longitude(), state.latitude(), text);
         }
     }
 
@@ -244,7 +301,7 @@ impl WorldMap<'_> {
             let text =
                 Self::OBJECT_SYMBOL.light_green().slow_blink() + format!(" {object_name}").white();
             let object_state = selected.predict(&self.shared.time.time()).unwrap();
-            ctx.print(object_state.longitude(), object_state.latitude(), text);
+            Self::draw_text(ctx, object_state.longitude(), object_state.latitude(), text);
         } else if let Some(hovered) = &self.shared.hovered_object {
             // Highlight the hovered object
             let object_name = hovered.name().unwrap_or(Self::UNKNOWN_NAME);
@@ -252,7 +309,7 @@ impl WorldMap<'_> {
                 + " ".into()
                 + object_name.to_string().white().reversed();
             let object_state = hovered.predict(&self.shared.time.time()).unwrap();
-            ctx.print(object_state.longitude(), object_state.latitude(), text);
+            Self::draw_text(ctx, object_state.longitude(), object_state.latitude(), text);
         }
     }
 
@@ -270,31 +327,58 @@ impl WorldMap<'_> {
         let Some(ground_station) = &self.shared.ground_station else {
             return;
         };
-        ctx.print(
+        Self::draw_text(
+            ctx,
             ground_station.position.lon,
             ground_station.position.lat,
             "*".light_cyan().bold() + format!(" {}", ground_station.name).light_cyan(),
         );
     }
 
-    /// Draws lines between points.
-    fn draw_lines(ctx: &mut Context, points: Vec<(f64, f64)>, color: Color) {
-        for window in points.windows(2) {
-            Self::draw_line(ctx, window[0], window[1], color);
+    /// Draws text at multiple offsets to handle map wrapping.
+    fn draw_text<'a, T>(ctx: &mut Context<'a>, x: f64, y: f64, text: T)
+    where
+        T: Into<Line<'a>> + Clone,
+    {
+        for offset in [-360.0, 0.0, 360.0] {
+            ctx.print(x + offset, y, text.clone());
         }
     }
 
-    /// Draws a line between two points.
-    fn draw_line(ctx: &mut Context, (x1, y1): (f64, f64), (x2, y2): (f64, f64), color: Color) {
-        // Handle trajectory crossing the international date line
-        if (x1 - x2).abs() >= 180.0 {
-            let x_edge = if x1 > 0.0 { 180.0 } else { -180.0 };
-            let y_midpoint = (y1 + y2) / 2.0;
-            ctx.draw(&canvas::Line::new(x1, y1, x_edge, y_midpoint, color));
-            ctx.draw(&canvas::Line::new(-x_edge, y_midpoint, x2, y2, color));
+    /// Draws lines between points.
+    fn draw_lines(ctx: &mut Context, points: Vec<(f64, f64)>, color: Color) {
+        if points.is_empty() {
             return;
         }
-        ctx.draw(&canvas::Line::new(x1, y1, x2, y2, color));
+
+        let mut p1 = points[0];
+        for &p2 in &points[1..] {
+            let mut p2_adj = p2;
+            let lon_diff = p2_adj.0 - p1.0;
+
+            if lon_diff.abs() > 180.0 {
+                // Handle IDL crossing by making the longitude continuous
+                p2_adj.0 -= 360.0 * lon_diff.signum();
+                Self::draw_line(ctx, p1, p2_adj, color);
+            } else if lon_diff.abs() > 90.0 && (p1.1.abs() > 70.0 || p2.1.abs() > 70.0) {
+                // Handle pole crossing: split the line at the pole to avoid a straight
+                // horizontal line across the map.
+                let y_pole = if p1.1 > 0.0 { 90.0 } else { -90.0 };
+                Self::draw_line(ctx, p1, (p1.0, y_pole), color);
+                Self::draw_line(ctx, (p2.0, y_pole), p2, color);
+            } else {
+                Self::draw_line(ctx, p1, p2, color);
+            }
+            p1 = p2_adj;
+        }
+    }
+
+    /// Draws a line between two points, repeating it at 360-degree offsets to
+    /// handle map wrapping and zooming correctly.
+    fn draw_line(ctx: &mut Context, (x1, y1): (f64, f64), (x2, y2): (f64, f64), color: Color) {
+        for offset in [-360.0, 0.0, 360.0] {
+            ctx.draw(&canvas::Line::new(x1 + offset, y1, x2 + offset, y2, color));
+        }
     }
 }
 
@@ -308,8 +392,16 @@ pub fn handle_event(event: Event, states: &mut States) -> Result<()> {
 
 fn handle_key_event(event: KeyEvent, states: &mut States) -> Result<()> {
     match event.code {
-        KeyCode::Char('[') => states.world_map_state.scroll_map_left(),
-        KeyCode::Char(']') => states.world_map_state.scroll_map_right(),
+        KeyCode::Char('a') => states.world_map_state.scroll_map_left(),
+        KeyCode::Char('d') => states.world_map_state.scroll_map_right(),
+        KeyCode::Char('w') => states.world_map_state.scroll_map_up(),
+        KeyCode::Char('s') => states.world_map_state.scroll_map_down(),
+        KeyCode::Char('e') | KeyCode::Char('+') | KeyCode::Char('=') => {
+            states.world_map_state.zoom_in()
+        }
+        KeyCode::Char('q') | KeyCode::Char('-') | KeyCode::Char('_') => {
+            states.world_map_state.zoom_out()
+        }
         KeyCode::Char('f') => {
             states.world_map_state.follow_object = !states.world_map_state.follow_object;
         }
@@ -339,12 +431,6 @@ fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()> {
         MouseEventKind::Down(MouseButton::Right) => {
             states.shared.selected_object = None;
         }
-        MouseEventKind::ScrollUp => {
-            states.world_map_state.scroll_map_left();
-        }
-        MouseEventKind::ScrollDown => {
-            states.world_map_state.scroll_map_right();
-        }
         _ => {}
     }
     states.shared.hovered_object =
@@ -373,31 +459,56 @@ fn get_nearest_object_index(
                 wrap_longitude_deg(state.longitude() - states.world_map_state.lon_offset),
                 state.latitude(),
                 inner_area,
+                &states.world_map_state,
             );
-            (x as i32 - position.x as i32).abs() + (y as i32 - position.y as i32).abs() * 2
+            ((x - position.x as f64).abs() + (y - position.y as f64).abs() * 2.0) as i32
         })
         .map(|(index, _)| index)
 }
 
 #[expect(dead_code)]
 /// Converts area coordinates to lon/lat coordinates.
-fn area_to_lon_lat(x: u16, y: u16, area: Rect) -> (f64, f64) {
+fn area_to_lon_lat(x: u16, y: u16, area: Rect, state: &WorldMapState) -> (f64, f64) {
     debug_assert!(x < area.width && y < area.height);
     debug_assert!(area.width > 0 && area.height > 0);
 
+    let lon_span = 360.0 / state.zoom;
+    let lat_span = 180.0 / state.zoom;
+
     let normalized_x = x as f64 / area.width as f64;
     let normalized_y = y as f64 / area.height as f64;
-    let lon = -180.0 + normalized_x * 360.0;
-    let lat = 90.0 - normalized_y * 180.0;
+    let lon = state.lon_offset - lon_span / 2.0 + normalized_x * lon_span;
+    let lat = state.lat_offset + lat_span / 2.0 - normalized_y * lat_span;
     (lon, lat)
 }
 
 /// Converts lon/lat coordinates to area coordinates.
-fn lon_lat_to_area(lon: f64, lat: f64, area: Rect) -> (u16, u16) {
-    debug_assert!((-180.0..=180.0).contains(&lon));
-    debug_assert!((-90.0..=90.0).contains(&lat));
+fn lon_lat_to_area(lon_diff: f64, lat: f64, area: Rect, state: &WorldMapState) -> (f64, f64) {
+    let lon_span = 360.0 / state.zoom;
+    let lat_span = 180.0 / state.zoom;
 
-    let x = ((lon + 180.0) * area.width as f64 / 360.0) - 1.0;
-    let y = ((90.0 - lat) * area.height as f64 / 180.0) - 1.0;
-    (x.round() as u16, y.round() as u16)
+    let x = (lon_diff / lon_span + 0.5) * area.width as f64;
+
+    let mut y_min = state.lat_offset - lat_span / 2.0;
+    let mut y_max = state.lat_offset + lat_span / 2.0;
+
+    if y_min < -90.0 {
+        y_max += -90.0 - y_min;
+        y_min = -90.0;
+    }
+    if y_max > 90.0 {
+        y_min -= y_max - 90.0;
+        y_max = 90.0;
+    }
+    y_min = y_min.max(-90.0);
+    y_max = y_max.min(90.0);
+
+    let y_span = y_max - y_min;
+    let y = if y_span > 0.0 {
+        ((y_max - lat) / y_span) * area.height as f64
+    } else {
+        0.0
+    };
+
+    (x, y)
 }

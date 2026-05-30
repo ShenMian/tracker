@@ -5,10 +5,10 @@ use tokio::{sync::mpsc, task::AbortHandle};
 
 use crate::{
     app::States, config::SatelliteGroupsConfig, event::Event, group::Group, object::Object,
-    widgets::window_to_area,
+    shared_state::SharedState, widgets::window_to_area,
 };
 use anyhow::Result;
-use crossterm::event::{MouseButton, MouseEvent, MouseEventKind};
+use crossterm::event::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use ratatui::{
     prelude::*,
     style::Styled,
@@ -27,6 +27,12 @@ pub struct SatelliteGroupsState {
     list_entries: Vec<Entry>,
     /// The current state of the list widget.
     list_state: ListState,
+
+    /// The current search query.
+    search_query: String,
+    /// Whether the search mode is active.
+    is_searching: bool,
+
     /// Timestamp of the last orbital elements update.
     last_update_instant: Instant,
     /// Duration that cached orbital elements remain valid before requiring a
@@ -50,7 +56,7 @@ impl SatelliteGroupsState {
                 .map(Group::from)
                 .map(Entry::from)
                 .collect(),
-            cache_lifetime: Duration::from_mins(config.cache_lifetime_mins),
+            cache_lifetime: Duration::from_secs(config.cache_lifetime_mins * 60),
             ..Self::default()
         }
     }
@@ -112,15 +118,67 @@ impl SatelliteGroupsState {
     }
 
     fn scroll_up(&mut self) {
-        *self.list_state.offset_mut() = self.list_state.offset().saturating_sub(1);
+        let indices = self.filtered_indices();
+        if indices.is_empty() {
+            self.list_state.select(None);
+            return;
+        }
+        let current = self.list_state.selected().unwrap_or(0);
+        let next = current.saturating_sub(1);
+        self.list_state.select(Some(next));
     }
 
     fn scroll_down(&mut self) {
-        *self.list_state.offset_mut() = (self.list_state.offset() + 1).min(self.max_offset());
+        let indices = self.filtered_indices();
+        if indices.is_empty() {
+            self.list_state.select(None);
+            return;
+        }
+        let current = self.list_state.selected().unwrap_or(0);
+        let next = (current + 1).min(indices.len().saturating_sub(1));
+        self.list_state.select(Some(next));
+    }
+
+    fn toggle_selected(&mut self, shared: &mut SharedState) {
+        let indices = self.filtered_indices();
+        let Some(selected_index) = self.list_state.selected() else {
+            return;
+        };
+        let actual_index = indices[selected_index];
+
+        let was_selected = self.list_entries[actual_index].selected;
+        self.list_entries[actual_index].selected = !was_selected;
+        shared.selected_object = None;
+
+        if was_selected {
+            // Deselecting: cancel if loading
+            self.cancel_entry_loading(actual_index);
+            shared.objects.clear();
+            self.reload_selected_entries();
+        } else {
+            // Selecting: start loading
+            self.load_entry(actual_index);
+        }
+    }
+
+    fn filtered_indices(&self) -> Vec<usize> {
+        self.list_entries
+            .iter()
+            .enumerate()
+            .filter(|(_, entry)| {
+                self.search_query.is_empty()
+                    || entry
+                        .group
+                        .label()
+                        .to_lowercase()
+                        .contains(&self.search_query.to_lowercase())
+            })
+            .map(|(i, _)| i)
+            .collect()
     }
 
     fn max_offset(&self) -> usize {
-        self.list_entries
+        self.filtered_indices()
             .len()
             .saturating_sub(self.inner_area.height as usize)
     }
@@ -132,6 +190,8 @@ impl Default for SatelliteGroupsState {
         Self {
             list_entries: Default::default(),
             list_state: Default::default(),
+            search_query: String::new(),
+            is_searching: false,
             inner_area: Default::default(),
             cache_lifetime: Default::default(),
             last_update_instant: Instant::now(),
@@ -143,7 +203,7 @@ impl Default for SatelliteGroupsState {
 
 impl Widget for SatelliteGroups<'_> {
     fn render(mut self, area: Rect, buf: &mut Buffer) {
-        let block = Self::block();
+        let block = self.block();
         self.state.inner_area = block.inner(area);
         block.render(area, buf);
 
@@ -153,12 +213,18 @@ impl Widget for SatelliteGroups<'_> {
 }
 
 impl SatelliteGroups<'_> {
-    fn block() -> Block<'static> {
-        Block::bordered().title(t!("group.title").to_string().blue())
+    fn block(&self) -> Block<'static> {
+        let mut title = t!("group.title").to_string();
+        if self.state.is_searching {
+            title = format!("{}: {}", title, self.state.search_query);
+        }
+        Block::bordered().title(title.blue())
     }
 
     fn list(&self) -> List<'static> {
-        let items = self.state.list_entries.iter().map(|entry| {
+        let indices = self.state.filtered_indices();
+        let items = indices.into_iter().map(|index| {
+            let entry = &self.state.list_entries[index];
             let icon = if entry.loading {
                 "⋯"
             } else if entry.selected {
@@ -233,6 +299,7 @@ pub fn handle_event(event: Event, states: &mut States) -> Result<()> {
             handle_update_event(states);
             Ok(())
         }
+        Event::Key(event) => handle_key_event(event, states),
         Event::Mouse(event) => handle_mouse_event(event, states),
         _ => Ok(()),
     }
@@ -254,6 +321,38 @@ fn handle_update_event(states: &mut States) {
     }
 }
 
+fn handle_key_event(event: KeyEvent, states: &mut States) -> Result<()> {
+    let state = &mut states.satellite_groups_state;
+
+    if state.is_searching {
+        match event.code {
+            KeyCode::Esc | KeyCode::Enter => {
+                state.is_searching = false;
+            }
+            KeyCode::Backspace => {
+                state.search_query.pop();
+            }
+            KeyCode::Char(c) => {
+                state.search_query.push(c);
+            }
+            _ => {}
+        }
+    } else {
+        match event.code {
+            KeyCode::Char('/') => {
+                state.is_searching = true;
+                state.search_query.clear();
+            }
+            KeyCode::Up => state.scroll_up(),
+            KeyCode::Down => state.scroll_down(),
+            KeyCode::Char(' ') => state.toggle_selected(&mut states.shared),
+            _ => {}
+        }
+    }
+
+    Ok(())
+}
+
 fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()> {
     let state = &mut states.satellite_groups_state;
 
@@ -265,22 +364,7 @@ fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()> {
 
     match event.kind {
         MouseEventKind::Down(MouseButton::Left) => {
-            // Toggle selection of the clicked entry.
-            if let Some(index) = state.list_state.selected() {
-                let was_selected = state.list_entries[index].selected;
-                state.list_entries[index].selected = !was_selected;
-                states.shared.selected_object = None;
-
-                if was_selected {
-                    // Deselecting: cancel if loading
-                    state.cancel_entry_loading(index);
-                    states.shared.objects.clear();
-                    state.reload_selected_entries();
-                } else {
-                    // Selecting: start loading
-                    state.load_entry(index);
-                }
-            }
+            state.toggle_selected(&mut states.shared);
         }
         MouseEventKind::ScrollUp => state.scroll_up(),
         MouseEventKind::ScrollDown => state.scroll_down(),
@@ -289,7 +373,7 @@ fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()> {
 
     // Highlight the hovered entry.
     let row = local_mouse.y as usize + state.list_state.offset();
-    let index = if row < state.list_entries.len() {
+    let index = if row < state.filtered_indices().len() {
         Some(row)
     } else {
         None
