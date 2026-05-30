@@ -3,7 +3,7 @@ _version: 1
 map.title: "World map"
 map.follow: "Follow"
 # Satellite groups
-group.title: "Satellite groups"
+group.title: "Satellite Groups"
 # Information
 info.title: "Info"
 info.name: "Name"
@@ -35,6 +35,7 @@ keymap.title: "Keymap"
 keymap.global: "Global"
 keymap.world_map: "World Map"
 keymap.timeline: "Timeline"
+keymap.satellite_groups: "Satellite Groups"
 keymap.quit: "Quit"
 keymap.help: "Toggle keymap popup"
 keymap.dismiss: "Dismiss popup"

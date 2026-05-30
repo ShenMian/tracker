@@ -44,7 +44,7 @@ const SECTIONS: &[(&str, &[(&str, &str)])] = &[
     ("keymap.global", GLOBAL_BINDINGS),
     ("keymap.world_map", MAP_BINDINGS),
     ("keymap.timeline", TIMELINE_BINDINGS),
-    ("keymap.satellite_groups", GROUP_BINDINGS),
+    ("group.title", GROUP_BINDINGS),
 ];
 
 pub struct Keymap;
