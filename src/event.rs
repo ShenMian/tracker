@@ -23,7 +23,6 @@ pub struct EventHandler {
     /// Event receiver channel.
     receiver: mpsc::UnboundedReceiver<Event>,
     /// Event handler thread.
-    #[expect(dead_code)]
     handler: tokio::task::JoinHandle<()>,
 }
 
@@ -33,34 +32,32 @@ impl EventHandler {
         const UPDATE_RATE: f64 = 10.0;
         const RENDER_RATE: f64 = 60.0;
 
-        let update_period = Duration::from_secs_f64(1.0 / UPDATE_RATE);
-        let render_period = Duration::from_secs_f64(1.0 / RENDER_RATE);
+        let mut update_interval = tokio::time::interval(Duration::from_secs_f64(1.0 / UPDATE_RATE));
+        let mut render_interval = tokio::time::interval(Duration::from_secs_f64(1.0 / RENDER_RATE));
         let (sender, receiver) = mpsc::unbounded_channel();
-        let _sender = sender.clone();
+        let sender_clone = sender.clone();
         let handler = tokio::spawn(async move {
             let mut reader = crossterm::event::EventStream::new();
-            let mut update_interval = tokio::time::interval(update_period);
-            let mut render_interval = tokio::time::interval(render_period);
             loop {
                 let crossterm_event = reader.next().fuse();
                 tokio::select! {
-                  _ = _sender.closed() => {
+                  _ = sender_clone.closed() => {
                     break;
                   }
                   _ = update_interval.tick() => {
-                    _sender.send(Event::Update).unwrap();
+                    sender_clone.send(Event::Update).unwrap();
                   }
                   _ = render_interval.tick() => {
-                    _sender.send(Event::Render).unwrap();
+                    sender_clone.send(Event::Render).unwrap();
                   }
                   Some(Ok(event)) = crossterm_event => {
                     match event {
                       CrosstermEvent::Key(key)
                         if key.kind == crossterm::event::KeyEventKind::Press => {
-                          _sender.send(Event::Key(key)).unwrap();
+                          sender_clone.send(Event::Key(key)).unwrap();
                         },
                       CrosstermEvent::Mouse(mouse) => {
-                        _sender.send(Event::Mouse(mouse)).unwrap();
+                        sender_clone.send(Event::Mouse(mouse)).unwrap();
                       },
                       _ => {},
                     }
@@ -68,6 +65,7 @@ impl EventHandler {
                 };
             }
         });
+
         Self {
             sender,
             receiver,
@@ -89,5 +87,11 @@ impl EventHandler {
 impl Default for EventHandler {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl Drop for EventHandler {
+    fn drop(&mut self) {
+        self.handler.abort();
     }
 }
