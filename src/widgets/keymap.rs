@@ -17,8 +17,11 @@ const GLOBAL_BINDINGS: &[(&str, &str)] = &[
 const MAP_BINDINGS: &[(&str, &str)] = &[
     ("<LeftMouse>", "keymap.select"),
     ("<RightMouse>", "keymap.deselect"),
-    ("<ScrollWheelUp> / <ScrollWheelDown>", "keymap.map_move"),
-    ("[ / ]", "keymap.map_move"),
+    ("<ScrollWheelUp> / <ScrollWheelDown>", "keymap.zoom"),
+    ("[ / ] or h/l / a/d", "keymap.scroll_horizontal"),
+    ("w/s or k/j", "keymap.scroll_vertical"),
+    ("+ / - or i/o", "keymap.zoom"),
+    ("0", "keymap.reset_view"),
     ("f", "keymap.follow"),
     ("t", "keymap.terminator"),
 ];

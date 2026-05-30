@@ -85,6 +85,7 @@ pub fn subsolar_point(time: &DateTime<Utc>) -> (f64, f64) {
 ///
 /// A vector of `(longitude, latitude)` pairs in degrees, representing the
 /// terminator line.
+#[expect(dead_code)]
 pub fn calculate_terminator(time: &DateTime<Utc>) -> Vec<(f64, f64)> {
     const LON_STEP: usize = 5;
 
