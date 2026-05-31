@@ -86,7 +86,7 @@ pub fn subsolar_point(time: &DateTime<Utc>) -> (f64, f64) {
 /// A vector of `(longitude, latitude)` pairs in degrees, representing the
 /// terminator line.
 pub fn calculate_terminator(time: &DateTime<Utc>) -> Vec<(f64, f64)> {
-    const LON_STEP: usize = 5;
+    const LON_STEP: usize = 1;
 
     let (sub_lon, decl) = subsolar_point(time);
     let mut points = Vec::with_capacity(361 / LON_STEP);
@@ -119,7 +119,7 @@ pub fn calculate_ground_track(object: &Object, time: &DateTime<Utc>) -> Vec<(f64
 ///
 /// See <https://en.wikipedia.org/wiki/Great-circle_distance>.
 pub fn calculate_visibility_area(position: &Lla) -> Vec<(f64, f64)> {
-    const AZIMUTH_STEP: usize = 10;
+    const AZIMUTH_STEP: usize = 2;
 
     let lat0_rad = position.lat.to_radians();
     let lon0_rad = position.lon.to_radians();

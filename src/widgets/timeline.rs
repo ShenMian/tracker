@@ -181,8 +181,11 @@ pub fn handle_event(event: Event, states: &mut States) -> Result<()> {
 }
 
 fn handle_key_event(event: KeyEvent, states: &mut States) -> Result<()> {
-    if let KeyCode::Char('r') = event.code {
-        states.shared.time.set_time_offset(chrono::Duration::zero())
+    match event.code {
+        KeyCode::Char('r') => states.shared.time.set_time_offset(chrono::Duration::zero()),
+        KeyCode::Left => states.shared.time.rewind_time(states.timeline_state.time_delta),
+        KeyCode::Right => states.shared.time.advance_time(states.timeline_state.time_delta),
+        _ => {}
     }
 
     Ok(())

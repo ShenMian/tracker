@@ -128,10 +128,6 @@ impl App {
 
     fn handle_key_events(&mut self, event: KeyEvent) {
         match event.code {
-            // Exit application on `Q`.
-            KeyCode::Char('q') => {
-                self.request_exit();
-            }
             // Exit application on `Ctrl-C`.
             KeyCode::Char('c') if event.modifiers == KeyModifiers::CONTROL => {
                 self.request_exit();
