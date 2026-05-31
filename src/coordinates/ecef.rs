@@ -15,6 +15,8 @@ impl Ecef {
     }
 
     /// Converts the position to a geodetic position.
+    ///
+    /// <https://en.wikipedia.org/wiki/Geographic_coordinate_conversion#From_ECEF_to_geodetic_coordinates>
     pub fn to_lla(&self) -> Lla {
         use super::wgs84::*;
 
@@ -26,7 +28,7 @@ impl Ecef {
         let theta = (self.z * A).atan2(p * B);
         let (sin_theta, cos_theta) = theta.sin_cos();
         let latitude =
-            ((self.z + E2 * B * sin_theta.powi(3)) / (p - E2 * A * cos_theta.powi(3))).atan();
+            ((self.z + EP2 * B * sin_theta.powi(3)) / (p - E2 * A * cos_theta.powi(3))).atan();
 
         // Calculate altitude
         let n = A / (1.0 - E2 * latitude.sin().powi(2)).sqrt();
