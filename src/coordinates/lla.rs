@@ -28,6 +28,8 @@ impl Lla {
     }
 
     /// Converts the position to a ECEF position.
+    ///
+    /// <https://en.wikipedia.org/wiki/Geographic_coordinate_conversion#From_geodetic_to_ECEF_coordinates>
     pub fn to_ecef(&self) -> Ecef {
         use super::wgs84::*;
 
@@ -68,6 +70,7 @@ impl Lla {
         let sin_lon0 = lon0.sin();
         let cos_lon0 = lon0.cos();
 
+        // <https://en.wikipedia.org/wiki/Geographic_coordinate_conversion#From_ECEF_to_ENU>
         let east = -sin_lon0 * dx + cos_lon0 * dy;
         let north = -sin_lat0 * cos_lon0 * dx - sin_lat0 * sin_lon0 * dy + cos_lat0 * dz;
         let up = cos_lat0 * cos_lon0 * dx + cos_lat0 * sin_lon0 * dy + sin_lat0 * dz;
