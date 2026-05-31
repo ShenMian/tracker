@@ -29,7 +29,23 @@ impl Lla {
 
     /// Converts the position to a ECEF position.
     pub fn to_ecef(&self) -> Ecef {
-        lla_to_ecef(self)
+        use super::wgs84::*;
+
+        let lat = self.lat.to_radians();
+        let lon = self.lon.to_radians();
+        let alt = self.alt;
+
+        let sin_lat = lat.sin();
+        let cos_lat = lat.cos();
+        let cos_lon = lon.cos();
+        let sin_lon = lon.sin();
+
+        let n = A / (1.0 - E2 * sin_lat.powi(2)).sqrt();
+        let x = (n + alt) * cos_lat * cos_lon;
+        let y = (n + alt) * cos_lat * sin_lon;
+        let z = (n * (1.0 - E2) + alt) * sin_lat;
+
+        Ecef::new(x, y, z)
     }
 
     /// Computes the azimuth and elevation from the observer's position to this
@@ -83,25 +99,4 @@ impl Lla {
         };
         (country.to_owned(), city.to_owned())
     }
-}
-
-/// Converts a geodetic position to ECEF position.
-fn lla_to_ecef(lla: &Lla) -> Ecef {
-    use super::wgs84::*;
-
-    let lat = lla.lat.to_radians();
-    let lon = lla.lon.to_radians();
-    let alt = lla.alt;
-
-    let sin_lat = lat.sin();
-    let cos_lat = lat.cos();
-    let cos_lon = lon.cos();
-    let sin_lon = lon.sin();
-
-    let n = A / (1.0 - E2 * sin_lat.powi(2)).sqrt();
-    let x = (n + alt) * cos_lat * cos_lon;
-    let y = (n + alt) * cos_lat * sin_lon;
-    let z = (n * (1.0 - E2) + alt) * sin_lat;
-
-    Ecef::new(x, y, z)
 }

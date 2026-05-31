@@ -20,7 +20,10 @@ impl Teme {
     ///
     /// * `gmst` - Greenwich Mean Sidereal Time in radians
     pub fn to_ecef(&self, gmst: f64) -> Ecef {
-        teme_to_ecef(self, gmst)
+        let (sin_theta, cos_theta) = gmst.sin_cos();
+        let x = cos_theta * self.x + sin_theta * self.y;
+        let y = -sin_theta * self.x + cos_theta * self.y;
+        Ecef::new(x, y, self.z)
     }
 }
 
@@ -28,21 +31,4 @@ impl From<[f64; 3]> for Teme {
     fn from([x, y, z]: [f64; 3]) -> Self {
         Self::new(x, y, z)
     }
-}
-
-/// Converts a position vector from TEME frame to ECEF frame.
-///
-/// # Arguments
-///
-/// * `teme` - A position in the TEME frame (in km)
-/// * `gmst_rad` - Greenwich Mean Sidereal Time in radians
-///
-/// # Returns
-///
-/// A position in the ECEF frame (same units as input).
-fn teme_to_ecef(teme: &Teme, gmst_rad: f64) -> Ecef {
-    let (sin_theta, cos_theta) = gmst_rad.sin_cos();
-    let x = cos_theta * teme.x + sin_theta * teme.y;
-    let y = -sin_theta * teme.x + cos_theta * teme.y;
-    Ecef::new(x, y, teme.z)
 }
