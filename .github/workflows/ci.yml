@@ -7,8 +7,6 @@ permissions:
 
 env:
   CARGO_TERM_COLOR: always
-  RUSTFLAGS: --deny warnings
-  RUSTDOCFLAGS: --deny warnings
 
 jobs:
   clippy:
@@ -30,7 +28,10 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: cargo-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+          key: cargo-${{ runner.os }}-${{ github.job }}-${{ github.ref_name }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            cargo-${{ runner.os }}-${{ github.job }}-${{ github.ref_name }}-
+            cargo-${{ runner.os }}-${{ github.job }}-
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -57,7 +58,10 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: cargo-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+          key: cargo-${{ runner.os }}-${{ github.job }}-${{ github.ref_name }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            cargo-${{ runner.os }}-${{ github.job }}-${{ github.ref_name }}-
+            cargo-${{ runner.os }}-${{ github.job }}-
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@nightly
@@ -85,13 +89,18 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: cargo-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+          key: cargo-${{ runner.os }}-${{ github.job }}-${{ github.ref_name }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            cargo-${{ runner.os }}-${{ github.job }}-${{ github.ref_name }}-
+            cargo-${{ runner.os }}-${{ github.job }}-
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
       - name: Check documentation
         run: cargo doc --locked --workspace --all-features --document-private-items --no-deps
+        env:
+          RUSTDOCFLAGS: -D warnings
 
   # test:
   #   name: Tests
@@ -111,7 +120,10 @@ jobs:
   #           ~/.cargo/registry/cache/
   #           ~/.cargo/git/db/
   #           target/
-  #         key: cargo-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+  #         key: cargo-${{ runner.os }}-${{ github.job }}-${{ github.ref_name }}-${{ hashFiles('**/Cargo.lock') }}
+  #         restore-keys: |
+  #           cargo-${{ runner.os }}-${{ github.job }}-${{ github.ref_name }}-
+  #           cargo-${{ runner.os }}-${{ github.job }}-
   #
   #     - name: Install Rust toolchain
   #       uses: dtolnay/rust-toolchain@stable
