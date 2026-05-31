@@ -2,6 +2,9 @@ name: CI
 
 on: [pull_request, push]
 
+permissions:
+  contents: read
+
 env:
   CARGO_TERM_COLOR: always
   RUSTFLAGS: --deny warnings
@@ -15,6 +18,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - name: Cache Cargo artifacts
         uses: actions/cache@v5
@@ -40,6 +45,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - name: Cache Cargo artifacts
         uses: actions/cache@v5
@@ -66,6 +73,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - name: Cache Cargo artifacts
         uses: actions/cache@v5
@@ -90,7 +99,9 @@ jobs:
   #   steps:
   #     - name: Checkout repository
   #       uses: actions/checkout@v6
-
+  #       with:
+  #         persist-credentials: false
+  #
   #     - name: Cache Cargo artifacts
   #       uses: actions/cache@v5
   #       with:
@@ -101,10 +112,10 @@ jobs:
   #           ~/.cargo/git/db/
   #           target/
   #         key: cargo-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
-
+  #
   #     - name: Install Rust toolchain
   #       uses: dtolnay/rust-toolchain@stable
-
+  #
   #     - name: Run tests
   #       run: |
   #         cargo test --locked --workspace --all-features --all-targets
