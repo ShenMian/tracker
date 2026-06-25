@@ -62,7 +62,7 @@ impl Widget for Sky<'_> {
         }
 
         if self.shared.ground_station.is_none() {
-            Self::centered_paragraph(t!("sky.no_ground_station").dark_gray())
+            Self::centered_paragraph(t!("sky-no_ground_station").dark_gray())
                 .render(self.state.inner_area, buf);
             return;
         }

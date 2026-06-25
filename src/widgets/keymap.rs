@@ -7,39 +7,39 @@ use unicode_width::UnicodeWidthStr;
 
 // Global
 const GLOBAL_BINDINGS: &[(&str, &str)] = &[
-    ("q, <C-c>", "keymap.quit"),
-    ("?", "keymap.help"),
-    ("<Esc>", "keymap.dismiss"),
-    ("<Tab> / <S-Tab>", "keymap.switch_tab"),
+    ("q, <C-c>", "keymap-quit"),
+    ("?", "keymap-help"),
+    ("<Esc>", "keymap-dismiss"),
+    ("<Tab> / <S-Tab>", "keymap-switch_tab"),
 ];
 
 // World Map
 const MAP_BINDINGS: &[(&str, &str)] = &[
-    ("<LeftMouse>", "keymap.select"),
-    ("<RightMouse>", "keymap.deselect"),
-    ("<ScrollWheelUp> / <ScrollWheelDown>", "keymap.map_move"),
-    ("[ / ]", "keymap.map_move"),
-    ("f", "keymap.follow"),
-    ("t", "keymap.terminator"),
+    ("<LeftMouse>", "keymap-select"),
+    ("<RightMouse>", "keymap-deselect"),
+    ("<ScrollWheelUp> / <ScrollWheelDown>", "keymap-map_move"),
+    ("[ / ]", "keymap-map_move"),
+    ("f", "keymap-follow"),
+    ("t", "keymap-terminator"),
 ];
 
 // Timeline
 const TIMELINE_BINDINGS: &[(&str, &str)] = &[
-    ("<ScrollWheelUp> / <ScrollWheelDown>", "keymap.adjust_time"),
-    ("r", "keymap.reset_time"),
+    ("<ScrollWheelUp> / <ScrollWheelDown>", "keymap-adjust_time"),
+    ("r", "keymap-reset_time"),
 ];
 
 const SECTIONS: &[(&str, &[(&str, &str)])] = &[
-    ("keymap.global", GLOBAL_BINDINGS),
-    ("keymap.world_map", MAP_BINDINGS),
-    ("keymap.timeline", TIMELINE_BINDINGS),
+    ("keymap-global", GLOBAL_BINDINGS),
+    ("keymap-world_map", MAP_BINDINGS),
+    ("keymap-timeline", TIMELINE_BINDINGS),
 ];
 
 pub struct Keymap;
 
 impl Keymap {
     fn block() -> Block<'static> {
-        Block::bordered().title(t!("keymap.title").to_string().blue())
+        Block::bordered().title(t!("keymap-title").to_string().blue())
     }
 }
 

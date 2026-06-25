@@ -154,7 +154,7 @@ impl Widget for SatelliteGroups<'_> {
 
 impl SatelliteGroups<'_> {
     fn block() -> Block<'static> {
-        Block::bordered().title(t!("group.title").to_string().blue())
+        Block::bordered().title(t!("group-title").to_string().blue())
     }
 
     fn list(&self) -> List<'static> {

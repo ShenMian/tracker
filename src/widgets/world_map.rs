@@ -97,7 +97,7 @@ impl WorldMap<'_> {
                 bottom_right: symbols::line::VERTICAL_LEFT,
                 ..Default::default()
             })
-            .title(t!("map.title").to_string().blue());
+            .title(t!("map-title").to_string().blue());
 
         // Show follow mode indicator if enabled
         if self.state.follow_object {
@@ -107,7 +107,7 @@ impl WorldMap<'_> {
                 Style::new().green().slow_blink()
             };
             block = block.title_bottom(
-                Line::from(format!("({})", t!("map.follow")).set_style(style)).right_aligned(),
+                Line::from(format!("({})", t!("map-follow")).set_style(style)).right_aligned(),
             );
         }
 
