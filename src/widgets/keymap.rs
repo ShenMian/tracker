@@ -2,7 +2,7 @@ use ratatui::{
     prelude::*,
     widgets::{Block, Clear, Paragraph},
 };
-use rust_i18n::t;
+use fluent_i18n::t;
 use unicode_width::UnicodeWidthStr;
 
 // Global

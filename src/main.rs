@@ -1,6 +1,6 @@
 use anyhow::{Context as _, Result};
 use clap::Parser;
-use rust_i18n::i18n;
+use fluent_i18n::i18n;
 
 i18n!("locales", fallback = "en");
 
@@ -28,8 +28,7 @@ async fn main() -> Result<()> {
     Args::parse();
 
     // Set the application's locale based on the system locale
-    let locale = sys_locale::get_locale().unwrap_or_else(|| String::from("en-US"));
-    rust_i18n::set_locale(&locale);
+    fluent_i18n::set_locale(None).unwrap();
 
     let config = load_config().unwrap_or_else(|e| {
         eprintln!("Failed to load configuration: {e}");

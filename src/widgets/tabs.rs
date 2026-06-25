@@ -3,7 +3,7 @@ use std::fmt::{Display, Formatter};
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{prelude::*, widgets::Block};
-use rust_i18n::t;
+use fluent_i18n::t;
 
 use crate::{
     app::States,

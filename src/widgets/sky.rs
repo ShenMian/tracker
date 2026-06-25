@@ -7,7 +7,7 @@ use ratatui::{
         canvas::{self, Canvas, Circle, Context},
     },
 };
-use rust_i18n::t;
+use fluent_i18n::t;
 
 use crate::{
     app::States, config::SkyConfig, coordinates::Lla, event::Event, shared_state::SharedState,

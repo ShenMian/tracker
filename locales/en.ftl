@@ -1,0 +1,50 @@
+# World map
+map-title = World map
+map-follow = Follow
+
+# Satellite groups
+group-title = Satellite groups
+
+# Information
+info-title = Info
+info-name = Name
+info-cospar_id = COSPAR ID
+info-norad_id = NORAD ID
+info-longitude = Longitude
+info-latitude = Latitude
+info-altitude = Altitude
+info-speed = Speed
+info-period = Period
+info-location = Location
+info-epoch = Epoch
+info-drag_term = Drag term
+info-inclination = Inc
+info-right_ascension = Right asc.
+info-eccentricity = Ecc
+info-mean_anomaly = M. anomaly
+info-mean_motion = M. motion
+info-rev_num = Rev. #
+
+# Sky
+sky-title = Sky
+sky-no_ground_station = No ground station
+
+# Keymap
+keymap-title = Keymap
+keymap-global = Global
+keymap-world_map = World Map
+keymap-timeline = Timeline
+keymap-quit = Quit
+keymap-help = Toggle keymap popup
+keymap-dismiss = Dismiss popup
+keymap-switch_tab = Switch to next/previous tab
+keymap-select = Select the nearest object
+keymap-deselect = Deselect current object
+keymap-map_move = Move the world map left/right
+keymap-follow = Toggle object tracking (follow)
+keymap-terminator = Toggle day-night terminator
+keymap-adjust_time = Adjust time backward/forward
+keymap-reset_time = Reset time offset
+
+no_object_selected = No object selected
+no_enough_space = Not enough space

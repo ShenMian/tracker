@@ -3,6 +3,7 @@ use std::borrow::Cow;
 use anyhow::Result;
 use arboard::Clipboard;
 use crossterm::event::{MouseButton, MouseEvent, MouseEventKind};
+use fluent_i18n::t;
 use ratatui::{
     prelude::*,
     style::palette::tailwind,
@@ -11,7 +12,6 @@ use ratatui::{
         TableState, Wrap,
     },
 };
-use rust_i18n::t;
 use unicode_width::UnicodeWidthStr;
 
 use crate::{

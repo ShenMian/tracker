@@ -1,5 +1,5 @@
 use rayon::prelude::*;
-use rust_i18n::t;
+use fluent_i18n::t;
 use std::time::{Duration, Instant};
 use tokio::{sync::mpsc, task::AbortHandle};
 

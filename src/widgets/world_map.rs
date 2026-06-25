@@ -1,5 +1,6 @@
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind};
+use fluent_i18n::t;
 use ratatui::{
     prelude::*,
     style::Styled,
@@ -9,7 +10,6 @@ use ratatui::{
     },
 };
 use rayon::prelude::*;
-use rust_i18n::t;
 
 use crate::{
     app::States, config::WorldMapConfig, event::Event, shared_state::SharedState, utils::*,

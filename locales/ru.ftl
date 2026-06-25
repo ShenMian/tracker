@@ -1,0 +1,50 @@
+# World map
+map-title = Карта мира
+map-follow = Следовать
+
+# Satellite groups
+group-title = Группы спутников
+
+# Information
+info-title = Инфо
+info-name = Название
+info-cospar_id = COSPAR ID
+info-norad_id = NORAD ID
+info-longitude = Долгота
+info-latitude = Широта
+info-altitude = Высота
+info-speed = Скорость
+info-period = Период
+info-location = Местоположение
+info-epoch = Эпоха
+info-drag_term = Коэфф. торможения
+info-inclination = Накл.
+info-right_ascension = Прям. восх.
+info-eccentricity = Эксц.
+info-mean_anomaly = Ср. аномалия
+info-mean_motion = Ср. движение
+info-rev_num = Виток №
+
+# Sky
+sky-title = Небо
+sky-no_ground_station = Нет наземной станции
+
+# Keymap
+keymap-title = Горячие клавиши
+keymap-global = Глобальные
+keymap-world_map = Карта мира
+keymap-timeline = Временная шкала
+keymap-quit = Выход
+keymap-help = Переключить popup сочетаний клавиш
+keymap-dismiss = Закрыть popup
+keymap-switch_tab = Следующая/предыдущая вкладка
+keymap-select = Выбрать ближайший объект
+keymap-deselect = Снять выделение с текущего объекта
+keymap-map_move = Сдвинуть карту влево/вправо
+keymap-follow = Переключить отслеживание объекта
+keymap-terminator = Переключить терминатор день-ночь
+keymap-adjust_time = Время назад/вперёд
+keymap-reset_time = Сбросить смещение времени
+
+no_object_selected = Объект не выбран
+no_enough_space = Недостаточно места
