@@ -131,8 +131,8 @@ impl WorldMap<'_> {
         let x_min = self.state.lon_offset - 180.0;
         let x_max = self.state.lon_offset + 180.0;
 
-        // Adjust the rendering order to prevent the labels on the left map from being
-        // covered by the right map
+        // Adjust the rendering order to prevent the labels on the left map from
+        // being covered by the right map
         let mut bounds_vec = Vec::new();
         if x_min < -180.0 {
             bounds_vec.push([x_min, x_max]); // Left side
