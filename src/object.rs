@@ -50,6 +50,10 @@ impl Object {
     }
 
     /// Predicts the state of the object at the given time.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`sgp4::Error`] if SGP4 propagation fails.
     pub fn predict(&self, time: &DateTime<Utc>) -> Result<State, sgp4::Error> {
         let minutes_since_epoch = (*time - self.epoch).as_seconds_f64() / 60.0;
 
