@@ -37,10 +37,14 @@ pub struct WorldMapState {
     follow_smoothing: f64,
     /// Whether to display the day-night terminator line.
     show_terminator: bool,
+    /// Whether to shade the night side of the Earth.
+    show_night_shading: bool,
     /// Whether to display the visibility area.
     show_visibility_area: bool,
 
-    map_color: Color,
+    coast_color: Color,
+    /// Background colour of the lit (day) side of the Earth.
+    day_color: Color,
     trajectory_color: Color,
     terminator_color: Color,
     visibility_area_color: Color,
@@ -56,9 +60,11 @@ impl WorldMapState {
             follow_object: config.follow_object,
             follow_smoothing: config.follow_smoothing,
             show_terminator: config.show_terminator,
+            show_night_shading: config.show_night_shading,
             show_visibility_area: config.show_visibility_area,
             lon_delta: config.lon_delta_deg,
-            map_color: config.map_color,
+            coast_color: config.coast_color,
+            day_color: config.day_color,
             trajectory_color: config.trajectory_color,
             terminator_color: config.terminator_color,
             visibility_area_color: config.visibility_area_color,
@@ -150,6 +156,43 @@ impl WorldMap<'_> {
         for bounds in &bounds_vec {
             self.render_top_layer(buf, *bounds);
         }
+
+        // Shade last, once every layer has been painted: setting only the
+        // background leaves the glyphs and their foreground colour untouched,
+        // so the map, objects and labels all stay legible on top of the tint.
+        if self.state.show_night_shading {
+            self.shade_night(buf);
+        }
+    }
+
+    /// Tints the background of every cell with its side of the terminator and
+    /// recolours the coastline on the night side.
+    fn shade_night(&self, buf: &mut Buffer) {
+        let area = self.state.inner_area;
+        if area.width == 0 || area.height == 0 {
+            return;
+        }
+
+        let subsolar = subsolar_point(&self.shared.time.time());
+        let lon_offset = self.state.lon_offset;
+        let day_color = self.state.day_color;
+        let night_color = dim_color(day_color);
+        let coast_color = self.state.coast_color;
+        let coast_night_color = dim_color(coast_color);
+
+        for row in 0..area.height {
+            for col in 0..area.width {
+                let (lon, lat) = cell_center_to_lon_lat(col, row, area, lon_offset);
+                let Some(cell) = buf.cell_mut((area.x + col, area.y + row)) else {
+                    continue;
+                };
+                let is_day = is_daylight(subsolar, lon, lat);
+                cell.set_bg(if is_day { day_color } else { night_color });
+                if !is_day && cell.fg == coast_color && is_braille(cell.symbol()) {
+                    cell.set_fg(coast_night_color);
+                }
+            }
+        }
     }
 
     /// Renders the bottom layer of the world map, including the map and all
@@ -160,7 +203,7 @@ impl WorldMap<'_> {
             .y_bounds([-90.0, 90.0])
             .paint(|ctx| {
                 ctx.draw(&Map {
-                    color: self.state.map_color,
+                    color: self.state.coast_color,
                     resolution: MapResolution::High,
                 });
                 ctx.layer();
@@ -316,6 +359,9 @@ fn handle_key_event(event: KeyEvent, states: &mut States) -> Result<()> {
         KeyCode::Char('t') => {
             states.world_map_state.show_terminator = !states.world_map_state.show_terminator;
         }
+        KeyCode::Char('n') => {
+            states.world_map_state.show_night_shading = !states.world_map_state.show_night_shading;
+        }
         _ => {}
     }
 
@@ -390,6 +436,57 @@ fn area_to_lon_lat(x: u16, y: u16, area: Rect) -> (f64, f64) {
     let lon = -180.0 + normalized_x * 360.0;
     let lat = 90.0 - normalized_y * 180.0;
     (lon, lat)
+}
+
+/// Converts area coordinates to the geographic coordinate at the cell centre.
+///
+/// This is the inverse of the canvas' own mapping: `x_bounds` covers a 360°
+/// window starting at `lon_offset - 180`, and `y_bounds` covers 90°S..90°N with
+/// north at the top. Sampling cell centres (the `+ 0.5`) keeps the computed
+/// terminator away from the cell edges.
+#[must_use]
+fn cell_center_to_lon_lat(col: u16, row: u16, area: Rect, lon_offset: f64) -> (f64, f64) {
+    debug_assert!(col < area.width && row < area.height);
+    debug_assert!(area.width > 0 && area.height > 0);
+
+    let normalized_x = (f64::from(col) + 0.5) / f64::from(area.width);
+    let normalized_y = (f64::from(row) + 0.5) / f64::from(area.height);
+    let lon = wrap_longitude_deg(lon_offset - 180.0 + normalized_x * 360.0);
+    let lat = 90.0 - normalized_y * 180.0;
+    (lon, lat)
+}
+
+/// How far night-side colours are scaled towards black.
+const NIGHT_DIM_FACTOR: f64 = 0.45;
+
+/// Returns `color` scaled towards black.
+fn dim_color(color: Color) -> Color {
+    match color {
+        Color::Gray => Color::DarkGray,
+        Color::White => Color::Gray,
+        Color::LightRed => Color::Red,
+        Color::LightGreen => Color::Green,
+        Color::LightYellow => Color::Yellow,
+        Color::LightBlue => Color::Blue,
+        Color::LightMagenta => Color::Magenta,
+        Color::LightCyan => Color::Cyan,
+        Color::Rgb(r, g, b) => {
+            let dim = |c: u8| (f64::from(c) * NIGHT_DIM_FACTOR) as u8;
+            Color::Rgb(dim(r), dim(g), dim(b))
+        }
+        other => other,
+    }
+}
+
+/// Returns true when `symbol` is a single Braille character, which is what
+/// ratatui's [`canvas::Map`](ratatui::widgets::canvas::Map) widget draws
+/// continents as. Used to distinguish coastline pixels from object labels when
+/// recolouring the night side.
+fn is_braille(symbol: &str) -> bool {
+    symbol
+        .chars()
+        .next()
+        .is_some_and(|c| ('\u{2800}'..='\u{28FF}').contains(&c))
 }
 
 /// Converts lon/lat coordinates to area coordinates.

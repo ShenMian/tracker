@@ -75,6 +75,34 @@ pub fn subsolar_point(time: &DateTime<Utc>) -> (f64, f64) {
     (lon, decl)
 }
 
+/// Returns the cosine of the solar zenith angle at a point on the Earth.
+///
+/// The sign alone answers "is the sun up?": positive means the sun is above the
+/// horizon, negative below it, and zero lands exactly on the terminator. The
+/// magnitude is the sine of the solar elevation, so it can also drive a
+/// twilight band rather than a hard day/night split.
+///
+/// # Arguments
+///
+/// * `subsolar` - The subsolar point `(longitude, latitude)` in radians, as
+///   returned by [`subsolar_point`]. It is taken as a parameter so callers can
+///   compute it once and reuse it across a whole grid of points.
+/// * `lon_deg` - Longitude of the point to test, in degrees.
+/// * `lat_deg` - Latitude of the point to test, in degrees.
+pub fn solar_zenith_cos(subsolar: (f64, f64), lon_deg: f64, lat_deg: f64) -> f64 {
+    let (sub_lon, sub_lat) = subsolar;
+    let lat = lat_deg.to_radians();
+    let dlon = lon_deg.to_radians() - sub_lon;
+    lat.sin() * sub_lat.sin() + lat.cos() * sub_lat.cos() * dlon.cos()
+}
+
+/// Returns whether the sun is above the horizon at the given point.
+///
+/// See [`solar_zenith_cos`] for the meaning of `subsolar`.
+pub fn is_daylight(subsolar: (f64, f64), lon_deg: f64, lat_deg: f64) -> bool {
+    solar_zenith_cos(subsolar, lon_deg, lat_deg) >= 0.0
+}
+
 /// Calculates a set of points representing the day-night terminator.
 ///
 /// # Arguments
@@ -250,4 +278,79 @@ pub fn wrap_longitude_deg(lon: f64) -> f64 {
 /// Wraps a value to the range [-π, π].
 pub fn wrap_longitude_rad(lon: f64) -> f64 {
     (lon + PI).rem_euclid(TAU) - PI
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::TimeZone;
+
+    fn at(y: i32, m: u32, d: u32, h: u32) -> DateTime<Utc> {
+        Utc.with_ymd_and_hms(y, m, d, h, 0, 0).unwrap()
+    }
+
+    #[test]
+    fn the_sun_is_at_the_zenith_of_the_subsolar_point() {
+        let subsolar = subsolar_point(&at(2026, 6, 21, 12));
+        let (lon, lat) = (subsolar.0.to_degrees(), subsolar.1.to_degrees());
+
+        let cos_z = solar_zenith_cos(subsolar, lon, lat);
+        assert!(cos_z > 0.999, "expected the zenith, got {cos_z}");
+        assert!(is_daylight(subsolar, lon, lat));
+    }
+
+    #[test]
+    fn the_antipode_of_the_subsolar_point_is_in_darkness() {
+        let subsolar = subsolar_point(&at(2026, 6, 21, 12));
+        let (lon, lat) = (subsolar.0.to_degrees(), subsolar.1.to_degrees());
+
+        assert!(!is_daylight(
+            subsolar,
+            wrap_longitude_deg(lon + 180.0),
+            -lat
+        ));
+    }
+
+    #[test]
+    fn a_quarter_turn_from_the_subsolar_meridian_is_the_terminator() {
+        let subsolar = subsolar_point(&at(2026, 6, 21, 12));
+        let lon = subsolar.0.to_degrees();
+
+        // On the equator, 90° of longitude from the subsolar meridian is
+        // exactly sunrise or sunset, whatever the declination happens
+        // to be.
+        let cos_z = solar_zenith_cos(subsolar, wrap_longitude_deg(lon + 90.0), 0.0);
+        assert!(cos_z.abs() < 1e-9, "expected the terminator, got {cos_z}");
+    }
+
+    #[test]
+    fn daylight_covers_half_the_globe() {
+        let subsolar = subsolar_point(&at(2026, 6, 21, 12));
+
+        let mut lit = 0;
+        let mut total = 0;
+        for lat in (-90..=90).step_by(2) {
+            for lon in (-180..180).step_by(2) {
+                total += 1;
+                if is_daylight(subsolar, lon as f64, lat as f64) {
+                    lit += 1;
+                }
+            }
+        }
+
+        let fraction = f64::from(lit) / f64::from(total);
+        assert!(
+            (0.45..=0.55).contains(&fraction),
+            "expected about half the globe lit, got {fraction}"
+        );
+    }
+
+    #[test]
+    fn the_subsolar_latitude_follows_the_seasons() {
+        let june = subsolar_point(&at(2026, 6, 21, 12)).1.to_degrees();
+        let december = subsolar_point(&at(2026, 12, 21, 12)).1.to_degrees();
+
+        assert!(june > 23.0, "June solstice declination {june}");
+        assert!(december < -23.0, "December solstice declination {december}");
+    }
 }

@@ -19,6 +19,7 @@
 | `[` / `]`                               | Move the world map left/right   |
 | `f`                                     | Toggle object tracking (follow) |
 | `t`                                     | Toggle day-night terminator     |
+| `n`                                     | Toggle night side shading       |
 
 ## Timeline
 

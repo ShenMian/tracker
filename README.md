@@ -15,6 +15,7 @@ A terminal-based real-time satellite tracking and orbit prediction application.
 - **Time shift**: View past/future positions.
 - **Object following**: Follow selected object.
 - **Infinite map**: Continuous horizontal world map.
+- **Day & night**: Night side of the Earth shaded from the subsolar point.
 - **Auto updates**: Automatic OMM updates sourced from [CelesTrak](https://celestrak.org/).
 - **Configurable**: Custom display & behavior.
 - **Localization**: UI translations.

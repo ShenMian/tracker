@@ -14,9 +14,11 @@ Default configuration file locations on different platforms:
 follow_object = true
 follow_smoothing = 0.3
 show_terminator = true
+show_night_shading = true
 show_visibility_area = true
 lon_delta_deg = 10.0
-map_color = "gray"
+coast_color = "gray"
+day_color = "#141d33"
 trajectory_color = "light_blue"
 terminator_color = "dark_gray"
 visibility_area_color = "yellow"
@@ -101,8 +103,12 @@ time_delta_mins = 1
 - `follow_object`: Whether to automatically center the map on the selected satellite.
 - `follow_smoothing`: Smoothing factor for follow mode (0.0 = no movement, 1.0 = instant snap).
 - `show_terminator`: Whether to display the day-night terminator line.
+- `show_night_shading`: Whether to shade the night side of the Earth. The shading is computed from the subsolar point, so exactly half the globe is tinted at any instant.
 - `show_visibility_area`: Whether to display the visibility area on the map where the satellite is above the horizon.
 - `lon_delta_deg`: Longitude offset in degrees when scrolling the map horizontally.
+- `day_color`: Background colour of the lit (day) side. Accepts a named colour or a `#RRGGBB` hex value.
+
+The night side is `day_color` dimmed down, and the night coastline is `coast_color` dimmed down.
 
 ## Satellite Groups
 
