@@ -38,10 +38,10 @@ impl Default for WorldMapConfig {
         Self {
             follow_object: true,
             follow_smoothing: 0.3,
-            show_terminator: true,
             show_subsolar_point: true,
             show_night_shading: true,
             show_visibility_area: true,
+            show_terminator: false,
             lon_delta_deg: 10.0,
             coast_color: Color::Gray,
             day_color: Color::Rgb(0x14, 0x1d, 0x33),

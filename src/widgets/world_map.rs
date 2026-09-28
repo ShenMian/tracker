@@ -35,14 +35,14 @@ pub struct WorldMapState {
     follow_object: bool,
     /// The smoothing factor for follow mode.
     follow_smoothing: f64,
-    /// Whether to display the day-night terminator line.
-    show_terminator: bool,
     /// Whether to mark the subsolar point.
     show_subsolar_point: bool,
     /// Whether to shade the night side of the Earth.
     show_night_shading: bool,
     /// Whether to display the visibility area.
     show_visibility_area: bool,
+    /// Whether to display the day-night terminator line.
+    show_terminator: bool,
 
     coast_color: Color,
     /// Background colour of the lit (day) side of the Earth.
@@ -61,10 +61,10 @@ impl WorldMapState {
         Self {
             follow_object: config.follow_object,
             follow_smoothing: config.follow_smoothing,
-            show_terminator: config.show_terminator,
             show_subsolar_point: config.show_subsolar_point,
             show_night_shading: config.show_night_shading,
             show_visibility_area: config.show_visibility_area,
+            show_terminator: config.show_terminator,
             lon_delta: config.lon_delta_deg,
             coast_color: config.coast_color,
             day_color: config.day_color,
@@ -469,7 +469,7 @@ fn cell_center_to_lon_lat(col: u16, row: u16, area: Rect, lon_offset: f64) -> (f
 }
 
 /// How far night-side colours are scaled towards black.
-const NIGHT_DIM_FACTOR: f64 = 0.45;
+const NIGHT_DIM_FACTOR: f64 = 0.7;
 
 /// Returns `color` scaled towards black.
 fn dim_color(color: Color) -> Color {

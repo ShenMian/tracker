@@ -2,7 +2,7 @@
 
 ## Location
 
-Default configuration file locations on different platforms:
+The default configuration file locations for different platforms are:
 
 - **Linux/macOS**: `$HOME/.config/tracker/config.toml`.
 - **Windows**: `%USERPROFILE%\.config\tracker\config.toml`.
@@ -13,10 +13,10 @@ Default configuration file locations on different platforms:
 [world_map]
 follow_object = true
 follow_smoothing = 0.3
-show_terminator = true
 show_subsolar_point = true
 show_night_shading = true
 show_visibility_area = true
+show_terminator = false
 lon_delta_deg = 10.0
 coast_color = "gray"
 day_color = "#141d33"
@@ -103,25 +103,25 @@ time_delta_mins = 1
 
 - `follow_object`: Whether to automatically center the map on the selected satellite.
 - `follow_smoothing`: Smoothing factor for follow mode (0.0 = no movement, 1.0 = instant snap).
-- `show_terminator`: Whether to display the day-night terminator line.
 - `show_subsolar_point`: Whether to mark the subsolar point.
-- `show_night_shading`: Whether to shade the night side of the Earth. The shading is computed from the subsolar point, so exactly half the globe is tinted at any instant.
-- `show_visibility_area`: Whether to display the visibility area on the map where the satellite is above the horizon.
+- `show_night_shading`: Whether to shade the night side of the Earth. **This requires a terminal with truecolor support.**
+- `show_visibility_area`: Whether to display the area in which the satellite is visible above the horizon.
+- `show_terminator`: Whether to display the day-night terminator line.
 - `lon_delta_deg`: Longitude offset in degrees when scrolling the map horizontally.
-- `day_color`: Background colour of the lit (day) side. Accepts a named colour or a `#RRGGBB` hex value.
+- `day_color`: Background color of the lit (day) side.
 
-The night side is `day_color` dimmed down, and the night coastline is `coast_color` dimmed down.
+The night side uses a dimmed `day_color`, and the night coastline uses a dimmed `coast_color`.
 
 ## Satellite Groups
 
 Satellite TLE (Two-Line Element) data is retrieved from [CelesTrak](https://celestrak.org), a 501(c)(3) non-profit organization dedicated to providing free orbital data and resources to the space community.
 
 - **Individual satellites**: Use the [Search Satellite Catalog](https://celestrak.org/satcat/search.php) to locate specific satellites. The `id` field should match the satellite's International Designator as listed in the catalog.
-- **Function-based groups**: Complete list of available satellite categories can be found at [Current GP Element Sets](https://celestrak.org/NORAD/elements/). The `group` field in the configuration corresponds to these category identifiers.
+- **Function-based groups**: A complete list of available satellite categories can be found at [Current GP Element Sets](https://celestrak.org/NORAD/elements/). The `group` field in the configuration corresponds to these category identifiers.
 
 ## Sky
 
-The `ground_station.name` is optional. If not provided, the city name corresponding to the specified coordinates will be used.
+The `ground_station.name` field is optional. If not provided, the city name corresponding to the specified coordinates will be used.
 
 ## Timeline
 
@@ -147,3 +147,5 @@ Available colors:
 - `light_magenta`.
 - `light_cyan`.
 - `white`.
+
+If the terminal supports truecolor, `#RRGGBB` hex values can also be used.
