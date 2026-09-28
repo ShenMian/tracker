@@ -451,12 +451,6 @@ fn area_to_lon_lat(x: u16, y: u16, area: Rect) -> (f64, f64) {
 }
 
 /// Converts area coordinates to the geographic coordinate at the cell centre.
-///
-/// This is the inverse of the canvas' own mapping: `x_bounds` covers a 360°
-/// window starting at `lon_offset - 180`, and `y_bounds` covers 90°S..90°N with
-/// north at the top. Sampling cell centres (the `+ 0.5`) keeps the computed
-/// terminator away from the cell edges.
-#[must_use]
 fn cell_center_to_lon_lat(col: u16, row: u16, area: Rect, lon_offset: f64) -> (f64, f64) {
     debug_assert!(col < area.width && row < area.height);
     debug_assert!(area.width > 0 && area.height > 0);
@@ -490,10 +484,7 @@ fn dim_color(color: Color) -> Color {
     }
 }
 
-/// Returns true when `symbol` is a single Braille character, which is what
-/// ratatui's [`canvas::Map`](ratatui::widgets::canvas::Map) widget draws
-/// continents as. Used to distinguish coastline pixels from object labels when
-/// recolouring the night side.
+/// Returns true when `symbol` is a single Braille character.
 fn is_braille(symbol: &str) -> bool {
     symbol
         .chars()
