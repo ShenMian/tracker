@@ -22,6 +22,7 @@ const MAP_BINDINGS: &[(&str, &str)] = &[
     ("f", "keymap-follow"),
     ("t", "keymap-terminator"),
     ("n", "keymap-night_shading"),
+    ("s", "keymap-subsolar_point"),
 ];
 
 // Timeline

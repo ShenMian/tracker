@@ -37,6 +37,8 @@ pub struct WorldMapState {
     follow_smoothing: f64,
     /// Whether to display the day-night terminator line.
     show_terminator: bool,
+    /// Whether to mark the subsolar point.
+    show_subsolar_point: bool,
     /// Whether to shade the night side of the Earth.
     show_night_shading: bool,
     /// Whether to display the visibility area.
@@ -60,6 +62,7 @@ impl WorldMapState {
             follow_object: config.follow_object,
             follow_smoothing: config.follow_smoothing,
             show_terminator: config.show_terminator,
+            show_subsolar_point: config.show_subsolar_point,
             show_night_shading: config.show_night_shading,
             show_visibility_area: config.show_visibility_area,
             lon_delta: config.lon_delta_deg,
@@ -210,6 +213,9 @@ impl WorldMap<'_> {
                 if self.state.show_terminator {
                     self.draw_terminator(ctx);
                 }
+                if self.state.show_subsolar_point {
+                    self.draw_subsolar_point(ctx);
+                }
                 self.draw_objects(ctx);
             })
             .render(self.state.inner_area, buf);
@@ -231,16 +237,18 @@ impl WorldMap<'_> {
             .render(self.state.inner_area, buf);
     }
 
-    /// Draws the day-night terminator and subsolar point.
+    /// Draws the day-night terminator line.
     fn draw_terminator(&self, ctx: &mut Context) {
-        // Draw the terminator line
         Self::draw_lines(
             ctx,
             calculate_terminator(&self.shared.time.time()),
             self.state.terminator_color,
         );
+    }
 
-        // Mark the subsolar point
+    /// Marks the subsolar point: the spot on the globe where the sun is
+    /// directly overhead, i.e. the centre of the day side.
+    fn draw_subsolar_point(&self, ctx: &mut Context) {
         let (sub_lon, sub_lat) = subsolar_point(&self.shared.time.time());
         ctx.print(
             sub_lon.to_degrees(),
@@ -361,6 +369,10 @@ fn handle_key_event(event: KeyEvent, states: &mut States) -> Result<()> {
         }
         KeyCode::Char('n') => {
             states.world_map_state.show_night_shading = !states.world_map_state.show_night_shading;
+        }
+        KeyCode::Char('s') => {
+            states.world_map_state.show_subsolar_point =
+                !states.world_map_state.show_subsolar_point;
         }
         _ => {}
     }

@@ -20,6 +20,7 @@
 | `f`                                     | Toggle object tracking (follow) |
 | `t`                                     | Toggle day-night terminator     |
 | `n`                                     | Toggle night side shading       |
+| `s`                                     | Toggle subsolar point           |
 
 ## Timeline
 
