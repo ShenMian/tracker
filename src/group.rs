@@ -60,9 +60,8 @@ impl Group {
 
         if needs_refresh {
             let elements = self.fetch_elements().await?;
-            let path = cache_path.clone();
             let json = serde_json::to_string(&elements).unwrap();
-            fs::write(path, json).await.unwrap();
+            fs::write(&cache_path, json).await.unwrap();
         }
 
         let json = fs::read_to_string(&cache_path).await.unwrap();
@@ -79,21 +78,17 @@ impl Group {
             Identifier::Group(group) => request.query(&[("GROUP", group)]),
         };
 
-        let response = match request.send().await {
-            Ok(resp) => resp,
-            Err(e) => {
-                eprintln!("Failed to fetch from celestrak.org: {}", e);
-                return None;
-            }
-        };
+        let response = request
+            .send()
+            .await
+            .inspect_err(|e| eprintln!("Failed to fetch from celestrak.org: {}", e))
+            .ok()?;
 
-        match response.json().await {
-            Ok(data) => Some(data),
-            Err(e) => {
-                eprintln!("Failed to parse JSON from celestrak.org: {}", e);
-                None
-            }
-        }
+        response
+            .json()
+            .await
+            .inspect_err(|e| eprintln!("Failed to parse JSON from celestrak.org: {}", e))
+            .ok()
     }
 }
 
@@ -105,16 +100,17 @@ impl PartialEq for Group {
 
 impl From<GroupConfig> for Group {
     fn from(config: GroupConfig) -> Self {
-        match (config.id, config.group) {
-            (Some(id), None) => Self {
-                label: config.label,
-                identifier: Identifier::CosparId(id),
-            },
-            (None, Some(group)) => Self {
-                label: config.label,
-                identifier: Identifier::Group(group),
-            },
-            _ => panic!("invalid `satellite_groups.groups` configuration"),
+        let identifier = match (config.id, config.group) {
+            (Some(id), None) => Identifier::CosparId(id),
+            (None, Some(group)) => Identifier::Group(group),
+            _ => panic!(
+                "`satellite_groups.groups` entry `{}` requires either `id` or `group`, but not both",
+                config.label
+            ),
+        };
+        Self {
+            label: config.label,
+            identifier,
         }
     }
 }

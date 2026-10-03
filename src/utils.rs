@@ -133,6 +133,8 @@ pub fn calculate_terminator(time: &DateTime<Utc>) -> Vec<(f64, f64)> {
 }
 
 /// Calculates ground track points of the object.
+///
+/// Returns a vector of `(longitude, latitude)` pairs.
 pub fn calculate_ground_track(object: &Object, time: &DateTime<Utc>) -> Vec<(f64, f64)> {
     (1..object.orbital_period().num_minutes())
         .into_par_iter()
