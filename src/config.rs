@@ -273,3 +273,8 @@ pub enum ConfigError {
     #[error("time_delta_mins must be greater than 0, got {0}")]
     InvalidTimeDelta(i64),
 }
+
+#[test]
+fn default_config_is_valid() {
+    assert_eq!(Config::default().validate(), Ok(()));
+}
