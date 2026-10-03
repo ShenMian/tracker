@@ -49,5 +49,6 @@ fn load_config() -> Result<Config> {
     }
     let content = std::fs::read_to_string(&path)?;
     let config: Config = toml::from_str(&content)?;
+    config.validate()?;
     Ok(config)
 }
