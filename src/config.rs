@@ -103,8 +103,8 @@ pub struct GroupConfig {
 impl GroupConfig {
     fn validate(&self) -> Result<(), ConfigError> {
         match (&self.id, &self.group) {
-            (Some(_), Some(_)) => Err(ConfigError::MultipleGroupSources(self.label.clone())),
-            (None, None) => Err(ConfigError::MissingGroupSource(self.label.clone())),
+            (Some(_), Some(_)) => Err(ConfigError::MultipleGroupIdentifier(self.label.clone())),
+            (None, None) => Err(ConfigError::MissingGroupIdentifier(self.label.clone())),
             _ => Ok(()),
         }
     }
@@ -261,14 +261,14 @@ pub enum ConfigError {
     #[error("lon_delta_deg must be a finite number greater than 0, got {0}")]
     InvalidLongitudeDelta(f64),
     #[error("satellite group {0:?} cannot specify both id and group")]
-    MultipleGroupSources(String),
+    MultipleGroupIdentifier(String),
     #[error("satellite group {0:?} must specify either id or group")]
-    MissingGroupSource(String),
-    #[error("ground station latitude must be between -90 and 90, got {0}")]
+    MissingGroupIdentifier(String),
+    #[error("latitude must be between -90 and 90, got {0}")]
     InvalidLatitude(f64),
-    #[error("ground station longitude must be between -180 and 180, got {0}")]
+    #[error("longitude must be between -180 and 180, got {0}")]
     InvalidLongitude(f64),
-    #[error("ground station altitude must be a finite non-negative number, got {0}")]
+    #[error("altitude must be a finite non-negative number, got {0}")]
     InvalidAltitude(f64),
     #[error("time_delta_mins must be greater than 0, got {0}")]
     InvalidTimeDelta(i64),
