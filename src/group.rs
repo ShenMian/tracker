@@ -1,8 +1,8 @@
-use std::{fmt::Display, sync::LazyLock, time::Duration};
+use std::{sync::LazyLock, time::Duration};
 
 use tokio::fs;
 
-use crate::config::GroupConfig;
+use crate::config::{GroupConfig, GroupIdentifier};
 
 /// The timeout duration for HTTP requests.
 const HTTP_TIMEOUT_SECS: u64 = 10;
@@ -21,7 +21,7 @@ static HTTP_CLIENT: LazyLock<reqwest::Client> = LazyLock::new(|| {
 #[derive(Clone, Eq, Debug)]
 pub struct Group {
     label: String,
-    identifier: Identifier,
+    identifier: GroupIdentifier,
 }
 
 impl Group {
@@ -74,8 +74,8 @@ impl Group {
 
         let mut request = HTTP_CLIENT.get(URL).query(&[("FORMAT", "json")]);
         request = match &self.identifier {
-            Identifier::CosparId(id) => request.query(&[("INTDES", id)]),
-            Identifier::Group(group) => request.query(&[("GROUP", group)]),
+            GroupIdentifier::CosparId(id) => request.query(&[("INTDES", id)]),
+            GroupIdentifier::Group(group) => request.query(&[("GROUP", group)]),
         };
 
         let response = request
@@ -100,31 +100,9 @@ impl PartialEq for Group {
 
 impl From<GroupConfig> for Group {
     fn from(config: GroupConfig) -> Self {
-        let identifier = match (config.id, config.group) {
-            (Some(id), None) => Identifier::CosparId(id),
-            (None, Some(group)) => Identifier::Group(group),
-            _ => unreachable!(),
-        };
         Self {
             label: config.label,
-            identifier,
-        }
-    }
-}
-
-#[derive(Clone, PartialEq, Eq, Hash, Debug)]
-enum Identifier {
-    /// COSPAR ID.
-    CosparId(String),
-    /// Group name.
-    Group(String),
-}
-
-impl Display for Identifier {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            Identifier::CosparId(id) => write!(f, "{id}"),
-            Identifier::Group(group) => write!(f, "{group}"),
+            identifier: config.identifier,
         }
     }
 }

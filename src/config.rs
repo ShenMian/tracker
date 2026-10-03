@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use ratatui::style::Color;
 use serde::Deserialize;
 use thiserror::Error;
@@ -17,7 +19,6 @@ pub struct Config {
 impl Config {
     pub fn validate(&self) -> Result<(), ConfigError> {
         self.world_map.validate()?;
-        self.satellite_groups.validate()?;
         self.sky.validate()?;
         self.timeline.validate()?;
         Ok(())
@@ -83,45 +84,45 @@ pub struct SatelliteGroupsConfig {
     pub groups: Vec<GroupConfig>,
 }
 
-impl SatelliteGroupsConfig {
-    pub fn validate(&self) -> Result<(), ConfigError> {
-        for group in &self.groups {
-            group.validate()?;
-        }
-        Ok(())
-    }
-}
-
 #[derive(Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct GroupConfig {
     pub label: String,
-    pub id: Option<String>,
-    pub group: Option<String>,
+    #[serde(flatten)]
+    pub identifier: GroupIdentifier,
+}
+
+#[derive(Clone, PartialEq, Eq, Hash, Debug, Deserialize)]
+pub enum GroupIdentifier {
+    /// COSPAR ID.
+    #[serde(rename = "id")]
+    CosparId(String),
+    /// Group name.
+    #[serde(rename = "group")]
+    Group(String),
+}
+
+impl Display for GroupIdentifier {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Self::CosparId(id) => write!(f, "{id}"),
+            Self::Group(group) => write!(f, "{group}"),
+        }
+    }
 }
 
 impl GroupConfig {
-    fn validate(&self) -> Result<(), ConfigError> {
-        match (&self.id, &self.group) {
-            (Some(_), Some(_)) => Err(ConfigError::MultipleGroupIdentifier(self.label.clone())),
-            (None, None) => Err(ConfigError::MissingGroupIdentifier(self.label.clone())),
-            _ => Ok(()),
-        }
-    }
-
     fn with_id(label: String, cospar_id: String) -> Self {
         Self {
             label,
-            id: Some(cospar_id),
-            group: None,
+            identifier: GroupIdentifier::CosparId(cospar_id),
         }
     }
 
     fn with_group(label: String, group_name: String) -> Self {
         Self {
             label,
-            id: None,
-            group: Some(group_name),
+            identifier: GroupIdentifier::Group(group_name),
         }
     }
 }
@@ -260,10 +261,6 @@ pub enum ConfigError {
     InvalidFollowSmoothing(f64),
     #[error("lon_delta_deg must be a finite number greater than 0, got {0}")]
     InvalidLongitudeDelta(f64),
-    #[error("satellite group {0:?} cannot specify both id and group")]
-    MultipleGroupIdentifier(String),
-    #[error("satellite group {0:?} must specify either id or group")]
-    MissingGroupIdentifier(String),
     #[error("latitude must be between -90 and 90, got {0}")]
     InvalidLatitude(f64),
     #[error("longitude must be between -180 and 180, got {0}")]
