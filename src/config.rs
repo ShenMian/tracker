@@ -1,5 +1,6 @@
 use ratatui::style::Color;
 use serde::Deserialize;
+use thiserror::Error;
 
 use crate::coordinates::Lla;
 
@@ -14,7 +15,7 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn validate(&self) -> Result<(), ()> {
+    pub fn validate(&self) -> Result<(), ConfigError> {
         self.world_map.validate()?;
         self.satellite_groups.validate()?;
         self.sky.validate()?;
@@ -44,12 +45,12 @@ pub struct WorldMapConfig {
 }
 
 impl WorldMapConfig {
-    pub fn validate(&self) -> Result<(), ()> {
+    pub fn validate(&self) -> Result<(), ConfigError> {
         if !(0.0..=1.0).contains(&self.follow_smoothing) {
-            return Err(());
+            return Err(ConfigError::InvalidFollowSmoothing(self.follow_smoothing));
         }
         if self.lon_delta_deg <= 0.0 {
-            return Err(());
+            return Err(ConfigError::InvalidLongitudeDelta(self.lon_delta_deg));
         }
         Ok(())
     }
@@ -83,7 +84,7 @@ pub struct SatelliteGroupsConfig {
 }
 
 impl SatelliteGroupsConfig {
-    pub fn validate(&self) -> Result<(), ()> {
+    pub fn validate(&self) -> Result<(), ConfigError> {
         for group in &self.groups {
             group.validate()?;
         }
@@ -100,10 +101,10 @@ pub struct GroupConfig {
 }
 
 impl GroupConfig {
-    fn validate(&self) -> Result<(), ()> {
+    fn validate(&self) -> Result<(), ConfigError> {
         match (&self.id, &self.group) {
-            (Some(_), Some(_)) => Err(()),
-            (None, None) => Err(()),
+            (Some(_), Some(_)) => Err(ConfigError::MultipleGroupSources(self.label.clone())),
+            (None, None) => Err(ConfigError::MissingGroupSource(self.label.clone())),
             _ => Ok(()),
         }
     }
@@ -199,7 +200,7 @@ pub struct SkyConfig {
 }
 
 impl SkyConfig {
-    pub fn validate(&self) -> Result<(), ()> {
+    pub fn validate(&self) -> Result<(), ConfigError> {
         if let Some(ground_station) = &self.ground_station {
             ground_station.validate()?;
         }
@@ -215,13 +216,17 @@ pub struct GroundStationConfig {
 }
 
 impl GroundStationConfig {
-    pub fn validate(&self) -> Result<(), ()> {
-        if !(-90.0..=90.0).contains(&self.position.lat)
-            || !(-180.0..=180.0).contains(&self.position.lon)
-            || self.position.alt < 0.0
-        {
-            return Err(());
+    pub fn validate(&self) -> Result<(), ConfigError> {
+        if !(-90.0..=90.0).contains(&self.position.lat) {
+            return Err(ConfigError::InvalidLatitude(self.position.lat));
         }
+        if !(-180.0..=180.0).contains(&self.position.lon) {
+            return Err(ConfigError::InvalidLongitude(self.position.lon));
+        }
+        if self.position.alt < 0.0 {
+            return Err(ConfigError::InvalidAltitude(self.position.alt));
+        }
+
         Ok(())
     }
 }
@@ -234,9 +239,9 @@ pub struct TimelineConfig {
 }
 
 impl TimelineConfig {
-    pub fn validate(&self) -> Result<(), ()> {
+    pub fn validate(&self) -> Result<(), ConfigError> {
         if self.time_delta_mins <= 0 {
-            return Err(());
+            return Err(ConfigError::InvalidTimeDelta(self.time_delta_mins));
         }
         Ok(())
     }
@@ -246,4 +251,25 @@ impl Default for TimelineConfig {
     fn default() -> Self {
         Self { time_delta_mins: 1 }
     }
+}
+
+/// An error encountered while validating the application configuration.
+#[derive(Clone, Debug, Error, PartialEq)]
+pub enum ConfigError {
+    #[error("follow_smoothing must be between 0 and 1, got {0}")]
+    InvalidFollowSmoothing(f64),
+    #[error("lon_delta_deg must be a finite number greater than 0, got {0}")]
+    InvalidLongitudeDelta(f64),
+    #[error("satellite group {0:?} cannot specify both id and group")]
+    MultipleGroupSources(String),
+    #[error("satellite group {0:?} must specify either id or group")]
+    MissingGroupSource(String),
+    #[error("ground station latitude must be between -90 and 90, got {0}")]
+    InvalidLatitude(f64),
+    #[error("ground station longitude must be between -180 and 180, got {0}")]
+    InvalidLongitude(f64),
+    #[error("ground station altitude must be a finite non-negative number, got {0}")]
+    InvalidAltitude(f64),
+    #[error("time_delta_mins must be greater than 0, got {0}")]
+    InvalidTimeDelta(i64),
 }

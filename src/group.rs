@@ -103,10 +103,7 @@ impl From<GroupConfig> for Group {
         let identifier = match (config.id, config.group) {
             (Some(id), None) => Identifier::CosparId(id),
             (None, Some(group)) => Identifier::Group(group),
-            _ => panic!(
-                "`satellite_groups.groups` entry `{}` requires either `id` or `group`, but not both",
-                config.label
-            ),
+            _ => unreachable!(),
         };
         Self {
             label: config.label,
