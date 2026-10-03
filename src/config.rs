@@ -13,6 +13,16 @@ pub struct Config {
     pub timeline: TimelineConfig,
 }
 
+impl Config {
+    pub fn validate(&self) -> Result<(), ()> {
+        self.world_map.validate()?;
+        self.satellite_groups.validate()?;
+        self.sky.validate()?;
+        self.timeline.validate()?;
+        Ok(())
+    }
+}
+
 /// Configuration for the world map widget.
 #[derive(Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
@@ -31,6 +41,18 @@ pub struct WorldMapConfig {
     pub trajectory_color: Color,
     pub terminator_color: Color,
     pub visibility_area_color: Color,
+}
+
+impl WorldMapConfig {
+    pub fn validate(&self) -> Result<(), ()> {
+        if !(0.0..=1.0).contains(&self.follow_smoothing) {
+            return Err(());
+        }
+        if self.lon_delta_deg <= 0.0 {
+            return Err(());
+        }
+        Ok(())
+    }
 }
 
 impl Default for WorldMapConfig {
@@ -60,6 +82,15 @@ pub struct SatelliteGroupsConfig {
     pub groups: Vec<GroupConfig>,
 }
 
+impl SatelliteGroupsConfig {
+    pub fn validate(&self) -> Result<(), ()> {
+        for group in &self.groups {
+            group.validate()?;
+        }
+        Ok(())
+    }
+}
+
 #[derive(Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct GroupConfig {
@@ -69,6 +100,14 @@ pub struct GroupConfig {
 }
 
 impl GroupConfig {
+    fn validate(&self) -> Result<(), ()> {
+        match (&self.id, &self.group) {
+            (Some(_), Some(_)) => Err(()),
+            (None, None) => Err(()),
+            _ => Ok(()),
+        }
+    }
+
     fn with_id(label: String, cospar_id: String) -> Self {
         Self {
             label,
@@ -159,6 +198,15 @@ pub struct SkyConfig {
     pub ground_station: Option<GroundStationConfig>,
 }
 
+impl SkyConfig {
+    pub fn validate(&self) -> Result<(), ()> {
+        if let Some(ground_station) = &self.ground_station {
+            ground_station.validate()?;
+        }
+        Ok(())
+    }
+}
+
 #[derive(Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct GroundStationConfig {
@@ -166,11 +214,32 @@ pub struct GroundStationConfig {
     pub position: Lla,
 }
 
+impl GroundStationConfig {
+    pub fn validate(&self) -> Result<(), ()> {
+        if !(-90.0..=90.0).contains(&self.position.lat)
+            || !(-180.0..=180.0).contains(&self.position.lon)
+            || self.position.alt < 0.0
+        {
+            return Err(());
+        }
+        Ok(())
+    }
+}
+
 /// Configuration for the timeline widget.
 #[derive(Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct TimelineConfig {
     pub time_delta_mins: i64,
+}
+
+impl TimelineConfig {
+    pub fn validate(&self) -> Result<(), ()> {
+        if self.time_delta_mins <= 0 {
+            return Err(());
+        }
+        Ok(())
+    }
 }
 
 impl Default for TimelineConfig {
