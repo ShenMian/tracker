@@ -256,6 +256,7 @@ impl Default for TimelineConfig {
 
 /// An error encountered while validating the application configuration.
 #[derive(Clone, Debug, Error, PartialEq)]
+#[allow(clippy::enum_variant_names)]
 pub enum ConfigError {
     #[error("follow_smoothing must be between 0 and 1, got {0}")]
     InvalidFollowSmoothing(f64),
