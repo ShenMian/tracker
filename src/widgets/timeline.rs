@@ -27,6 +27,8 @@ pub struct TimelineState {
     mouse_position: Option<Position>,
     /// The time step to advance or rewind when scrolling time.
     time_delta: Duration,
+    /// Cached satellite pass segments for the selected object.
+    pass_times: Vec<(DateTime<Utc>, DateTime<Utc>)>,
     /// The inner rendering area of the widget.
     inner_area: Rect,
 }
@@ -38,6 +40,23 @@ impl TimelineState {
             time_delta: Duration::minutes(config.time_delta_mins),
             ..Default::default()
         }
+    }
+
+    /// Recomputes the cached pass times for the selected object.
+    fn update(&mut self, shared: &SharedState) {
+        let (Some(object), Some(station)) = (&shared.selected_object, &shared.ground_station)
+        else {
+            self.pass_times.clear();
+            return;
+        };
+
+        let current_time = shared.time.time();
+        self.pass_times = calculate_pass_times(
+            object,
+            &station.position,
+            &(current_time - Duration::hours(Timeline::HOURS_WINDOW) / 2),
+            &(current_time + Duration::hours(Timeline::HOURS_WINDOW) / 2),
+        );
     }
 
     fn hovered_time(&self, current_time: DateTime<Utc>) -> Option<DateTime<Utc>> {
@@ -141,26 +160,18 @@ impl Timeline<'_> {
     }
 
     fn draw_pass_times(&self, ctx: &mut Context) {
-        let Some(selected_object) = &self.shared.selected_object else {
-            return;
-        };
-        let Some(ground_station) = &self.shared.ground_station else {
-            return;
-        };
-
         let current_time = self.shared.time.time();
-        let pass_segments = calculate_pass_times(
-            selected_object,
-            &ground_station.position,
-            &(current_time - Duration::hours(Self::HOURS_WINDOW) / 2),
-            &(current_time + Duration::hours(Self::HOURS_WINDOW) / 2),
-        );
 
-        for (start_time, end_time) in pass_segments {
-            let x1 = time_to_canvas_x(start_time, current_time).max(0.0);
-            let x2 = time_to_canvas_x(end_time, current_time).min(Self::HOURS_WINDOW as f64);
+        for (start_time, end_time) in &self.state.pass_times {
+            let x1 = time_to_canvas_x(*start_time, current_time);
+            let x2 = time_to_canvas_x(*end_time, current_time);
+            if x2 < 0.0 || x1 > Self::HOURS_WINDOW as f64 {
+                continue;
+            }
+            let x1 = x1.max(0.0);
+            let x2 = x2.min(Self::HOURS_WINDOW as f64);
 
-            debug_assert!(x2 >= 0.0 && x1 <= Self::HOURS_WINDOW as f64);
+            debug_assert!(x2 >= 0.0 && x1 <= Self::HOURS_WINDOW as f64 && x2 >= x1);
             ctx.draw(&canvas::Line {
                 x1,
                 y1: 0.5,
@@ -174,10 +185,16 @@ impl Timeline<'_> {
 
 pub fn handle_event(event: Event, states: &mut States) -> Result<()> {
     match event {
+        Event::Update => handle_update_event(states),
         Event::Key(event) => handle_key_event(event, states),
         Event::Mouse(event) => handle_mouse_event(event, states),
         _ => Ok(()),
     }
+}
+
+fn handle_update_event(states: &mut States) -> Result<()> {
+    states.timeline_state.update(&states.shared);
+    Ok(())
 }
 
 fn handle_key_event(event: KeyEvent, states: &mut States) -> Result<()> {
