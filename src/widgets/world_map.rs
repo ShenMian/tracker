@@ -265,14 +265,14 @@ impl WorldMap<'_> {
             .shared
             .objects
             .par_iter()
-            .map(|object| {
+            .filter_map(|object| {
                 let object_name = object.name().unwrap_or(Self::UNKNOWN_NAME);
                 let text = if self.shared.selected_object.is_none() {
                     Self::OBJECT_SYMBOL.light_red() + format!(" {object_name}").white()
                 } else {
                     Self::OBJECT_SYMBOL.red() + format!(" {object_name}").dark_gray()
                 };
-                (text, object.predict(&time).unwrap())
+                Some((text, object.predict(&time).ok()?))
             })
             .collect::<Vec<_>>()
         {

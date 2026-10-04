@@ -138,9 +138,9 @@ pub fn calculate_terminator(time: &DateTime<Utc>) -> Vec<(f64, f64)> {
 pub fn calculate_ground_track(object: &Object, time: &DateTime<Utc>) -> Vec<(f64, f64)> {
     (1..object.orbital_period().num_minutes())
         .into_par_iter()
-        .map(|mins| {
-            let state = object.predict(&(*time + Duration::minutes(mins))).unwrap();
-            (state.longitude(), state.latitude())
+        .filter_map(|mins| {
+            let state = object.predict(&(*time + Duration::minutes(mins))).ok()?;
+            Some((state.longitude(), state.latitude()))
         })
         .collect()
 }
@@ -180,6 +180,7 @@ pub fn calculate_sky_track(
     ground_station: &Lla,
     time: &DateTime<Utc>,
 ) -> Vec<(f64, f64)> {
+    const MIN_VISIBLE_ELEVATION: f64 = 10.0;
     const WINDOW_MINUTES: i64 = 30;
     const STEP_MIN: usize = 1;
 
@@ -188,13 +189,12 @@ pub fn calculate_sky_track(
         .collect::<Vec<_>>()
         .into_par_iter()
         .filter_map(|mins| {
-            let state = object.predict(&(*time + Duration::minutes(mins))).unwrap();
+            let state = object.predict(&(*time + Duration::minutes(mins))).ok()?;
             let (az, el) = state.position.az_el(ground_station);
-            if el < 0.0 {
-                None
-            } else {
-                Some(az_el_to_canvas(az, el))
+            if el < MIN_VISIBLE_ELEVATION {
+                return None;
             }
+            Some(az_el_to_canvas(az, el))
         })
         .collect()
 }
