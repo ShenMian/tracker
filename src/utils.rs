@@ -215,9 +215,10 @@ pub fn calculate_pass_times(
 
     let mut time = *start_time;
     while time <= *end_time {
-        let state = object.predict(&time).unwrap();
-        let (_, el) = state.position.az_el(observer);
-        let is_visible = el >= 0.0;
+        // Treat unresolvable steps as not visible.
+        let is_visible = object
+            .predict(&time)
+            .is_ok_and(|state| state.position.az_el(observer).1 >= 0.0);
 
         match (current_pass_start, is_visible) {
             (None, true) => {
