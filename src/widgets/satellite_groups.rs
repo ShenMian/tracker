@@ -63,7 +63,7 @@ impl SatelliteGroupsState {
         let group = entry.group.clone();
         let cache_lifetime = self.cache_lifetime;
         let handle = tokio::spawn(async move {
-            let elements = group.get_elements(cache_lifetime).await;
+            let elements = group.get_elements(cache_lifetime).await.ok();
             let _ = tx.send(UpdateResult { index, elements });
         });
         entry.abort_handle = Some(handle.abort_handle());

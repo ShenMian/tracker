@@ -1,5 +1,6 @@
 use std::{sync::LazyLock, time::Duration};
 
+use anyhow::{Context, Result};
 use tokio::fs;
 
 use crate::config::{GroupConfig, GroupIdentifier};
@@ -38,38 +39,29 @@ impl Group {
     /// # Arguments
     ///
     /// * `cache_lifetime` - Duration for which the cache is considered valid.
-    pub async fn get_elements(&self, cache_lifetime: Duration) -> Option<Vec<sgp4::Elements>> {
+    pub async fn get_elements(&self, cache_lifetime: Duration) -> Result<Vec<sgp4::Elements>> {
         let cache_path = std::env::temp_dir().join(format!(
             "tracker/{}.json",
             self.identifier.to_string().to_lowercase()
         ));
-        fs::create_dir_all(cache_path.parent().unwrap())
-            .await
-            .unwrap();
+        fs::create_dir_all(cache_path.parent().unwrap()).await?;
 
         // Check if cache needs refresh (doesn't exist or expired)
-        let needs_refresh = !fs::try_exists(&cache_path).await.unwrap()
-            || fs::metadata(&cache_path)
-                .await
-                .unwrap()
-                .modified()
-                .unwrap()
-                .elapsed()
-                .unwrap()
-                > cache_lifetime;
+        let needs_refresh = !fs::try_exists(&cache_path).await?
+            || fs::metadata(&cache_path).await?.modified()?.elapsed()? > cache_lifetime;
 
         if needs_refresh {
             let elements = self.fetch_elements().await?;
-            let json = serde_json::to_string(&elements).unwrap();
-            fs::write(&cache_path, json).await.unwrap();
+            let json = serde_json::to_string(&elements)?;
+            fs::write(&cache_path, json).await?;
         }
 
-        let json = fs::read_to_string(&cache_path).await.unwrap();
-        serde_json::from_str(&json).expect("failed to parse cache")
+        let json = fs::read_to_string(&cache_path).await?;
+        serde_json::from_str(&json).context("failed to parse cache")
     }
 
     /// Fetches SGP4 elements from <https://celestrak.org>.
-    async fn fetch_elements(&self) -> Option<Vec<sgp4::Elements>> {
+    async fn fetch_elements(&self) -> Result<Vec<sgp4::Elements>> {
         const URL: &str = "https://celestrak.org/NORAD/elements/gp.php";
 
         let mut request = HTTP_CLIENT.get(URL).query(&[("FORMAT", "json")]);
@@ -81,14 +73,12 @@ impl Group {
         let response = request
             .send()
             .await
-            .inspect_err(|e| eprintln!("Failed to fetch from celestrak.org: {}", e))
-            .ok()?;
+            .context("failed to fetch from celestrak.org")?;
 
         response
             .json()
             .await
-            .inspect_err(|e| eprintln!("Failed to parse JSON from celestrak.org: {}", e))
-            .ok()
+            .context("failed to parse JSON from celestrak.org")
     }
 }
 
