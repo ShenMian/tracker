@@ -1,6 +1,6 @@
 [package]
 name = "tracker"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["ShenMian <sms_school@outlook.com>"]
 license = "Apache-2.0"
 edition = "2024"
