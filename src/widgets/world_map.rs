@@ -437,19 +437,6 @@ fn get_nearest_object_index(
         .map(|(index, _)| index)
 }
 
-#[expect(dead_code)]
-/// Converts area coordinates to lon/lat coordinates.
-fn area_to_lon_lat(x: u16, y: u16, area: Rect) -> (f64, f64) {
-    debug_assert!(x < area.width && y < area.height);
-    debug_assert!(area.width > 0 && area.height > 0);
-
-    let normalized_x = x as f64 / area.width as f64;
-    let normalized_y = y as f64 / area.height as f64;
-    let lon = -180.0 + normalized_x * 360.0;
-    let lat = 90.0 - normalized_y * 180.0;
-    (lon, lat)
-}
-
 /// Converts area coordinates to the geographic coordinate at the cell centre.
 fn cell_center_to_lon_lat(col: u16, row: u16, area: Rect, lon_offset: f64) -> (f64, f64) {
     debug_assert!(col < area.width && row < area.height);
@@ -500,4 +487,17 @@ fn lon_lat_to_area(lon: f64, lat: f64, area: Rect) -> (u16, u16) {
     let x = ((lon + 180.0) * area.width as f64 / 360.0) - 1.0;
     let y = ((90.0 - lat) * area.height as f64 / 180.0) - 1.0;
     (x.round() as u16, y.round() as u16)
+}
+
+#[expect(dead_code)]
+/// Converts area coordinates to lon/lat coordinates.
+fn area_to_lon_lat(x: u16, y: u16, area: Rect) -> (f64, f64) {
+    debug_assert!(x < area.width && y < area.height);
+    debug_assert!(area.width > 0 && area.height > 0);
+
+    let normalized_x = x as f64 / area.width as f64;
+    let normalized_y = y as f64 / area.height as f64;
+    let lon = -180.0 + normalized_x * 360.0;
+    let lat = 90.0 - normalized_y * 180.0;
+    (lon, lat)
 }

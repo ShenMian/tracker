@@ -79,15 +79,12 @@ impl SatelliteGroupsState {
     }
 
     /// Spawns async tasks to reload orbital elements for all selected entries.
-    /// Returns the loaded objects.
-    pub fn reload_selected_entries(&mut self) -> Vec<Object> {
-        let objects = Vec::new();
+    pub fn reload_selected_entries(&mut self) {
         for index in 0..self.list_entries.len() {
             if self.list_entries[index].selected {
                 self.load_entry(index);
             }
         }
-        objects
     }
 
     /// Polls for async entry update results and returns new objects.
