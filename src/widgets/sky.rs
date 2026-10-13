@@ -3,15 +3,20 @@ use crossterm::event::MouseEvent;
 use ratatui::{
     prelude::*,
     widgets::{
-        Block, Borders, Paragraph, Wrap,
+        Block, Borders,
         canvas::{self, Canvas, Circle, Context},
     },
 };
 use rust_i18n::t;
 
 use crate::{
-    app::States, config::SkyConfig, coordinates::Lla, event::Event, shared_state::SharedState,
-    utils::*, widgets::window_to_area,
+    app::States,
+    config::SkyConfig,
+    coordinates::Lla,
+    event::Event,
+    shared_state::SharedState,
+    utils::*,
+    widgets::{centered_paragraph, window_to_area},
 };
 
 /// A widget that displays the sky track on a polar plot.
@@ -56,19 +61,19 @@ impl Widget for Sky<'_> {
             .min(self.state.canvas_area.height)
             < 5
         {
-            Self::centered_paragraph(t!("no_enough_space").dark_gray())
+            centered_paragraph(t!("no_enough_space").dark_gray())
                 .render(self.state.inner_area, buf);
             return;
         }
 
         if self.shared.ground_station.is_none() {
-            Self::centered_paragraph(t!("sky-no_ground_station").dark_gray())
+            centered_paragraph(t!("sky-no_ground_station").dark_gray())
                 .render(self.state.inner_area, buf);
             return;
         }
 
         if self.shared.selected_object.is_none() {
-            Self::centered_paragraph(t!("no_object_selected").dark_gray())
+            centered_paragraph(t!("no_object_selected").dark_gray())
                 .render(self.state.inner_area, buf);
             return;
         }
@@ -142,18 +147,8 @@ impl Sky<'_> {
         for window in points.windows(2) {
             let (x1, y1) = window[0];
             let (x2, y2) = window[1];
-            ctx.draw(&canvas::Line {
-                x1,
-                y1,
-                x2,
-                y2,
-                color,
-            });
+            ctx.draw(&canvas::Line::new(x1, y1, x2, y2, color));
         }
-    }
-
-    fn centered_paragraph<'a>(text: impl Into<Text<'a>>) -> Paragraph<'a> {
-        Paragraph::new(text).centered().wrap(Wrap { trim: true })
     }
 }
 

@@ -7,15 +7,18 @@ use ratatui::{
     prelude::*,
     style::palette::tailwind,
     widgets::{
-        Block, Borders, Cell, Paragraph, Row, Scrollbar, ScrollbarState, StatefulWidget, Table,
-        TableState, Wrap,
+        Block, Borders, Cell, Row, Scrollbar, ScrollbarState, StatefulWidget, Table, TableState,
     },
 };
 use rust_i18n::t;
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
-    app::States, event::Event, object::Object, shared_state::SharedState, widgets::window_to_area,
+    app::States,
+    event::Event,
+    object::Object,
+    shared_state::SharedState,
+    widgets::{centered_paragraph, window_to_area},
 };
 
 /// A widget that displays information about a selected object.
@@ -62,7 +65,7 @@ impl Widget for Information<'_> {
             self.render_table(buf, object);
             self.render_scrollbar(area, buf);
         } else {
-            Self::centered_paragraph(t!("no_object_selected").dark_gray())
+            centered_paragraph(t!("no_object_selected").dark_gray())
                 .render(self.state.inner_area, buf);
         }
     }
@@ -208,10 +211,6 @@ impl Information<'_> {
                 elements.revolution_number.to_string(),
             ),
         ];
-    }
-
-    fn centered_paragraph<'a>(text: impl Into<Text<'a>>) -> Paragraph<'a> {
-        Paragraph::new(text).centered().wrap(Wrap { trim: true })
     }
 }
 

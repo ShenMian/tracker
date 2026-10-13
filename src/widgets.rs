@@ -1,4 +1,7 @@
-use ratatui::prelude::*;
+use ratatui::{
+    prelude::*,
+    widgets::{Paragraph, Wrap},
+};
 
 pub mod information;
 pub mod keymap;
@@ -15,4 +18,9 @@ fn window_to_area(global: Position, area: Rect) -> Option<Position> {
         return None;
     }
     Some(Position::new(global.x - area.x, global.y - area.y))
+}
+
+/// Builds a centered paragraph with word wrapping.
+fn centered_paragraph<'a>(text: impl Into<Text<'a>>) -> Paragraph<'a> {
+    Paragraph::new(text).centered().wrap(Wrap { trim: true })
 }
