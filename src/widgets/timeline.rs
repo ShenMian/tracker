@@ -51,7 +51,7 @@ impl TimelineState {
         };
 
         let current_time = shared.time.time();
-        let window_duration = Duration::seconds((Timeline::WINDOW_HOURS * SECS_PER_HOUR) as i64);
+        let window_duration = Duration::hours(Timeline::WINDOW_HOURS as i64);
         self.pass_times = calculate_pass_times(
             object,
             &station.position,
@@ -173,13 +173,7 @@ impl Timeline<'_> {
             let x2 = x2.min(Self::WINDOW_HOURS);
 
             debug_assert!(x2 >= 0.0 && x1 <= Self::WINDOW_HOURS && x2 >= x1);
-            ctx.draw(&canvas::Line {
-                x1,
-                y1: 0.5,
-                x2,
-                y2: 0.5,
-                color: Color::LightYellow,
-            });
+            ctx.draw(&canvas::Line::new(x1, 0.5, x2, 0.5, Color::LightYellow));
         }
     }
 }
