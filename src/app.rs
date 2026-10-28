@@ -12,7 +12,7 @@ use crate::{
         keymap::Keymap,
         satellite_groups::{self, SatelliteGroups, SatelliteGroupsState},
         sky::{self, SkyState},
-        tabs::{self, Tabs, TabsState},
+        tabs::{self, Tab, Tabs, TabsState},
         timeline::{self, Timeline, TimelineState},
         world_map::{self, WorldMap, WorldMapState},
     },
@@ -121,8 +121,10 @@ impl App {
         world_map::handle_event(event, &mut self.states)?;
         satellite_groups::handle_event(event, &mut self.states)?;
         tabs::handle_event(event, &mut self.states)?;
-        information::handle_event(event, &mut self.states)?;
-        sky::handle_event(event, &mut self.states)?;
+        match self.states.tab_state.selected {
+            Tab::Info => information::handle_event(event, &mut self.states)?,
+            Tab::Sky => sky::handle_event(event, &mut self.states)?,
+        }
         timeline::handle_event(event, &mut self.states)
     }
 
