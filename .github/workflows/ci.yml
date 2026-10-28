@@ -102,34 +102,31 @@ jobs:
         env:
           RUSTDOCFLAGS: -D warnings
 
-  # test:
-  #   name: Tests
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v7
-  #       with:
-  #         persist-credentials: false
-  #
-  #     - name: Cache Cargo artifacts
-  #       uses: actions/cache@v6
-  #       with:
-  #         path: |
-  #           ~/.cargo/bin/
-  #           ~/.cargo/registry/index/
-  #           ~/.cargo/registry/cache/
-  #           ~/.cargo/git/db/
-  #           target/
-  #         key: cargo-${{ runner.os }}-${{ github.job }}-${{ github.ref_name }}-${{ hashFiles('**/Cargo.lock') }}
-  #         restore-keys: |
-  #           cargo-${{ runner.os }}-${{ github.job }}-${{ github.ref_name }}-
-  #           cargo-${{ runner.os }}-${{ github.job }}-
-  #
-  #     - name: Install Rust toolchain
-  #       uses: dtolnay/rust-toolchain@stable
-  #
-  #     - name: Run tests
-  #       run: |
-  #         cargo test --locked --workspace --all-features --all-targets
-  #         # Workaround for https://github.com/rust-lang/cargo/issues/6669
-  #         cargo test --locked --workspace --all-features --doc
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Cache Cargo artifacts
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: cargo-${{ runner.os }}-${{ github.job }}-${{ github.ref_name }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            cargo-${{ runner.os }}-${{ github.job }}-${{ github.ref_name }}-
+            cargo-${{ runner.os }}-${{ github.job }}-
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Run tests
+        run: cargo test --locked --workspace --all-features --all-targets
