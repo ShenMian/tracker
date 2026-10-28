@@ -129,8 +129,10 @@ impl Sky<'_> {
         Self::draw_lines(ctx, points, Color::LightBlue);
 
         // Draw current satellite position if visible
-        let object_state = object.predict(&time).unwrap();
-        let (az, el) = object_state.position.az_el(station_position);
+        let Ok(state) = object.predict(&time) else {
+            return;
+        };
+        let (az, el) = state.position.az_el(station_position);
         if el >= 0.0 {
             let (x, y) = az_el_to_canvas(az, el);
             let object_name = object.name().unwrap_or(UNKNOWN_NAME);

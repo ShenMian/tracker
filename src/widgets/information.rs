@@ -78,6 +78,9 @@ impl Information<'_> {
 
     fn table(&mut self, object: &Object) -> Table<'static> {
         self.update_table_entries(object);
+        if self.state.table_entries.is_empty() {
+            return Table::default();
+        }
 
         let key_width = self
             .state
@@ -140,7 +143,11 @@ impl Information<'_> {
     fn update_table_entries(&mut self, object: &Object) {
         const UNKNOWN: &str = "(Unknown)";
 
-        let state = object.predict(&self.shared.time.time()).unwrap();
+        let Ok(state) = object.predict(&self.shared.time.time()) else {
+            self.state.table_entries.clear();
+            self.state.table_state = TableState::default();
+            return;
+        };
         let (country, city) = state.position.country_city();
         let elements = object.elements();
         self.state.table_entries = vec![

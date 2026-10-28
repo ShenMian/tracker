@@ -128,9 +128,8 @@ impl WorldMap<'_> {
         // Follow the longitude of the selected object
         if self.state.follow_object
             && let Some(selected) = &self.shared.selected_object
+            && let Ok(object_state) = selected.predict(&self.shared.time.time())
         {
-            let object_state = selected.predict(&self.shared.time.time()).unwrap();
-
             self.state.lon_offset +=
                 wrap_longitude_deg(object_state.longitude() - self.state.lon_offset)
                     * self.state.follow_smoothing;
@@ -294,7 +293,9 @@ impl WorldMap<'_> {
             let object_name = selected.name().unwrap_or(Self::UNKNOWN_NAME);
             let text =
                 Self::OBJECT_SYMBOL.light_green().slow_blink() + format!(" {object_name}").white();
-            let object_state = selected.predict(&self.shared.time.time()).unwrap();
+            let Ok(object_state) = selected.predict(&self.shared.time.time()) else {
+                return;
+            };
             ctx.print(object_state.longitude(), object_state.latitude(), text);
         } else if let Some(hovered) = &self.shared.hovered_object {
             // Highlight the hovered object
@@ -302,7 +303,9 @@ impl WorldMap<'_> {
             let text = Self::OBJECT_SYMBOL.light_red().reversed()
                 + " ".into()
                 + object_name.to_string().white().reversed();
-            let object_state = hovered.predict(&self.shared.time.time()).unwrap();
+            let Ok(object_state) = hovered.predict(&self.shared.time.time()) else {
+                return;
+            };
             ctx.print(object_state.longitude(), object_state.latitude(), text);
         }
     }
@@ -312,7 +315,9 @@ impl WorldMap<'_> {
         let Some(object) = &self.shared.selected_object else {
             return;
         };
-        let object_state = object.predict(&self.shared.time.time()).unwrap();
+        let Ok(object_state) = object.predict(&self.shared.time.time()) else {
+            return;
+        };
         let points = calculate_visibility_area(&object_state.position);
         Self::draw_lines(ctx, points, self.state.visibility_area_color);
     }
@@ -424,17 +429,20 @@ fn get_nearest_object_index(
         .objects
         .par_iter()
         .enumerate()
-        .min_by_key(|(_, obj)| {
-            let state = obj.predict(&time).unwrap();
+        .filter_map(|(index, obj)| {
+            let state = obj.predict(&time).ok()?;
             // Convert to area position
             let (x, y) = lon_lat_to_area(
                 wrap_longitude_deg(state.longitude() - states.world_map_state.lon_offset),
                 state.latitude(),
                 inner_area,
             );
-            (x as i32 - position.x as i32).abs() + (y as i32 - position.y as i32).abs() * 2
+            let distance =
+                (x as i32 - position.x as i32).abs() + (y as i32 - position.y as i32).abs() * 2;
+            Some((distance, index))
         })
-        .map(|(index, _)| index)
+        .min()
+        .map(|(_, index)| index)
 }
 
 /// Converts area coordinates to the geographic coordinate at the cell centre.
