@@ -18,15 +18,20 @@ pub struct Object {
 
 impl Object {
     /// Creates a new `Object` from SGP4 elements.
-    pub fn from_elements(elements: sgp4::Elements) -> Self {
+    ///
+    /// # Errors
+    ///
+    /// Returns [`sgp4::ElementsError`] if the elements cannot be initialized by
+    /// SGP4.
+    pub fn from_elements(elements: sgp4::Elements) -> Result<Self, sgp4::ElementsError> {
         let orbital_period = Duration::seconds((SECONDS_PER_DAY / elements.mean_motion) as i64);
 
-        Self {
+        Ok(Self {
             epoch: Utc.from_utc_datetime(&elements.datetime),
             orbital_period,
-            constants: sgp4::Constants::from_elements(&elements).unwrap(),
+            constants: sgp4::Constants::from_elements(&elements)?,
             elements,
-        }
+        })
     }
 
     /// Returns the name of the object.

@@ -98,7 +98,7 @@ impl SatelliteGroupsState {
                 new_objects.extend(
                     elements
                         .into_par_iter()
-                        .map(Object::from_elements)
+                        .filter_map(|elements| Object::from_elements(elements).ok())
                         .collect::<Vec<_>>(),
                 );
             } else {
