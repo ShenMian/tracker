@@ -4,41 +4,140 @@ on:
   push:
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+"
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: false
 
 env:
   CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: "1"
 
 jobs:
-  release:
-    name: Release
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            artifact_name: tracker
-            asset_name: tracker-linux-x86_64
-            target: x86_64-unknown-linux-gnu
-          - os: windows-latest
-            artifact_name: tracker.exe
-            asset_name: tracker-windows-x86_64
-            target: x86_64-pc-windows-msvc
-          - os: macos-latest
-            artifact_name: tracker
-            asset_name: tracker-macos-x86_64
-            target: x86_64-apple-darwin
-          - os: macos-latest
-            artifact_name: tracker
-            asset_name: tracker-macos-aarch64
-            target: aarch64-apple-darwin
-    runs-on: ${{ matrix.os }}
+  meta:
+    name: Resolve build ref
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      ref: ${{ steps.version.outputs.ref }}
+      tag: ${{ steps.version.outputs.tag }}
+      version: ${{ steps.version.outputs.version }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Resolve tag and version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=$(cargo metadata --no-deps --locked --format-version 1 \
+            | jq -r '.packages[] | select(.name == "tracker") | .version')
+
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            tag="$GITHUB_REF_NAME"
+            if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "invalid release tag: $tag" >&2
+              exit 1
+            fi
+            if [[ "v$version" != "$tag" ]]; then
+              echo "tag $tag does not match Cargo.toml version $version" >&2
+              exit 1
+            fi
+            git rev-parse "refs/tags/$tag" >/dev/null
+            git fetch --no-tags origin main
+            if ! git merge-base --is-ancestor HEAD origin/main; then
+              echo "tag $tag does not point to a commit on main" >&2
+              exit 1
+            fi
+            ref="refs/tags/$tag"
+          else
+            tag=""
+            ref="$GITHUB_SHA"
+            echo "::notice::Manual build; building tracker $version artifacts only."
+          fi
+
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  test:
+    name: Test (${{ matrix.os }})
+    needs: meta
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.meta.outputs.ref }}
+          persist-credentials: false
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo artifacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run tests
+        run: cargo test --locked --workspace --all-features --all-targets
+
+  build:
+    name: Build (${{ matrix.asset }})
+    needs: [meta, test]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            asset: linux-x86_64
+            archive: tar.zst
+          - os: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+            asset: linux-aarch64
+            archive: tar.zst
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            asset: windows-x86_64
+            archive: zip
+          - os: windows-11-arm
+            target: aarch64-pc-windows-msvc
+            asset: windows-aarch64
+            archive: zip
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            asset: macos-x86_64
+            archive: tar.zst
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            asset: macos-aarch64
+            archive: tar.zst
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.meta.outputs.ref }}
           persist-credentials: false
 
       - name: Install Rust toolchain
@@ -46,20 +145,101 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
-      - name: Build
-        run: cargo build --release --target ${{ matrix.target }}
+      - name: Cache Cargo artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
 
-      - name: Create archive
+      - name: Build release binary
+        run: cargo build --release --locked --target ${{ matrix.target }}
+
+      - name: Strip binary
+        if: runner.os != 'Windows'
+        run: strip "target/${{ matrix.target }}/release/tracker"
+
+      - name: Package release archive
+        shell: bash
+        env:
+          ASSET: ${{ matrix.asset }}
+          ARCHIVE: ${{ matrix.archive }}
+        run: |
+          set -euo pipefail
+          name="tracker-${ASSET}"
+          stage="${RUNNER_TEMP:?}/stage-${ASSET}"
+          mkdir -p "${stage}" dist
+
+          exe="tracker"
+          if [[ "${{ matrix.target }}" == *-windows-* ]]; then
+            exe="tracker.exe"
+          fi
+          cp "target/${{ matrix.target }}/release/${exe}" "${stage}/"
+          cp README.md LICENSE "${stage}/"
+
+          (
+            cd "${stage}"
+            if [[ "${ARCHIVE}" == "zip" ]]; then
+              7z a -tzip "${GITHUB_WORKSPACE}/dist/${name}.zip" "${exe}" README.md LICENSE > /dev/null
+            else
+              chmod +x "${exe}"
+              tar -caf "${GITHUB_WORKSPACE}/dist/${name}.tar.zst" "${exe}" README.md LICENSE
+            fi
+          )
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: tracker-${{ matrix.asset }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    name: Publish release
+    needs: [meta, build]
+    if: needs.meta.outputs.tag != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.meta.outputs.ref }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Generate release notes
+        uses: orhun/git-cliff-action@v4
+        with:
+          config: cliff.toml
+          args: --current --strip header --offline
+          version: v2.14.2
+        env:
+          OUTPUT: release-notes.md
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: tracker-*
+          path: dist
+          merge-multiple: true
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.meta.outputs.tag }}
+          VERSION: ${{ needs.meta.outputs.version }}
         shell: bash
         run: |
-          cd target/${{ matrix.target }}/release
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            7z a -tzip ${{ matrix.asset_name }}.zip ${{ matrix.artifact_name }}
+          set -euo pipefail
+          shopt -s nullglob
+          assets=(dist/tracker-*.tar.zst dist/tracker-*.zip)
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --title "$VERSION Release" --notes-file release-notes.md
+            gh release upload "$TAG" "${assets[@]}" --clobber
           else
-            tar -caf ${{ matrix.asset_name }}.tar.zst ${{ matrix.artifact_name }}
+            gh release create "$TAG" "${assets[@]}" \
+              --title "$VERSION Release" --notes-file release-notes.md --verify-tag
           fi
-
-      - name: Create release and upload assets
-        uses: softprops/action-gh-release@v3
-        with:
-          files: target/${{ matrix.target }}/release/${{ matrix.asset_name }}.*
