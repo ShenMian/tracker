@@ -14,6 +14,7 @@ pub struct Config {
     pub satellite_groups: SatelliteGroupsConfig,
     pub sky: SkyConfig,
     pub timeline: TimelineConfig,
+    pub display: DisplayConfig,
 }
 
 impl Config {
@@ -21,7 +22,31 @@ impl Config {
         self.world_map.validate()?;
         self.sky.validate()?;
         self.timeline.validate()?;
+        self.display.validate()?;
         Ok(())
+    }
+}
+
+/// Configuration for drawing to the terminal.
+#[derive(Clone, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct DisplayConfig {
+    /// Frames drawn per second.
+    pub render_rate: f64,
+}
+
+impl DisplayConfig {
+    pub fn validate(&self) -> Result<(), ConfigError> {
+        if !self.render_rate.is_finite() || self.render_rate <= 0.0 {
+            return Err(ConfigError::InvalidRenderRate(self.render_rate));
+        }
+        Ok(())
+    }
+}
+
+impl Default for DisplayConfig {
+    fn default() -> Self {
+        Self { render_rate: 60.0 }
     }
 }
 
@@ -270,9 +295,31 @@ pub enum ConfigError {
     InvalidAltitude(f64),
     #[error("time_delta_mins must be greater than 0, got {0}")]
     InvalidTimeDelta(i64),
+    #[error("render_rate must be a finite number greater than 0, got {0}")]
+    InvalidRenderRate(f64),
 }
 
 #[test]
 fn default_config_is_valid() {
     assert_eq!(Config::default().validate(), Ok(()));
+}
+
+#[test]
+fn render_rate_defaults_to_60_and_can_be_set() {
+    assert_eq!(Config::default().display.render_rate, 60.0);
+
+    let config: Config = toml::from_str("[display]\nrender_rate = 10.0").unwrap();
+    assert_eq!(config.display.render_rate, 10.0);
+    assert_eq!(config.validate(), Ok(()));
+}
+
+#[test]
+fn render_rate_must_be_finite_and_positive() {
+    for render_rate in [0.0, -1.0, f64::INFINITY, f64::NAN] {
+        let config = DisplayConfig { render_rate };
+        assert!(matches!(
+            config.validate(),
+            Err(ConfigError::InvalidRenderRate(_))
+        ));
+    }
 }

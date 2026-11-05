@@ -97,6 +97,9 @@ groups = [
 
 [timeline]
 time_delta_mins = 1
+
+[display]
+render_rate = 60.0
 ```
 
 ## World Map
@@ -126,6 +129,10 @@ The `ground_station.name` field is optional. If not provided, the city name corr
 ## Timeline
 
 - `time_delta_mins`: Time step in minutes for time simulation controls.
+
+## Display
+
+- `render_rate`: Frames drawn per second. A lower value uses less CPU. Must be greater than 0.
 
 ## Color Options
 
