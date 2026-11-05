@@ -38,6 +38,10 @@ pub struct SatelliteGroupsState {
     update_sender: mpsc::UnboundedSender<UpdateResult>,
     /// Receiver for async data updates.
     update_receiver: mpsc::UnboundedReceiver<UpdateResult>,
+    /// Index of the entry whose first object is selected once it has loaded.
+    follow_index: Option<usize>,
+    /// The followed entry's first object, until it is taken.
+    followed_object: Option<Object>,
 }
 
 impl SatelliteGroupsState {
@@ -87,6 +91,22 @@ impl SatelliteGroupsState {
         }
     }
 
+    /// Selects the groups with these labels and notes the group to follow.
+    pub fn start_with(&mut self, groups: &[String], follow: Option<&str>) {
+        for entry in &mut self.list_entries {
+            entry.selected = groups.iter().any(|group| group == entry.group.label());
+        }
+        self.follow_index = self
+            .list_entries
+            .iter()
+            .position(|entry| Some(entry.group.label()) == follow);
+    }
+
+    /// Returns the followed group's first object, once, after it has loaded.
+    pub fn take_followed_object(&mut self) -> Option<Object> {
+        self.followed_object.take()
+    }
+
     /// Polls for async entry update results and returns new objects.
     pub fn poll_entry_updates(&mut self) -> Vec<Object> {
         let mut new_objects = Vec::new();
@@ -95,12 +115,15 @@ impl SatelliteGroupsState {
             entry.loading = false;
             entry.abort_handle = None;
             if let Some(elements) = result.elements {
-                new_objects.extend(
-                    elements
-                        .into_par_iter()
-                        .filter_map(|elements| Object::from_elements(elements).ok())
-                        .collect::<Vec<_>>(),
-                );
+                let objects = elements
+                    .into_par_iter()
+                    .filter_map(|elements| Object::from_elements(elements).ok())
+                    .collect::<Vec<_>>();
+                if self.follow_index == Some(result.index) {
+                    self.follow_index = None;
+                    self.followed_object = objects.first().cloned();
+                }
+                new_objects.extend(objects);
             } else {
                 entry.selected = false;
             }
@@ -134,6 +157,8 @@ impl Default for SatelliteGroupsState {
             last_update_instant: Instant::now(),
             update_sender: tx,
             update_receiver: rx,
+            follow_index: None,
+            followed_object: None,
         }
     }
 }
@@ -243,6 +268,11 @@ fn handle_update_event(states: &mut States) {
     let new_objects = state.poll_entry_updates();
     states.shared.objects.extend(new_objects);
 
+    // Select the object of the group followed from the command line
+    if let Some(object) = state.take_followed_object() {
+        states.shared.selected_object = Some(object);
+    }
+
     let now = Instant::now();
     if now.duration_since(state.last_update_instant) >= state.cache_lifetime {
         states.shared.objects.clear();
@@ -294,4 +324,118 @@ fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()> {
     state.list_state.select(index);
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const ISS: usize = 0;
+    const CSS: usize = 1;
+
+    fn state() -> SatelliteGroupsState {
+        SatelliteGroupsState::with_config(SatelliteGroupsConfig::default())
+    }
+
+    fn labels(names: &[&str]) -> Vec<String> {
+        names.iter().map(ToString::to_string).collect()
+    }
+
+    fn selected_labels(state: &SatelliteGroupsState) -> Vec<&str> {
+        state
+            .list_entries
+            .iter()
+            .filter(|entry| entry.selected)
+            .map(|entry| entry.group.label())
+            .collect()
+    }
+
+    /// Orbital elements of a real TLE, under the given name.
+    fn elements(name: &str) -> sgp4::Elements {
+        sgp4::Elements::from_tle(
+            Some(name.to_string()),
+            b"1 25544U 98067A   20194.88612269 -.00002218  00000-0 -31515-4 0  9992",
+            b"2 25544  51.6461 221.2784 0001413  89.1723 280.4612 15.49507896236008",
+        )
+        .unwrap()
+    }
+
+    fn finish_loading(
+        state: &mut SatelliteGroupsState,
+        index: usize,
+        elements: Option<Vec<sgp4::Elements>>,
+    ) {
+        state
+            .update_sender
+            .send(UpdateResult { index, elements })
+            .unwrap();
+        state.poll_entry_updates();
+    }
+
+    #[test]
+    fn start_selects_only_the_named_groups() {
+        let mut state = state();
+        state.start_with(&labels(&["CSS"]), None);
+        assert_eq!(selected_labels(&state), ["CSS"]);
+    }
+
+    #[test]
+    fn start_without_groups_selects_nothing() {
+        let mut state = state();
+        state.start_with(&[], None);
+        assert!(selected_labels(&state).is_empty());
+    }
+
+    #[test]
+    fn followed_group_gives_its_first_object() {
+        let mut state = state();
+        state.start_with(&labels(&["ISS", "CSS"]), Some("ISS"));
+        finish_loading(
+            &mut state,
+            ISS,
+            Some(vec![elements("FIRST"), elements("SECOND")]),
+        );
+        let object = state.take_followed_object().unwrap();
+        assert_eq!(object.name(), Some("FIRST"));
+    }
+
+    #[test]
+    fn a_group_that_loads_first_is_not_followed_by_mistake() {
+        let mut state = state();
+        state.start_with(&labels(&["ISS", "CSS"]), Some("ISS"));
+
+        finish_loading(&mut state, CSS, Some(vec![elements("CSS OBJECT")]));
+        assert!(state.take_followed_object().is_none());
+
+        finish_loading(&mut state, ISS, Some(vec![elements("ISS OBJECT")]));
+        let object = state.take_followed_object().unwrap();
+        assert_eq!(object.name(), Some("ISS OBJECT"));
+    }
+
+    #[test]
+    fn nothing_is_followed_without_the_flag() {
+        let mut state = state();
+        state.start_with(&labels(&["ISS"]), None);
+        finish_loading(&mut state, ISS, Some(vec![elements("ISS OBJECT")]));
+        assert!(state.take_followed_object().is_none());
+    }
+
+    #[test]
+    fn a_failed_download_gives_no_object() {
+        let mut state = state();
+        state.start_with(&labels(&["ISS"]), Some("ISS"));
+        finish_loading(&mut state, ISS, None);
+        assert!(state.take_followed_object().is_none());
+    }
+
+    #[test]
+    fn a_reload_does_not_select_the_object_again() {
+        let mut state = state();
+        state.start_with(&labels(&["ISS"]), Some("ISS"));
+        finish_loading(&mut state, ISS, Some(vec![elements("ISS OBJECT")]));
+        assert!(state.take_followed_object().is_some());
+
+        finish_loading(&mut state, ISS, Some(vec![elements("ISS OBJECT")]));
+        assert!(state.take_followed_object().is_none());
+    }
 }

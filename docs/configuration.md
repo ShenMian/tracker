@@ -122,6 +122,17 @@ Satellite TLE (Two-Line Element) data is retrieved from [CelesTrak](https://cele
 - **Individual satellites**: Use the [Search Satellite Catalog](https://celestrak.org/satcat/search.php) to locate specific satellites. The `id` field should match the satellite's International Designator as listed in the catalog.
 - **Function-based groups**: A complete list of available satellite categories can be found at [Current GP Element Sets](https://celestrak.org/NORAD/elements/). The `group` field in the configuration corresponds to these category identifiers.
 
+To load groups at startup, for example on a screen with no mouse, pass their labels on the command line:
+
+```sh
+tracker --group ISS --group CSS --follow ISS
+```
+
+- `--group`: Loads the group with this label at startup. Can be repeated.
+- `--follow`: Selects the first object of the group with this label. The label must also be given with `--group`.
+
+A label that is not in `groups` stops tracker with an error that lists the available labels.
+
 ## Sky
 
 The `ground_station.name` field is optional. If not provided, the city name corresponding to the specified coordinates will be used.
