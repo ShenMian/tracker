@@ -32,7 +32,7 @@ impl App {
     pub fn with_config(config: Config) -> Result<Self> {
         let backend = CrosstermBackend::new(std::io::stdout());
         let terminal = Terminal::new(backend)?;
-        let events = EventHandler::new();
+        let events = EventHandler::new(config.display.render_rate);
         let tui = Tui::new(terminal, events);
         Ok(Self {
             running: true,

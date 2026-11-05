@@ -28,12 +28,11 @@ pub struct EventHandler {
 
 impl EventHandler {
     /// Creates a new `EventHandler`.
-    pub fn new() -> Self {
+    pub fn new(render_rate: f64) -> Self {
         const UPDATE_RATE: f64 = 10.0;
-        const RENDER_RATE: f64 = 60.0;
 
         let mut update_interval = tokio::time::interval(Duration::from_secs_f64(1.0 / UPDATE_RATE));
-        let mut render_interval = tokio::time::interval(Duration::from_secs_f64(1.0 / RENDER_RATE));
+        let mut render_interval = tokio::time::interval(Duration::from_secs_f64(1.0 / render_rate));
         let (sender, receiver) = mpsc::unbounded_channel();
         let sender_clone = sender.clone();
         let handler = tokio::spawn(async move {
@@ -81,12 +80,6 @@ impl EventHandler {
         self.receiver.recv().await.ok_or(
           anyhow::anyhow!("the event receiver has been closed and there are no remaining messages in the receiver's buffer")
         )
-    }
-}
-
-impl Default for EventHandler {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
