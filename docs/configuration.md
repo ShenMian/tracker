@@ -98,8 +98,9 @@ groups = [
 [timeline]
 time_delta_mins = 1
 
-[display]
+[performance]
 render_rate = 60.0
+update_rate = 10.0
 ```
 
 ## World Map
@@ -130,9 +131,10 @@ The `ground_station.name` field is optional. If not provided, the city name corr
 
 - `time_delta_mins`: Time step in minutes for time simulation controls.
 
-## Display
+## Performance
 
-- `render_rate`: Frames drawn per second. A lower value uses less CPU. Must be greater than 0.
+- `render_rate`: Frames drawn per second. A lower value uses less CPU.
+- `update_rate`: State updates per second. A lower value uses less CPU.
 
 ## Color Options
 

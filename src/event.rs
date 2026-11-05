@@ -28,10 +28,8 @@ pub struct EventHandler {
 
 impl EventHandler {
     /// Creates a new `EventHandler`.
-    pub fn new(render_rate: f64) -> Self {
-        const UPDATE_RATE: f64 = 10.0;
-
-        let mut update_interval = tokio::time::interval(Duration::from_secs_f64(1.0 / UPDATE_RATE));
+    pub fn new(render_rate: f64, update_rate: f64) -> Self {
+        let mut update_interval = tokio::time::interval(Duration::from_secs_f64(1.0 / update_rate));
         let mut render_interval = tokio::time::interval(Duration::from_secs_f64(1.0 / render_rate));
         let (sender, receiver) = mpsc::unbounded_channel();
         let sender_clone = sender.clone();
