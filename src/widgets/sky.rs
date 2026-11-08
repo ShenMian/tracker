@@ -128,7 +128,7 @@ impl Sky<'_> {
             return;
         };
         let (az, el) = state.position.az_el(station_position);
-        if el >= 0.0 {
+        if el >= MIN_VISIBLE_ELEVATION {
             let (x, y) = az_el_to_canvas(az, el);
             let object_name = object.name().unwrap_or(UNKNOWN_NAME);
             ctx.print(

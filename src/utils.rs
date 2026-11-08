@@ -6,6 +6,9 @@ use std::f64::consts::{PI, TAU};
 
 use crate::{coordinates::Lla, object::Object};
 
+/// Minimum elevation in degrees for reliable signal reception; the visibility cutoff.
+pub const MIN_VISIBLE_ELEVATION: f64 = 10.0;
+
 /// Returns the Epoch for the given UTC timestamp.
 pub fn epoch_from_utc(time: &DateTime<Utc>) -> Epoch {
     Epoch::from_gregorian_utc(
@@ -154,8 +157,10 @@ pub fn calculate_visibility_area(position: &Lla) -> Vec<(f64, f64)> {
     let lat0_rad = position.lat.to_radians();
     let lon0_rad = position.lon.to_radians();
     let earth_radius = 6371.0088_f64; // mean Earth radius in km
-    let cos_c = earth_radius / (earth_radius + position.alt.max(0.1));
-    let central_angle_rad = cos_c.acos();
+    let radius_ratio = earth_radius / (earth_radius + position.alt.max(0.1));
+    let mask_rad = MIN_VISIBLE_ELEVATION.to_radians();
+    // cos(c + mask) = R / (R + h) * cos(mask)
+    let central_angle_rad = (radius_ratio * mask_rad.cos()).acos() - mask_rad;
     let mut points = Vec::with_capacity(360 / AZIMUTH_STEP);
     for az in (-180..=180)
         .step_by(AZIMUTH_STEP)
@@ -180,7 +185,6 @@ pub fn calculate_sky_track(
     ground_station: &Lla,
     time: &DateTime<Utc>,
 ) -> Vec<(f64, f64)> {
-    const MIN_VISIBLE_ELEVATION: f64 = 10.0;
     const WINDOW_MINUTES: i64 = 30;
     const STEP_MIN: usize = 1;
 
@@ -218,7 +222,7 @@ pub fn calculate_pass_times(
         // Treat unresolvable steps as not visible.
         let is_visible = object
             .predict(&time)
-            .is_ok_and(|state| state.position.az_el(observer).1 >= 0.0);
+            .is_ok_and(|state| state.position.az_el(observer).1 >= MIN_VISIBLE_ELEVATION);
 
         match (current_pass_start, is_visible) {
             (None, true) => {
