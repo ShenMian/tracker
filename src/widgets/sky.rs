@@ -11,7 +11,6 @@ use rust_i18n::t;
 
 use crate::{
     app::States,
-    config::SkyConfig,
     coordinates::Lla,
     event::Event,
     shared_state::SharedState,
@@ -37,10 +36,6 @@ pub struct SkyState {
 }
 
 impl SkyState {
-    pub fn with_config(_config: SkyConfig) -> Self {
-        Self::default()
-    }
-
     fn hovered_az_el(&self) -> Option<(f64, f64)> {
         let (x, y) = self.mouse_position?;
         Some(canvas_to_az_el(x, y))

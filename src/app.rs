@@ -168,12 +168,12 @@ pub struct States {
 impl States {
     pub fn with_config(config: Config) -> Self {
         Self {
-            shared: SharedState::with_config(config.sky.clone()),
+            shared: SharedState::with_config(config.sky),
             world_map_state: WorldMapState::with_config(config.world_map),
             satellite_groups_state: SatelliteGroupsState::with_config(config.satellite_groups),
             tab_state: Default::default(),
             information_state: Default::default(),
-            sky_state: SkyState::with_config(config.sky),
+            sky_state: Default::default(),
             timeline_state: TimelineState::with_config(config.timeline),
             show_keymap: false,
         }

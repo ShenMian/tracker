@@ -18,8 +18,8 @@ pub struct SharedState {
 }
 
 impl SharedState {
-    pub fn with_config(config: SkyConfig) -> Self {
-        let ground_station = config.ground_station.map(|station| Station {
+    pub fn with_config(key_config: SkyConfig) -> Self {
+        let ground_station = key_config.ground_station.map(|station| Station {
             name: station
                 .name
                 .unwrap_or_else(|| station.position.country_city().1),
