@@ -58,7 +58,6 @@ impl SatelliteGroupsState {
     /// Spawns async task to load orbital elements for a single entry.
     fn load_entry(&mut self, index: usize) {
         let entry = &mut self.list_entries[index];
-        entry.loading = true;
         let tx = self.update_sender.clone();
         let group = entry.group.clone();
         let cache_lifetime = self.cache_lifetime;
@@ -75,7 +74,6 @@ impl SatelliteGroupsState {
         if let Some(handle) = entry.abort_handle.take() {
             handle.abort();
         }
-        entry.loading = false;
     }
 
     /// Spawns async tasks to reload orbital elements for all selected entries.
@@ -92,7 +90,6 @@ impl SatelliteGroupsState {
         let mut new_objects = Vec::new();
         while let Ok(result) = self.update_receiver.try_recv() {
             let entry = &mut self.list_entries[result.index];
-            entry.loading = false;
             entry.abort_handle = None;
             if let Some(elements) = result.elements {
                 new_objects.extend(
@@ -156,7 +153,7 @@ impl SatelliteGroups<'_> {
 
     fn list(&self) -> List<'static> {
         let items = self.state.list_entries.iter().map(|entry| {
-            let icon = if entry.loading {
+            let icon = if entry.abort_handle.is_some() {
                 "⋯"
             } else if entry.selected {
                 "✓"
@@ -207,8 +204,6 @@ pub struct Entry {
     group: Group,
     /// Whether this entry is selected.
     selected: bool,
-    /// Whether this entry is currently loading data.
-    loading: bool,
     /// Handle to abort the loading task.
     abort_handle: Option<AbortHandle>,
 }
@@ -218,7 +213,6 @@ impl From<Group> for Entry {
         Self {
             group,
             selected: false,
-            loading: false,
             abort_handle: None,
         }
     }
