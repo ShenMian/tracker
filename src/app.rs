@@ -8,11 +8,9 @@ use crate::{
     shared_state::SharedState,
     tui::Tui,
     widgets::{
-        information::{self, InformationState},
         keymap::Keymap,
         satellite_groups::{self, SatelliteGroups, SatelliteGroupsState},
-        sky::{self, SkyState},
-        tabs::{self, Tab, Tabs, TabsState},
+        tabs::{self, Tabs, TabsState},
         timeline::{self, Timeline, TimelineState},
         world_map::{self, WorldMap, WorldMapState},
     },
@@ -89,8 +87,6 @@ impl App {
             Tabs {
                 state: &mut self.states.tab_state,
                 shared: &self.states.shared,
-                sky_state: &mut self.states.sky_state,
-                information_state: &mut self.states.information_state,
             }
             .render(right_top_area, frame.buffer_mut());
 
@@ -124,10 +120,6 @@ impl App {
         world_map::handle_event(event, &mut self.states)?;
         satellite_groups::handle_event(event, &mut self.states)?;
         tabs::handle_event(event, &mut self.states)?;
-        match self.states.tab_state.selected {
-            Tab::Info => information::handle_event(event, &mut self.states)?,
-            Tab::Sky => sky::handle_event(event, &mut self.states)?,
-        }
         timeline::handle_event(event, &mut self.states)
     }
 
@@ -159,8 +151,6 @@ pub struct States {
     pub world_map_state: WorldMapState,
     pub satellite_groups_state: SatelliteGroupsState,
     pub tab_state: TabsState,
-    pub information_state: InformationState,
-    pub sky_state: SkyState,
     pub timeline_state: TimelineState,
     pub show_keymap: bool,
 }
@@ -172,8 +162,6 @@ impl States {
             world_map_state: WorldMapState::with_config(config.world_map),
             satellite_groups_state: SatelliteGroupsState::with_config(config.satellite_groups),
             tab_state: Default::default(),
-            information_state: Default::default(),
-            sky_state: Default::default(),
             timeline_state: TimelineState::with_config(config.timeline),
             show_keymap: false,
         }

@@ -10,8 +10,8 @@ use crate::{
     event::Event,
     shared_state::SharedState,
     widgets::{
-        information::{Information, InformationState},
-        sky::{Sky, SkyState},
+        information::{self, Information, InformationState},
+        sky::{self, Sky, SkyState},
     },
 };
 
@@ -55,13 +55,13 @@ impl Display for Tab {
 pub struct Tabs<'a> {
     pub state: &'a mut TabsState,
     pub shared: &'a SharedState,
-    pub sky_state: &'a mut SkyState,
-    pub information_state: &'a mut InformationState,
 }
 
 #[derive(Default)]
 pub struct TabsState {
     pub selected: Tab,
+    pub information: InformationState,
+    pub sky: SkyState,
 }
 
 impl Widget for Tabs<'_> {
@@ -91,14 +91,14 @@ impl Tabs<'_> {
         match self.state.selected {
             Tab::Sky => {
                 let sky = Sky {
-                    state: self.sky_state,
+                    state: &mut self.state.sky,
                     shared: self.shared,
                 };
                 sky.render(area, buf);
             }
             Tab::Info => {
                 let information = Information {
-                    state: self.information_state,
+                    state: &mut self.state.information,
                     shared: self.shared,
                 };
                 information.render(area, buf);
@@ -108,9 +108,13 @@ impl Tabs<'_> {
 }
 
 pub fn handle_event(event: Event, states: &mut States) -> Result<()> {
-    match event {
-        Event::Key(event) => handle_key_event(event, states),
-        _ => Ok(()),
+    if let Event::Key(key) = event {
+        handle_key_event(key, states)?;
+    }
+
+    match states.tab_state.selected {
+        Tab::Info => information::handle_event(event, states),
+        Tab::Sky => sky::handle_event(event, states),
     }
 }
 

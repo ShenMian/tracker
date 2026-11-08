@@ -169,9 +169,9 @@ pub fn handle_event(event: Event, states: &mut States) -> Result<()> {
 
 fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()> {
     let global_mouse = Position::new(event.column, event.row);
-    let canvas_area = states.sky_state.canvas_area;
+    let canvas_area = states.tab_state.sky.canvas_area;
     let Some(local_mouse) = window_to_area(global_mouse, canvas_area) else {
-        states.sky_state.mouse_position = None;
+        states.tab_state.sky.mouse_position = None;
         return Ok(());
     };
 
@@ -181,10 +181,10 @@ fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()> {
     let canvas_x = local_x * 2.0 - 1.0;
     let canvas_y = 1.0 - (local_y * 2.0);
     if (canvas_x.powi(2) + canvas_y.powi(2)).sqrt() > 1.0 {
-        states.sky_state.mouse_position = None;
+        states.tab_state.sky.mouse_position = None;
         return Ok(());
     }
-    states.sky_state.mouse_position = Some((canvas_x, canvas_y));
+    states.tab_state.sky.mouse_position = Some((canvas_x, canvas_y));
 
     Ok(())
 }

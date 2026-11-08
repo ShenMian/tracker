@@ -229,7 +229,7 @@ pub fn handle_event(event: Event, states: &mut States) -> Result<()> {
 }
 
 fn handle_mouse_event(event: MouseEvent, states: &mut States) -> Result<()> {
-    let state = &mut states.information_state;
+    let state = &mut states.tab_state.information;
 
     let global_mouse = Position::new(event.column, event.row);
     let Some(local_mouse) = window_to_area(global_mouse, state.inner_area) else {
