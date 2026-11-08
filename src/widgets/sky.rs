@@ -130,6 +130,9 @@ impl Sky<'_> {
         let (az, el) = state.position.az_el(station_position);
         if el >= MIN_VISIBLE_ELEVATION {
             let (x, y) = az_el_to_canvas(az, el);
+            let Some((x, y)) = snap_label_to_shape(ctx, x, y, self.state.canvas_area) else {
+                return;
+            };
             let object_name = object.name().unwrap_or(UNKNOWN_NAME);
             ctx.print(
                 x,
@@ -158,6 +161,21 @@ fn centered_square(area: Rect) -> Rect {
         width,
         height,
     }
+}
+
+/// Snaps a label onto the cell a braille shape at the same coordinate occupies:
+/// ratatui grids shapes by dot but labels by cell.
+fn snap_label_to_shape(ctx: &mut Context, x: f64, y: f64, area: Rect) -> Option<(f64, f64)> {
+    let painter = canvas::Painter::from(ctx);
+    // Braille packs 2x4 dots per cell.
+    let (dot_x, dot_y) = painter.get_point(x, y)?;
+    let (&[left, right], &[bottom, top]) = painter.bounds();
+    let (cell_x, cell_y) = ((dot_x / 2) as f64, (dot_y / 4) as f64);
+    let (w, h) = (f64::from(area.width) - 1.0, f64::from(area.height) - 1.0);
+    Some((
+        (left + (cell_x + 0.5) * (right - left) / w).clamp(left, right),
+        (top - (cell_y + 0.5) * (top - bottom) / h).clamp(bottom, top),
+    ))
 }
 
 pub fn handle_event(event: Event, states: &mut States) -> Result<()> {

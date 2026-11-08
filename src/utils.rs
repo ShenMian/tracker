@@ -6,7 +6,8 @@ use std::f64::consts::{PI, TAU};
 
 use crate::{coordinates::Lla, object::Object};
 
-/// Minimum elevation in degrees for reliable signal reception; the visibility cutoff.
+/// Minimum elevation in degrees for reliable signal reception; the visibility
+/// cutoff.
 pub const MIN_VISIBLE_ELEVATION: f64 = 10.0;
 
 /// Returns the Epoch for the given UTC timestamp.
